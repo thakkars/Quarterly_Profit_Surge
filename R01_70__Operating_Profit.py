@@ -562,13 +562,13 @@ try:
 
         # ── 9A. SAVE TO MASTER FILE ──────────────────────────────────────
         try:
-            if os.path.exists(MASTER_FILE_PATH):
-                mode, if_sheet_exists = "a", "overlay"
+            master_exists = os.path.exists(MASTER_FILE_PATH)
+            if master_exists:
+                ew_kwargs = dict(engine="openpyxl", mode="a", if_sheet_exists="overlay")
             else:
-                mode, if_sheet_exists = "w", "replace"
+                ew_kwargs = dict(engine="openpyxl", mode="w")
 
-            with pd.ExcelWriter(MASTER_FILE_PATH, engine="openpyxl",
-                                mode=mode, if_sheet_exists=if_sheet_exists) as writer:
+            with pd.ExcelWriter(MASTER_FILE_PATH, **ew_kwargs) as writer:
                 if not df_to_append.empty:
                     try:
                         try:
