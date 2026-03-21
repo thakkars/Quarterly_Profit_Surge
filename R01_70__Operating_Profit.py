@@ -501,6 +501,10 @@ try:
             df_export["Exception_Industry"] = "No"
 
         # ── 6. FILTER LOGIC ──────────────────────────────────────────────
+        # Safety: ensure Exception_Industry always exists even if VLOOKUP was skipped
+        if "Exception_Industry" not in df_export.columns:
+            df_export["Exception_Industry"] = "No"
+
         condition_op       = df_export["OP Profit > 70%"]               == True
         condition_max      = df_export["Current Profit > in past 3 yrs"] == True
         condition_exc      = df_export["Exception_Industry"]             == "Yes"
