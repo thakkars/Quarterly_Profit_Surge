@@ -1,6 +1,5 @@
 name: Run Stock Screener
 
-# ── Trigger: manually from dashboard OR GitHub website
 on:
   workflow_dispatch:
     inputs:
@@ -12,53 +11,36 @@ on:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 120        # max 2 hours — enough for full scrape
+    timeout-minutes: 120
 
     steps:
-    # 1. Get your code
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # 2. Set up Python
     - name: Set up Python 3.11
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
 
-    # 3. Install Google Chrome (stable)
-    - name: Install Google Chrome
-      run: |
-        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-        sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
-        sudo apt-get update
-        sudo apt-get install -y google-chrome-stable
+    # ── Reliable Chrome + ChromeDriver install ──
+    - name: Install Chrome and ChromeDriver
+      uses: browser-actions/setup-chrome@v1
+      with:
+        chrome-version: stable
 
-    # 4. Install matching ChromeDriver
-    - name: Install ChromeDriver
-      run: |
-        CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+\.\d+')
-        MAJOR_VERSION=$(echo $CHROME_VERSION | cut -d. -f1)
-        wget -q "https://storage.googleapis.com/chrome-for-testing-public/${CHROME_VERSION}/linux64/chromedriver-linux64.zip" || \
-        wget -q "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${MAJOR_VERSION}" -O /tmp/version.txt && \
-        wget -q "https://chromedriver.storage.googleapis.com/$(cat /tmp/version.txt)/chromedriver_linux64.zip" -O /tmp/chromedriver.zip
-        ls /tmp/*.zip 2>/dev/null && unzip /tmp/*.zip -d /tmp/ || true
-        find /tmp -name "chromedriver" -exec sudo mv {} /usr/local/bin/chromedriver \; 2>/dev/null || true
-        sudo chmod +x /usr/local/bin/chromedriver 2>/dev/null || true
-
-    # 5. Install Python packages
     - name: Install Python dependencies
       run: |
         pip install --upgrade pip
-        pip install -r requirements.txt
+        pip install selenium pandas numpy openpyxl \
+                    google-auth google-auth-httplib2 \
+                    google-api-python-client gspread
 
-    # 6. Download existing Master File from Google Drive (so we can append to it)
     - name: Download existing files from Google Drive
       env:
         GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
         GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
       run: python download_from_drive.py
 
-    # 7. Run the main screener script
     - name: Run Stock Screener
       env:
         SCREENER_USERNAME: ${{ secrets.SCREENER_USERNAME }}
@@ -68,7 +50,6 @@ jobs:
         GITHUB_ACTIONS: "true"
       run: python R01_70__Operating_Profit.py
 
-    # 8. Upload results as GitHub artifact (backup download)
     - name: Upload Excel files as artifacts
       uses: actions/upload-artifact@v4
       if: always()
