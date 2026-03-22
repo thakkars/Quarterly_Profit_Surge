@@ -346,7 +346,7 @@ def upload_to_google_drive():
                 continue
 
             # Check if file already exists
-            query = f"name="{filename}" and "{gdrive_folder}" in parents and trashed=false"
+            query = 'name="' + filename + '" and "' + gdrive_folder + '" in parents and trashed=false'
             resp = requests.get(
                 "https://www.googleapis.com/drive/v3/files",
                 headers=headers,
@@ -368,7 +368,7 @@ def upload_to_google_drive():
                     params={"uploadType": "media"},
                     data=file_data
                 )
-                print(f"✅ Updated "{filename}" in Google Drive.")
+                print(f'✅ Updated {filename} in Google Drive.')
             else:
                 # Create new file
                 import json as _json
@@ -383,7 +383,7 @@ def upload_to_google_drive():
                     params={"uploadType": "multipart"},
                     files=files
                 )
-                print(f"✅ Uploaded "{filename}" to Google Drive.")
+                print(f'✅ Uploaded {filename} to Google Drive.')
 
     except Exception as e:
         print(f"⚠️ Google Drive upload failed: {e}")
