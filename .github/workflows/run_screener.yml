@@ -23,22 +23,16 @@ jobs:
         chrome-version: stable
 
     - name: Install Python dependencies
-      run: pip install selenium pandas numpy openpyxl google-auth google-auth-httplib2 google-api-python-client gspread
-
-    - name: Download existing files from Google Drive
-      env:
-        GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-        GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
-        GITHUB_ACTIONS: "true"
-      run: python download_from_drive.py
+      run: pip install selenium pandas numpy openpyxl boto3 google-auth google-auth-httplib2 google-api-python-client gspread
 
     - name: Run Stock Screener
       env:
         SCREENER_USERNAME: ${{ secrets.SCREENER_USERNAME }}
         SCREENER_PASSWORD: ${{ secrets.SCREENER_PASSWORD }}
-        GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-        GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
-        GDRIVE_OWNER_EMAIL: ${{ secrets.GDRIVE_OWNER_EMAIL }}
+        R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+        R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL }}
+        R2_BUCKET_NAME: quarterly-profit-surge
         GITHUB_ACTIONS: "true"
       run: python R01_70__Operating_Profit.py
 
@@ -49,3 +43,35 @@ jobs:
         name: screener-results-${{ github.run_number }}
         path: /tmp/screener_data/
         retention-days: 30
+```
+```
+→ Commit message: "Add R2 storage"
+→ Commit changes
+```
+
+---
+
+## Step 3 — Push Python File via GitHub Desktop
+```
+GitHub Desktop
+→ R01_70__Operating_Profit.py shows as changed
+→ Summary: "Add R2 upload"
+→ Commit to main → Push origin
+```
+
+---
+
+## Step 4 — Run Workflow
+```
+GitHub → Actions → Run Stock Screener
+→ Run workflow → Run workflow
+```
+
+---
+
+## Step 5 — Check R2 Bucket
+```
+dash.cloudflare.com → R2 → quarterly-profit-surge
+→ 📊 Master File.xlsx  ✅
+→ 📊 Raw Data.xlsx     ✅
+→ Click to download anytime!
