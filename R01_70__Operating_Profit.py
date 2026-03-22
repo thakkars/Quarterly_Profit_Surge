@@ -314,6 +314,7 @@ def clean_and_convert(df_in):
 def upload_to_google_drive():
     creds_json_str = os.environ.get("GOOGLE_CREDENTIALS", "")
     gdrive_folder  = os.environ.get("GDRIVE_FOLDER_ID", "")
+    owner_email    = os.environ.get("GDRIVE_OWNER_EMAIL", "")
 
     if not creds_json_str:
         print("⚠️ GOOGLE_CREDENTIALS not set — skipping upload.")
@@ -321,69 +322,67 @@ def upload_to_google_drive():
 
     try:
         import json
-        import requests
         from google.oauth2.service_account import Credentials
-        from google.auth.transport.requests import Request
+        from googleapiclient.discovery import build
+        from googleapiclient.http import MediaFileUpload
 
-        # Get access token
         creds = Credentials.from_service_account_info(
             json.loads(creds_json_str),
             scopes=["https://www.googleapis.com/auth/drive"]
         )
-        creds.refresh(Request())
-        token = creds.token
+        service = build("drive", "v3", credentials=creds)
 
         files_to_upload = [
             (MASTER_FILE_PATH, "Master File.xlsx"),
             (RAW_FILE_PATH,    "Raw Data.xlsx"),
         ]
 
-        headers = {"Authorization": f"Bearer {token}"}
+        mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
         for local_path, filename in files_to_upload:
             if not os.path.exists(local_path):
                 print(f"⚠️ {filename} not found, skipping.")
                 continue
 
-            # Check if file already exists
-            query = 'name="' + filename + '" and "' + gdrive_folder + '" in parents and trashed=false'
-            resp = requests.get(
-                "https://www.googleapis.com/drive/v3/files",
-                headers=headers,
-                params={"q": query, "fields": "files(id,name)"}
-            ).json()
-            existing = resp.get("files", [])
+            # Search for existing file in the folder
+            query = f"name='{filename}' and '{gdrive_folder}' in parents and trashed=false"
+            results  = service.files().list(q=query, fields="files(id,name)").execute()
+            existing = results.get("files", [])
 
-            with open(local_path, "rb") as f:
-                file_data = f.read()
-
-            mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            media = MediaFileUpload(local_path, mimetype=mime, resumable=True)
 
             if existing:
-                # Update existing file
                 file_id = existing[0]["id"]
-                requests.patch(
-                    f"https://www.googleapis.com/upload/drive/v3/files/{file_id}",
-                    headers={**headers, "Content-Type": mime},
-                    params={"uploadType": "media"},
-                    data=file_data
-                )
-                print(f'✅ Updated {filename} in Google Drive.')
+                service.files().update(
+                    fileId=file_id,
+                    media_body=media
+                ).execute()
+                print(f"✅ Updated {filename} in Google Drive.")
             else:
-                # Create new file
-                import json as _json
-                meta = _json.dumps({"name": filename, "parents": [gdrive_folder]})
-                files = {
-                    "data": ("metadata", meta, "application/json"),
-                    "file": (filename, file_data, mime)
+                file_meta = {
+                    "name"    : filename,
+                    "parents" : [gdrive_folder]
                 }
-                requests.post(
-                    "https://www.googleapis.com/upload/drive/v3/files",
-                    headers=headers,
-                    params={"uploadType": "multipart"},
-                    files=files
-                )
-                print(f'✅ Uploaded {filename} to Google Drive.')
+                new_file = service.files().create(
+                    body=file_meta,
+                    media_body=media,
+                    fields="id"
+                ).execute()
+                file_id = new_file.get("id")
+
+                # Share the file with your personal Google account
+                if owner_email:
+                    service.permissions().create(
+                        fileId=file_id,
+                        body={
+                            "type" : "user",
+                            "role" : "writer",
+                            "emailAddress": owner_email
+                        },
+                        sendNotificationEmail=False
+                    ).execute()
+
+                print(f"✅ Uploaded {filename} to Google Drive.")
 
     except Exception as e:
         print(f"⚠️ Google Drive upload failed: {e}")
