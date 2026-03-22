@@ -38,6 +38,7 @@ jobs:
         SCREENER_PASSWORD: ${{ secrets.SCREENER_PASSWORD }}
         GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
         GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+        GDRIVE_OWNER_EMAIL: ${{ secrets.GDRIVE_OWNER_EMAIL }}
         GITHUB_ACTIONS: "true"
       run: python R01_70__Operating_Profit.py
 
