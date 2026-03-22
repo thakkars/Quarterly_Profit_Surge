@@ -309,84 +309,61 @@ def clean_and_convert(df_in):
 
 
 # ═══════════════════════════════════════════════════════════
-#  GOOGLE DRIVE UPLOAD
+#  CLOUDFLARE R2 UPLOAD  (S3-compatible, works perfectly)
 # ═══════════════════════════════════════════════════════════
-def upload_to_google_drive():
-    creds_json_str = os.environ.get("GOOGLE_CREDENTIALS", "")
-    gdrive_folder  = os.environ.get("GDRIVE_FOLDER_ID", "")
-    owner_email    = os.environ.get("GDRIVE_OWNER_EMAIL", "")
+def upload_to_cloudflare_r2():
+    """
+    Uploads Excel files to Cloudflare R2 storage.
+    Uses S3-compatible API — no quota issues, always works.
+    """
+    access_key    = os.environ.get("R2_ACCESS_KEY_ID", "")
+    secret_key    = os.environ.get("R2_SECRET_ACCESS_KEY", "")
+    endpoint_url  = os.environ.get("R2_ENDPOINT_URL", "")
+    bucket_name   = os.environ.get("R2_BUCKET_NAME", "quarterly-profit-surge")
 
-    if not creds_json_str:
-        print("⚠️ GOOGLE_CREDENTIALS not set — skipping upload.")
+    if not all([access_key, secret_key, endpoint_url]):
+        print("⚠️ R2 credentials not set — skipping upload.")
         return
 
     try:
-        import json
-        from google.oauth2.service_account import Credentials
-        from googleapiclient.discovery import build
-        from googleapiclient.http import MediaFileUpload
+        import boto3
+        from botocore.config import Config
 
-        creds = Credentials.from_service_account_info(
-            json.loads(creds_json_str),
-            scopes=["https://www.googleapis.com/auth/drive"]
+        s3 = boto3.client(
+            "s3",
+            endpoint_url          = endpoint_url,
+            aws_access_key_id     = access_key,
+            aws_secret_access_key = secret_key,
+            config                = Config(signature_version="s3v4"),
+            region_name           = "auto"
         )
-        service = build("drive", "v3", credentials=creds)
 
         files_to_upload = [
             (MASTER_FILE_PATH, "Master File.xlsx"),
             (RAW_FILE_PATH,    "Raw Data.xlsx"),
         ]
 
-        mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-
         for local_path, filename in files_to_upload:
             if not os.path.exists(local_path):
                 print(f"⚠️ {filename} not found, skipping.")
                 continue
 
-            # Search for existing file in the folder
-            query = f"name='{filename}' and '{gdrive_folder}' in parents and trashed=false"
-            results  = service.files().list(q=query, fields="files(id,name)").execute()
-            existing = results.get("files", [])
-
-            media = MediaFileUpload(local_path, mimetype=mime, resumable=True)
-
-            if existing:
-                file_id = existing[0]["id"]
-                service.files().update(
-                    fileId=file_id,
-                    media_body=media
-                ).execute()
-                print(f"✅ Updated {filename} in Google Drive.")
-            else:
-                file_meta = {
-                    "name"    : filename,
-                    "parents" : [gdrive_folder]
-                }
-                new_file = service.files().create(
-                    body=file_meta,
-                    media_body=media,
-                    fields="id"
-                ).execute()
-                file_id = new_file.get("id")
-
-                # Share the file with your personal Google account
-                if owner_email:
-                    service.permissions().create(
-                        fileId=file_id,
-                        body={
-                            "type" : "user",
-                            "role" : "writer",
-                            "emailAddress": owner_email
-                        },
-                        sendNotificationEmail=False
-                    ).execute()
-
-                print(f"✅ Uploaded {filename} to Google Drive.")
+            s3.upload_file(
+                local_path,
+                bucket_name,
+                filename,
+                ExtraArgs={"ContentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}
+            )
+            print(f"✅ Uploaded {filename} to Cloudflare R2.")
 
     except Exception as e:
-        print(f"⚠️ Google Drive upload failed: {e}")
+        print(f"⚠️ R2 upload failed: {e}")
         traceback.print_exc()
+
+
+# Keep old name as alias
+def upload_to_google_drive():
+    upload_to_cloudflare_r2()
 
 
 # ═══════════════════════════════════════════════════════════
