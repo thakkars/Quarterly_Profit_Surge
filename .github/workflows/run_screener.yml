@@ -48,15 +48,3 @@ jobs:
         name: screener-results-${{ github.run_number }}
         path: /tmp/screener_data/
         retention-days: 30
-```
-
----
-
-## Then:
-```
-Scroll down
-→ Commit message: "Fix YAML file"
-→ Click [ Commit changes ]
-        ↓
-Actions tab → Run Stock Screener
-→ Run workflow → Run workflow
