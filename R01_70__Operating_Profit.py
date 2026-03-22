@@ -614,9 +614,93 @@ try:
         except PermissionError:
             print(f"\n❌ ERROR: Raw Data file is OPEN. Please close it.\n   {RAW_FILE_PATH}")
 
-        # ── 10. UPLOAD TO GOOGLE DRIVE  (NEW) ────────────────────────────
-        print("\n☁️  Uploading files to Google Drive...")
-        upload_to_google_drive()
+        # ── 10. SAVE RESULTS JSON (for dashboard) ───────────────────────
+        try:
+            rows = []
+            if not df_to_append.empty:
+                # Use the appended data (new unique rows with Sr no.)
+                df_json = df_to_append.copy()
+            elif not df_master_candidates.empty:
+                df_json = df_master_candidates.copy()
+                df_json.insert(0, "Sr no.", range(1, len(df_json) + 1))
+            else:
+                df_json = pd.DataFrame()
+
+            if not df_json.empty:
+                # Get quarter column names (like "Dec 2025", "Sep 2025")
+                q_cols = [c for c in df_json.columns if any(
+                    m in str(c) for m in ["Jan","Feb","Mar","Apr","May","Jun",
+                                          "Jul","Aug","Sep","Oct","Nov","Dec"]
+                ) and any(ch.isdigit() for ch in str(c)) and ">" not in str(c)]
+
+                latest_q_col = q_cols[0] if len(q_cols) > 0 else None
+                prev_q_col   = q_cols[4] if len(q_cols) > 4 else None
+
+                for _, row in df_json.iterrows():
+                    rows.append({
+                        "sr"           : int(row.get("Sr no.", 0)),
+                        "name"         : str(row.get("Name", "")),
+                        "company_page" : str(row.get("Company (Page)", "")),
+                        "latest_q"     : float(row[latest_q_col]) if latest_q_col and pd.notna(row.get(latest_q_col)) else 0,
+                        "prev_q"       : float(row[prev_q_col])   if prev_q_col   and pd.notna(row.get(prev_q_col))   else 0,
+                        "op_profit_70" : bool(row.get("OP Profit > 70%", False)),
+                        "all_time_hi"  : bool(row.get("Current Profit > in past 3 yrs", False)),
+                        "promoter"     : float(row.get("Promoter Holding", 0) or 0),
+                        "pledged"      : float(row.get("Pledged %", 0) or 0),
+                        "wc_days"      : float(row.get("WC Days", 0) or 0),
+                        "industry_group": str(row.get("Industry Group", "") or ""),
+                        "industry"     : str(row.get("Industry", "") or ""),
+                    })
+
+            import json as _json
+            results_payload = _json.dumps({
+                "quarter"      : latest_quarter_label,
+                "generated_at" : datetime.now().isoformat(),
+                "total_count"  : len(rows),
+                "rows"         : rows
+            }, indent=2)
+
+            results_path = os.path.join(FOLDER_PATH, "results.json")
+            with open(results_path, "w") as f:
+                f.write(results_payload)
+            print(f"✅ results.json saved → {len(rows)} rows")
+
+        except Exception as e:
+            print(f"⚠️ results.json generation failed: {e}")
+            traceback.print_exc()
+
+        # ── 11. UPLOAD TO CLOUDFLARE R2 ──────────────────────────────────
+        print("\n☁️  Uploading files to Cloudflare R2...")
+        upload_to_google_drive()  # this calls upload_to_cloudflare_r2()
+
+        # Also upload results.json to R2
+        try:
+            results_path = os.path.join(FOLDER_PATH, "results.json")
+            if os.path.exists(results_path):
+                access_key   = os.environ.get("R2_ACCESS_KEY_ID", "")
+                secret_key   = os.environ.get("R2_SECRET_ACCESS_KEY", "")
+                endpoint_url = os.environ.get("R2_ENDPOINT_URL", "")
+                bucket_name  = os.environ.get("R2_BUCKET_NAME", "quarterly-profit-surge")
+
+                if all([access_key, secret_key, endpoint_url]):
+                    import boto3
+                    from botocore.config import Config
+                    s3 = boto3.client(
+                        "s3",
+                        endpoint_url          = endpoint_url,
+                        aws_access_key_id     = access_key,
+                        aws_secret_access_key = secret_key,
+                        config                = Config(signature_version="s3v4"),
+                        region_name           = "auto"
+                    )
+                    s3.upload_file(
+                        results_path, bucket_name, "results.json",
+                        ExtraArgs={"ContentType": "application/json"}
+                    )
+                    print("✅ Uploaded results.json to Cloudflare R2.")
+        except Exception as e:
+            print(f"⚠️ results.json R2 upload failed: {e}")
+            traceback.print_exc()
 
 finally:
     try:
