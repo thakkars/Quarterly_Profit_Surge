@@ -2,11 +2,6 @@ name: Run Stock Screener
 
 on:
   workflow_dispatch:
-    inputs:
-      triggered_by:
-        description: 'Who triggered this run'
-        required: false
-        default: 'manual'
 
 jobs:
   scrape:
@@ -28,11 +23,7 @@ jobs:
         chrome-version: stable
 
     - name: Install Python dependencies
-      run: |
-        pip install --upgrade pip
-        pip install selenium pandas numpy openpyxl \
-                    google-auth google-auth-httplib2 \
-                    google-api-python-client gspread
+      run: pip install selenium pandas numpy openpyxl google-auth google-auth-httplib2 google-api-python-client gspread
 
     - name: Download existing files from Google Drive
       env:
@@ -55,20 +46,17 @@ jobs:
       if: always()
       with:
         name: screener-results-${{ github.run_number }}
-        path: |
-          /tmp/screener_data/Master File.xlsx
-          /tmp/screener_data/Raw Data.xlsx
+        path: /tmp/screener_data/
         retention-days: 30
 ```
 
-### Step 4 — Commit
+---
+
+## Then:
 ```
 Scroll down
-→ Commit message: "Fix workflow ChromeDriver"
+→ Commit message: "Fix YAML file"
 → Click [ Commit changes ]
-```
-
-### Step 5 — Run workflow
-```
+        ↓
 Actions tab → Run Stock Screener
 → Run workflow → Run workflow
