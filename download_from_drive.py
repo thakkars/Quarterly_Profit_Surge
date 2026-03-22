@@ -8,7 +8,11 @@ BEFORE the screener runs — so the script can append to them correctly.
 import os
 import json
 
-FOLDER_PATH = os.path.join(os.path.dirname(__file__), "data")
+IS_GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS", "false").lower() == "true"
+if IS_GITHUB_ACTIONS:
+    FOLDER_PATH = "/tmp/screener_data"
+else:
+    FOLDER_PATH = os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(FOLDER_PATH, exist_ok=True)
 
 creds_json_str = os.environ.get("GOOGLE_CREDENTIALS", "")

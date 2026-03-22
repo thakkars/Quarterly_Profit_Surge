@@ -24,17 +24,23 @@ PASSWORD  = os.environ.get("SCREENER_PASSWORD", "")
 
 SCREEN_URL = "https://www.screener.in/screens/742984/top-growers/"
 
-# ── Paths: use a local "data/" folder (works both locally and on GitHub Actions)
-FOLDER_PATH      = os.path.join(os.path.dirname(__file__), "data")
-MASTER_FILE_PATH = os.path.join(FOLDER_PATH, "Master_File.xlsx")
-RAW_FILE_PATH    = os.path.join(FOLDER_PATH, "Raw_Data.xlsx")
-
-os.makedirs(FOLDER_PATH, exist_ok=True)
-
 # ── HEADLESS is always True when running on GitHub Actions cloud
 IS_GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS", "false").lower() == "true"
 HEADLESS   = IS_GITHUB_ACTIONS   # True on cloud, False on your laptop
 PAGE_DELAY = 1.0
+
+# ── Paths:
+# On cloud (GitHub Actions) → use temp folder, files upload to Drive only
+# On your laptop            → save to D: drive as before
+if IS_GITHUB_ACTIONS:
+    FOLDER_PATH = "/tmp/screener_data"
+else:
+    FOLDER_PATH = r"D:\Investment Research\Python Projects\Operating Profit more than 70% jump"
+
+MASTER_FILE_PATH = os.path.join(FOLDER_PATH, "Master File.xlsx")
+RAW_FILE_PATH    = os.path.join(FOLDER_PATH, "Raw Data.xlsx")
+
+os.makedirs(FOLDER_PATH, exist_ok=True)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -345,7 +351,12 @@ def upload_to_google_drive():
             if gdrive_folder:
                 query += f" and '{gdrive_folder}' in parents"
 
-            results = service.files().list(q=query, fields="files(id, name)").execute()
+            results = service.files().list(
+                q=query,
+                fields="files(id, name)",
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True
+            ).execute()
             existing = results.get("files", [])
 
             media = MediaFileUpload(
@@ -356,14 +367,23 @@ def upload_to_google_drive():
             if existing:
                 # Update existing file
                 file_id = existing[0]["id"]
-                service.files().update(fileId=file_id, media_body=media).execute()
+                service.files().update(
+                    fileId=file_id,
+                    media_body=media,
+                    supportsAllDrives=True
+                ).execute()
                 print(f"✅ Updated '{filename}' in Google Drive.")
             else:
-                # Create new file
+                # Create new file in the shared folder
                 meta = {"name": filename}
                 if gdrive_folder:
                     meta["parents"] = [gdrive_folder]
-                service.files().create(body=meta, media_body=media, fields="id").execute()
+                service.files().create(
+                    body=meta,
+                    media_body=media,
+                    fields="id",
+                    supportsAllDrives=True
+                ).execute()
                 print(f"✅ Uploaded '{filename}' to Google Drive.")
 
     except Exception as e:
