@@ -7,24 +7,17 @@ jobs:
   scrape:
     runs-on: ubuntu-latest
     timeout-minutes: 120
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v5
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: '3.11'
-
     - name: Install Chrome and ChromeDriver
       uses: browser-actions/setup-chrome@v1
       with:
         chrome-version: stable
-
     - name: Install Python dependencies
       run: pip install selenium pandas numpy openpyxl boto3 google-auth google-auth-httplib2 google-api-python-client gspread
-
     - name: Run Stock Screener
       env:
         SCREENER_USERNAME: ${{ secrets.SCREENER_USERNAME }}
@@ -35,7 +28,6 @@ jobs:
         R2_BUCKET_NAME: quarterly-profit-surge
         GITHUB_ACTIONS: "true"
       run: python R01_70__Operating_Profit.py
-
     - name: Upload Excel files as artifacts
       uses: actions/upload-artifact@v4
       if: always()
@@ -43,35 +35,3 @@ jobs:
         name: screener-results-${{ github.run_number }}
         path: /tmp/screener_data/
         retention-days: 30
-```
-```
-→ Commit message: "Add R2 storage"
-→ Commit changes
-```
-
----
-
-## Step 3 — Push Python File via GitHub Desktop
-```
-GitHub Desktop
-→ R01_70__Operating_Profit.py shows as changed
-→ Summary: "Add R2 upload"
-→ Commit to main → Push origin
-```
-
----
-
-## Step 4 — Run Workflow
-```
-GitHub → Actions → Run Stock Screener
-→ Run workflow → Run workflow
-```
-
----
-
-## Step 5 — Check R2 Bucket
-```
-dash.cloudflare.com → R2 → quarterly-profit-surge
-→ 📊 Master File.xlsx  ✅
-→ 📊 Raw Data.xlsx     ✅
-→ Click to download anytime!
