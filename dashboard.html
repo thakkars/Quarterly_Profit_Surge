@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quarterly Profit Surge · Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ══ TOKENS ══════════════════════════════════════════════════ */
+:root {
+  --ff-serif: 'Libre Baskerville', Georgia, serif;
+  --ff-mono:  'JetBrains Mono', 'Courier New', monospace;
+}
+[data-theme="light"] {
+  --bg:        #f5f3ef;
+  --bg2:       #eeebe5;
+  --surface:   #ffffff;
+  --surface2:  #faf9f7;
+  --border:    #ddd9d3;
+  --border2:   #c9c4bc;
+  --text:      #1a1714;
+  --text2:     #5c574f;
+  --muted:     #9c9690;
+  --accent:    #b45309;
+  --accent-lt: #fef3c7;
+  --green:     #15803d;
+  --green-lt:  #dcfce7;
+  --red:       #b91c1c;
+  --red-lt:    #fee2e2;
+  --blue:      #1d4ed8;
+  --blue-lt:   #dbeafe;
+  --shadow:    0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.05);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,.08);
+}
+[data-theme="dark"] {
+  --bg:        #0d1117;
+  --bg2:       #161b22;
+  --surface:   #1c2128;
+  --surface2:  #22272e;
+  --border:    #30363d;
+  --border2:   #444c56;
+  --text:      #cdd9e5;
+  --text2:     #768390;
+  --muted:     #545d68;
+  --accent:    #f0883e;
+  --accent-lt: rgba(240,136,62,.12);
+  --green:     #3fb950;
+  --green-lt:  rgba(63,185,80,.1);
+  --red:       #f85149;
+  --red-lt:    rgba(248,81,73,.1);
+  --blue:      #58a6ff;
+  --blue-lt:   rgba(88,166,255,.1);
+  --shadow:    0 1px 3px rgba(0,0,0,.3);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,.4);
+}
+
+/* ══ RESET & BASE ══════════════════════════════════════════════ */
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--ff-mono);font-size:13px;min-height:100vh;transition:background .25s,color .25s}
+
+/* ══ NAV ════════════════════════════════════════════════════ */
+.nav{
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  padding:0 28px;
+  height:54px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+  box-shadow:var(--shadow);
+}
+.nav-brand{display:flex;align-items:center;gap:12px}
+.nav-logo{
+  width:32px;height:32px;
+  background:var(--accent);
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  color:white;font-size:15px;
+  flex-shrink:0;
+}
+.nav-title{
+  font-family:var(--ff-serif);
+  font-size:17px;
+  font-weight:700;
+  letter-spacing:-.02em;
+  color:var(--text);
+}
+.nav-title span{
+  font-family:var(--ff-mono);
+  font-size:10px;
+  color:var(--muted);
+  font-weight:400;
+  letter-spacing:.06em;
+  display:block;
+  margin-top:1px;
+}
+.nav-right{display:flex;align-items:center;gap:8px}
+
+/* ══ TABS ═══════════════════════════════════════════════════ */
+.tabs{
+  display:flex;
+  gap:2px;
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  padding:0 28px;
+}
+.tab{
+  padding:12px 18px;
+  font-family:var(--ff-mono);
+  font-size:11px;
+  font-weight:500;
+  letter-spacing:.04em;
+  color:var(--muted);
+  cursor:pointer;
+  border-bottom:2px solid transparent;
+  transition:all .15s;
+  display:flex;align-items:center;gap:7px;
+  white-space:nowrap;
+}
+.tab:hover{color:var(--text2)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-badge{
+  background:var(--accent-lt);
+  color:var(--accent);
+  border-radius:10px;
+  padding:1px 6px;
+  font-size:10px;
+}
+
+/* ══ PAGES ══════════════════════════════════════════════════ */
+.page{display:none;padding:24px 28px;min-height:calc(100vh - 107px)}
+.page.active{display:block}
+
+/* ══ BUTTONS ════════════════════════════════════════════════ */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 16px;border-radius:6px;
+  border:1px solid var(--border);
+  background:var(--surface);color:var(--text2);
+  font-family:var(--ff-mono);font-size:11px;font-weight:500;
+  cursor:pointer;transition:all .15s;white-space:nowrap;
+  letter-spacing:.03em;
+}
+.btn:hover{background:var(--bg2);border-color:var(--border2);color:var(--text)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-accent{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-accent:hover{opacity:.88;color:#fff}
+.btn-green{background:var(--green);color:#fff;border-color:var(--green)}
+.btn-green:hover{opacity:.88;color:#fff}
+.btn-sm{padding:5px 11px;font-size:10px}
+.btn-icon{padding:7px 9px;font-size:14px}
+
+/* ══ THEME TOGGLE ════════════════════════════════════════════ */
+.theme-toggle{
+  width:36px;height:20px;
+  background:var(--border2);
+  border-radius:10px;
+  cursor:pointer;
+  position:relative;
+  transition:background .25s;
+  border:none;
+  flex-shrink:0;
+}
+.theme-toggle::after{
+  content:"";
+  position:absolute;
+  width:14px;height:14px;
+  background:white;
+  border-radius:50%;
+  top:3px;left:3px;
+  transition:transform .25s;
+  box-shadow:0 1px 2px rgba(0,0,0,.2);
+}
+[data-theme="dark"] .theme-toggle{background:var(--accent)}
+[data-theme="dark"] .theme-toggle::after{transform:translateX(16px)}
+
+/* ══ SETTINGS MODAL ══════════════════════════════════════════ */
+.modal-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.45);z-index:200;
+  align-items:center;justify-content:center;
+}
+.modal-overlay.open{display:flex}
+.modal{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:24px;
+  width:420px;
+  max-width:95vw;
+  box-shadow:var(--shadow-lg);
+}
+.modal h2{font-family:var(--ff-serif);font-size:17px;margin-bottom:18px}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:10px;color:var(--muted);margin-bottom:4px;letter-spacing:.05em;text-transform:uppercase}
+.field input{
+  width:100%;background:var(--bg);border:1px solid var(--border);
+  border-radius:5px;color:var(--text);
+  font-family:var(--ff-mono);font-size:11px;
+  padding:8px 10px;outline:none;transition:border-color .15s;
+}
+.field input:focus{border-color:var(--accent);background:var(--surface)}
+.field-hint{font-size:10px;color:var(--muted);margin-top:3px}
+
+/* ══ STATUS BAR ══════════════════════════════════════════════ */
+.status-bar{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:10px 16px;
+  margin-bottom:20px;
+  display:flex;align-items:center;gap:8px;
+  font-size:11px;color:var(--text2);
+}
+.sdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sd-blue{background:var(--blue)}
+.sd-green{background:var(--green);animation:glow 2s infinite}
+.sd-red{background:var(--red)}
+.sd-amber{background:#f59e0b;animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(63,185,80,.4)}50%{box-shadow:0 0 0 4px rgba(63,185,80,0)}}
+
+/* ══ SECTION HEADERS ═════════════════════════════════════════ */
+.section-head{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:16px;
+  padding-bottom:12px;
+  border-bottom:1px solid var(--border);
+}
+.section-head h2{
+  font-family:var(--ff-serif);
+  font-size:18px;font-weight:700;
+  letter-spacing:-.02em;
+}
+.section-head p{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* ══ STATS CARDS ═════════════════════════════════════════════ */
+.stats-row{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap}
+.stat-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:14px 18px;
+  flex:1;min-width:120px;
+  box-shadow:var(--shadow);
+}
+.stat-card .sv{
+  font-family:var(--ff-serif);
+  font-size:28px;font-weight:700;
+  line-height:1;
+  display:block;
+}
+.stat-card .sl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:3px}
+.stat-card.accent .sv{color:var(--accent)}
+.stat-card.green  .sv{color:var(--green)}
+.stat-card.blue   .sv{color:var(--blue)}
+
+/* ══ TABLE ═══════════════════════════════════════════════════ */
+.table-wrap{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:10px;
+  overflow:hidden;
+  box-shadow:var(--shadow);
+  overflow-x:auto;
+}
+table{width:100%;border-collapse:collapse;min-width:900px}
+thead tr{background:var(--bg2);border-bottom:2px solid var(--border)}
+thead th{
+  padding:10px 14px;
+  font-size:10px;font-weight:500;
+  text-align:left;
+  letter-spacing:.07em;text-transform:uppercase;
+  color:var(--muted);white-space:nowrap;
+}
+tbody tr{
+  border-bottom:1px solid var(--border);
+  transition:background .1s;
+}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--surface2)}
+tbody td{
+  padding:10px 14px;
+  font-size:12px;
+  white-space:nowrap;
+}
+.company-name{
+  font-family:var(--ff-serif);
+  font-size:13px;font-weight:700;
+  color:var(--text);
+}
+.company-sub{font-size:10px;color:var(--muted);margin-top:1px}
+.tag{
+  display:inline-block;
+  padding:2px 8px;border-radius:4px;
+  font-size:10px;font-weight:500;
+  letter-spacing:.04em;
+}
+.tag-green{background:var(--green-lt);color:var(--green)}
+.tag-red  {background:var(--red-lt);color:var(--red)}
+.tag-blue {background:var(--blue-lt);color:var(--blue)}
+.tag-amber{background:var(--accent-lt);color:var(--accent)}
+.num{font-variant-numeric:tabular-nums;color:var(--text2)}
+.num-hi{color:var(--green);font-weight:500}
+.num-lo{color:var(--red)}
+.bool-yes{color:var(--green)}
+.bool-no {color:var(--red)}
+.empty-table{
+  padding:60px 20px;
+  text-align:center;color:var(--muted);
+}
+.empty-table p{font-size:32px;margin-bottom:8px}
+.empty-table h3{font-family:var(--ff-serif);font-size:16px;color:var(--text2);margin-bottom:6px}
+
+/* ══ RUN PAGE ════════════════════════════════════════════════ */
+.run-hero{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:40px;
+  text-align:center;
+  box-shadow:var(--shadow);
+  margin-bottom:20px;
+}
+.run-hero h2{font-family:var(--ff-serif);font-size:24px;font-weight:700;margin-bottom:8px}
+.run-hero p{font-size:12px;color:var(--muted);margin-bottom:28px;max-width:400px;margin-left:auto;margin-right:auto}
+.run-btn{
+  font-size:14px!important;padding:14px 36px!important;
+  border-radius:8px!important;
+}
+.run-log{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:20px;
+  box-shadow:var(--shadow);
+}
+.run-log h3{font-size:11px;font-weight:500;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-bottom:14px}
+.log-entry{
+  padding:8px 0;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:flex-start;gap:10px;
+  font-size:11px;
+}
+.log-entry:last-child{border-bottom:none}
+.log-time{color:var(--muted);flex-shrink:0;font-size:10px;padding-top:1px}
+.log-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:3px}
+
+/* ══ EXCEPTION PAGE ══════════════════════════════════════════ */
+.exc-layout{display:grid;grid-template-columns:240px 1fr 240px;gap:16px;height:calc(100vh - 170px)}
+.exc-left,.exc-right{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:10px;
+  overflow-y:auto;
+  display:flex;flex-direction:column;
+}
+.exc-mid{overflow-y:auto}
+.exc-panel-title{
+  padding:12px 14px;
+  font-size:9px;font-weight:500;
+  letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);
+  border-bottom:1px solid var(--border);
+  position:sticky;top:0;background:var(--surface);z-index:2;
+}
+.egroup{
+  padding:8px 14px;display:flex;justify-content:space-between;
+  align-items:center;cursor:pointer;
+  border-bottom:1px solid var(--border);
+  font-size:11px;transition:background .12s;
+}
+.egroup:hover{background:var(--bg2)}
+.egroup.active{background:var(--accent-lt);color:var(--accent)}
+.egc{font-size:10px;background:var(--bg2);border-radius:10px;padding:1px 6px;color:var(--muted)}
+.egc.hs{background:var(--green-lt);color:var(--green)}
+.exc-toolbar{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:10px 14px;
+  display:flex;gap:8px;align-items:center;margin-bottom:12px;
+}
+.exc-sw{flex:1;position:relative}
+.exc-sw input{
+  width:100%;background:var(--bg);border:1px solid var(--border);
+  border-radius:5px;color:var(--text);
+  font-family:var(--ff-mono);font-size:12px;
+  padding:7px 10px 7px 28px;outline:none;transition:all .15s;
+}
+.exc-sw input:focus{border-color:var(--accent)}
+.exc-sw-ic{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:11px}
+.icard{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:6px;margin-bottom:3px;
+  display:flex;align-items:center;gap:9px;
+  padding:8px 12px;cursor:pointer;transition:all .12s;
+}
+.icard:hover{border-color:var(--border2);transform:translateY(-1px);box-shadow:var(--shadow)}
+.icard.sel{background:var(--green-lt);border-color:#86efac}
+.icard input[type=checkbox]{width:14px;height:14px;accent-color:var(--green);cursor:pointer;flex-shrink:0}
+.icard-name{flex:1;font-size:12px}
+.icard-tag{font-size:10px;color:var(--muted);background:var(--bg2);border-radius:3px;padding:2px 6px;max-width:110px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.icard.sel .icard-tag{background:rgba(255,255,255,.7);color:var(--green)}
+.stag{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--green-lt);border:1px solid #86efac;
+  border-radius:5px;padding:5px 9px;margin-bottom:3px;
+  font-size:11px;color:var(--green);gap:6px;
+}
+.stag .sn{flex:1;line-height:1.3}
+.stag .rm{cursor:pointer;color:var(--green);opacity:.55;font-size:14px;line-height:1;transition:opacity .12s}
+.stag .rm:hover{opacity:1}
+.exc-empty{text-align:center;padding:24px 14px;color:var(--muted);font-size:11px;line-height:1.8}
+.exc-save-bar{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:12px 16px;margin-top:14px;
+  display:flex;justify-content:space-between;align-items:center;
+}
+
+/* ══ SCROLLBAR ═══════════════════════════════════════════════ */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+
+/* ══ ANIMATIONS ══════════════════════════════════════════════ */
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.page.active{animation:fadeIn .2s ease both}
+</style>
+</head>
+<body>
+
+<!-- ══ NAV ════════════════════════════════════════════════════ -->
+<nav class="nav">
+  <div class="nav-brand">
+    <div class="nav-logo">📈</div>
+    <div class="nav-title">
+      Quarterly Profit Surge
+      <span>STOCK SCREENER DASHBOARD</span>
+    </div>
+  </div>
+  <div class="nav-right">
+    <span id="lastRun" style="font-size:10px;color:var(--muted)">Last run: —</span>
+    <button class="btn btn-sm" onclick="openSettings()">⚙ Settings</button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme"></button>
+  </div>
+</nav>
+
+<!-- ══ TABS ═══════════════════════════════════════════════════ -->
+<div class="tabs">
+  <div class="tab active" onclick="showTab('results')" id="tab-results">
+    📋 Results <span class="tab-badge" id="results-badge">0</span>
+  </div>
+  <div class="tab" onclick="showTab('run')" id="tab-run">
+    ▶ Run Screener
+  </div>
+  <div class="tab" onclick="showTab('exceptions')" id="tab-exceptions">
+    ⚙ Exceptions <span class="tab-badge" id="exc-badge">0</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- PAGE: RESULTS                                             -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="page active" id="page-results">
+
+  <div class="section-head">
+    <div>
+      <h2>Screener Results</h2>
+      <p>Filtered stocks from latest run · loaded from Cloudflare R2</p>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn btn-sm" onclick="loadResults()">🔄 Refresh</button>
+      <button class="btn btn-accent btn-sm" onclick="showTab('run')">▶ Run New Screen</button>
+    </div>
+  </div>
+
+  <div class="status-bar" id="results-status">
+    <div class="sdot sd-blue" id="rs-dot"></div>
+    <span id="rs-msg">Configure R2 in Settings and click Refresh to load results</span>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row" id="stats-row">
+    <div class="stat-card accent"><span class="sv" id="st-total">—</span><span class="sl">Qualified Stocks</span></div>
+    <div class="stat-card"><span class="sv" id="st-quarter">—</span><span class="sl">Latest Quarter</span></div>
+    <div class="stat-card green"><span class="sv" id="st-promo">—</span><span class="sl">Avg Promoter %</span></div>
+    <div class="stat-card blue"><span class="sv" id="st-pledge">—</span><span class="sl">Avg Pledged %</span></div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Sr.</th>
+          <th>Company</th>
+          <th>Latest Q</th>
+          <th>Prev Q</th>
+          <th>YoY &gt;70%</th>
+          <th>All-time Hi</th>
+          <th>Promoter</th>
+          <th>Pledged</th>
+          <th>WC Days</th>
+          <th>Industry Group</th>
+          <th>Industry</th>
+        </tr>
+      </thead>
+      <tbody id="results-tbody">
+        <tr><td colspan="11" class="empty-table"><p>📊</p><h3>No data loaded</h3><p>Configure R2 credentials in Settings → click Refresh</p></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- PAGE: RUN SCREENER                                        -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="page" id="page-run">
+
+  <div class="run-hero">
+    <h2>Run Stock Screener</h2>
+    <p>Triggers your Python script on GitHub Actions. The cloud runs the full screener and uploads results to R2.</p>
+    <button class="btn btn-accent run-btn" id="run-btn" onclick="triggerRun()">
+      ▶ Start Screener Run
+    </button>
+    <div style="margin-top:16px;font-size:11px;color:var(--muted)">
+      Estimated time: <strong style="color:var(--text2)">~2 minutes</strong> · Cost: <strong style="color:var(--green)">₹0</strong>
+    </div>
+  </div>
+
+  <div class="run-log">
+    <h3>Run Log</h3>
+    <div id="run-log-body">
+      <div class="log-entry">
+        <span class="log-time">—</span>
+        <div class="log-dot" style="background:var(--muted)"></div>
+        <span style="color:var(--muted)">No runs yet this session. Click Start to begin.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- PAGE: EXCEPTIONS                                          -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="page" id="page-exceptions">
+
+  <div class="section-head">
+    <div>
+      <h2>Exception Industries</h2>
+      <p>Industries exempt from WC Days / profit filters · saved to R2</p>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-sm" onclick="loadExceptions()">⬇ Load Saved</button>
+      <button class="btn btn-green btn-sm" onclick="saveExceptions()">☁ Save to R2</button>
+    </div>
+  </div>
+
+  <div class="status-bar" id="exc-status">
+    <div class="sdot sd-blue" id="es-dot"></div>
+    <span id="es-msg">Click "Load Saved" to restore your exception selections from R2</span>
+  </div>
+
+  <div class="exc-layout">
+    <!-- Left: groups -->
+    <div class="exc-left">
+      <div class="exc-panel-title">Industry Groups</div>
+      <div id="exc-groups"></div>
+    </div>
+
+    <!-- Middle: industries -->
+    <div class="exc-mid">
+      <div class="exc-toolbar">
+        <div class="exc-sw">
+          <span class="exc-sw-ic">🔍</span>
+          <input type="text" id="exc-search" placeholder="Search industries..." oninput="excDoSearch()">
+        </div>
+        <button class="btn btn-sm" onclick="excSelAll()">All</button>
+        <button class="btn btn-sm" onclick="excClear()">Clear</button>
+      </div>
+      <div id="exc-industries"></div>
+    </div>
+
+    <!-- Right: selected -->
+    <div class="exc-right">
+      <div class="exc-panel-title">Selected (<span id="exc-sel-count">0</span>)</div>
+      <div style="padding:8px;flex:1;overflow-y:auto" id="exc-selected">
+        <div class="exc-empty">No exceptions selected</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="exc-save-bar">
+    <span style="font-size:11px;color:var(--text2)"><strong id="exc-sel-count2">0</strong> industries marked as exceptions</span>
+    <button class="btn btn-green" onclick="saveExceptions()">☁ Save to R2</button>
+  </div>
+</div>
+
+<!-- ══ SETTINGS MODAL ══════════════════════════════════════════ -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal">
+    <h2>⚙ Settings</h2>
+    <div class="field">
+      <label>R2 Endpoint URL</label>
+      <input type="text" id="s-endpoint" placeholder="https://XXXX.r2.cloudflarestorage.com">
+      <div class="field-hint">From Cloudflare R2 → Manage R2 API Tokens</div>
+    </div>
+    <div class="field">
+      <label>R2 Bucket Name</label>
+      <input type="text" id="s-bucket" value="quarterly-profit-surge">
+    </div>
+    <div class="field">
+      <label>R2 Access Key ID</label>
+      <input type="password" id="s-access" placeholder="••••••••">
+    </div>
+    <div class="field">
+      <label>R2 Secret Access Key</label>
+      <input type="password" id="s-secret" placeholder="••••••••">
+    </div>
+    <div class="field">
+      <label>GitHub Personal Access Token</label>
+      <input type="password" id="s-ghtoken" placeholder="ghp_••••••••">
+      <div class="field-hint">Needs <code>repo</code> or <code>actions:write</code> scope · github.com → Settings → Developer Settings → PAT</div>
+    </div>
+    <div class="field">
+      <label>GitHub Repo (owner/repo)</label>
+      <input type="text" id="s-ghrepo" placeholder="thakkars/Quarterly_Profit_Surge" value="thakkars/Quarterly_Profit_Surge">
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeSettings()">Cancel</button>
+      <button class="btn btn-accent" onclick="saveSettings()">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══ INDUSTRY DATA ═══════════════════════════════════════════
+const IND = {"Aerospace & Defense":["Aerospace & Defense"],"Agricultural Food & other Products":["Edible Oil","Other Agricultural Products","Sugar","Tea & Coffee"],"Agricultural, Commercial & Construction Vehicles":["Commercial Vehicles","Construction Vehicles","Dealers-Commercial Vehicles, Tractors, Construction Vehicles","Tractors"],"Auto Components":["Auto Components & Equipments","Trading - Auto components","Tyres & Rubber Products"],"Automobiles":["2/3 Wheelers","Auto Dealer","Passenger Cars & Utility Vehicles"],"Banks":["Other Bank","Private Sector Bank","Public Sector Bank"],"Beverages":["Breweries & Distilleries","Other Beverages"],"Capital Markets":["Asset Management Company","Depositories, Clearing Houses and Other Intermediaries","Exchange and Data Platform","Financial Products Distributor","Other Capital Market related Services","Ratings","Stockbroking & Allied"],"Cement & Cement Products":["Cement & Cement Products"],"Chemicals & Petrochemicals":["Carbon Black","Commodity Chemicals","Dyes And Pigments","Explosives","Industrial Gases","Petrochemicals","Printing Inks","Specialty Chemicals","Trading - Chemicals"],"Cigarettes & Tobacco Products":["Cigarettes & Tobacco Products"],"Commercial Services & Supplies":["Business Process Outsourcing (BPO)/ Knowledge Process Outsourcing (KPO)","Consulting Services","Data Processing Services","Diversified Commercial Services","Trading & Distributors"],"Construction":["Civil Construction"],"Consumable Fuels":["Coal","Trading - Coal"],"Consumer Durables":["Ceramics","Consumer Electronics","Cycles","Diversified consumer products","Footwear","Furniture, Home Furnishing","Gems, Jewellery And Watches","Glass - Consumer","Granites & Marbles","Household Appliances","Houseware","Leather And Leather Products","Leisure Products","Paints","Plastic Products - Consumer","Plywood Boards/ Laminates","Sanitary Ware"],"Diversified":["Diversified"],"Diversified FMCG":["Diversified FMCG"],"Diversified Metals":["Diversified Metals"],"Electrical Equipment":["Heavy Electrical Equipment","Other Electrical Equipment"],"Engineering Services":["Dredging"],"Entertainment":["Digital Entertainment","Film Production, Distribution & Exhibition","Media & Entertainment","TV Broadcasting & Software Production"],"Ferrous Metals":["Ferro & Silica Manganese","Iron & Steel","Pig Iron","Sponge Iron"],"Fertilizers & Agrochemicals":["Fertilizers","Pesticides & Agrochemicals"],"Finance":["Financial Institution","Holding Company","Housing Finance Company","Investment Company","Microfinance Institutions","Non Banking Financial Company (NBFC)","Other Financial Services"],"Financial Technology (Fintech)":["Financial Technology (Fintech)"],"Food Products":["Animal Feed","Dairy Products","Meat Products including Poultry","Other Food Products","Packaged Foods","Seafood"],"Gas":["Gas Transmission/Marketing","LPG/CNG/PNG/LNG Supplier","Trading - Gas"],"Healthcare Equipment & Supplies":["Medical Equipment & Supplies"],"Healthcare Services":["Healthcare Research, Analytics & Technology","Healthcare Service Provider","Hospital"],"Household Products":["Household Products","Stationary"],"IT - Hardware":["Computers Hardware & Equipments"],"IT - Services":["IT Enabled Services"],"IT - Software":["Computers - Software & Consulting","Software Products"],"Industrial Manufacturing":["Industrial Products","Railway Wagons","Ship Building & Allied Services"],"Industrial Products":["Abrasives & Bearings","Aluminium, Copper & Zinc Products","Cables - Electricals","Castings & Forgings","Compressors, Pumps & Diesel Engines","Electrodes & Refractories","Glass - Industrial","Iron & Steel Products","Other Industrial Products","Packaging","Plastic Products - Industrial","Rubber"],"Insurance":["General Insurance","Insurance Distributors","Life Insurance"],"Leisure Services":["Amusement Parks/ Other Recreation","Hotels & Resorts","Restaurants","Tour, Travel Related Services","Wellness"],"Media":["Advertising & Media Agencies","Electronic Media","Print Media","Web based media and service"],"Metals & Minerals Trading":["Trading - Metals","Trading - Minerals"],"Minerals & Mining":["Industrial Minerals"],"Non - Ferrous Metals":["Aluminium","Copper","Precious Metals","Zinc"],"Oil":["Offshore Support Solution Drilling","Oil Equipment & Services","Oil Exploration & Production","Oil Storage & Transportation"],"Other Construction Materials":["Other Construction Materials"],"Other Consumer Services":["E-Learning","Education","Food Storage Facilities","Other Consumer Services"],"Other Utilities":["Multi Utilities","Other Utilities","Waste Management","Water Supply & Management"],"Paper, Forest & Jute Products":["Forest Products","Jute & Jute Products","Paper & Paper Products"],"Personal Products":["Personal Care"],"Petroleum Products":["Lubricants","Refineries & Marketing"],"Pharmaceuticals & Biotechnology":["Biotechnology","Pharmaceuticals"],"Power":["Integrated Power Utilities","Power - Transmission","Power Distribution","Power Generation","Power Trading"],"Printing & Publication":["Printing & Publication"],"Realty":["Real Estate Investment Trusts (REITs)","Real Estate related services","Residential, Commercial Projects"],"Retailing":["Distributors","Diversified Retail","E-Retail/ E-Commerce","Internet & Catalogue Retail","Pharmacy Retail","Speciality Retail"],"Telecom -  Equipment & Accessories":["Telecom -  Equipment & Accessories"],"Telecom - Services":["Other Telecom Services","Telecom - Cellular & Fixed line services","Telecom - Infrastructure"],"Textiles & Apparels":["Garments & Apparels","Other Textile Products","Trading - Textile Products"],"Transport Infrastructure":["Airport & Airport services","Port & Port services","Road AssetsToll, Annuity, Hybrid-Annuity"],"Transport Services":["Airline","Logistics Solution Provider","Road Transport","Shipping","Transport Related Services"]};
+
+// ══ STATE ════════════════════════════════════════════════════
+let settings = JSON.parse(localStorage.getItem('qps_settings') || '{}');
+let excSel = new Set(), excGroup = '', excQuery = '';
+const allInd = [];
+for (const [g, ii] of Object.entries(IND)) for (const i of ii) allInd.push({i, g});
+
+// ══ THEME ════════════════════════════════════════════════════
+function toggleTheme() {
+  const t = document.documentElement.getAttribute('data-theme');
+  const nt = t === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', nt);
+  localStorage.setItem('qps_theme', nt);
+}
+const savedTheme = localStorage.getItem('qps_theme');
+if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+
+// ══ TABS ═════════════════════════════════════════════════════
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('page-' + name).classList.add('active');
+}
+
+// ══ SETTINGS ═════════════════════════════════════════════════
+function openSettings() {
+  const s = settings;
+  document.getElementById('s-endpoint').value = s.endpoint || '';
+  document.getElementById('s-bucket').value   = s.bucket   || 'quarterly-profit-surge';
+  document.getElementById('s-access').value   = s.access   || '';
+  document.getElementById('s-secret').value   = s.secret   || '';
+  document.getElementById('s-ghtoken').value  = s.ghtoken  || '';
+  document.getElementById('s-ghrepo').value   = s.ghrepo   || 'thakkars/Quarterly_Profit_Surge';
+  document.getElementById('settings-modal').classList.add('open');
+}
+function closeSettings() {
+  document.getElementById('settings-modal').classList.remove('open');
+}
+function saveSettings() {
+  settings = {
+    endpoint: document.getElementById('s-endpoint').value.trim().replace(/\/$/,''),
+    bucket:   document.getElementById('s-bucket').value.trim(),
+    access:   document.getElementById('s-access').value.trim(),
+    secret:   document.getElementById('s-secret').value.trim(),
+    ghtoken:  document.getElementById('s-ghtoken').value.trim(),
+    ghrepo:   document.getElementById('s-ghrepo').value.trim(),
+  };
+  localStorage.setItem('qps_settings', JSON.stringify(settings));
+  closeSettings();
+  setStatus('rs', 'Settings saved! Click Refresh to load results.', 'blue');
+}
+document.getElementById('settings-modal').onclick = (e) => {
+  if (e.target === document.getElementById('settings-modal')) closeSettings();
+};
+
+// ══ R2 SIGNING ═══════════════════════════════════════════════
+async function hm(k, d) {
+  const key = await crypto.subtle.importKey('raw', k instanceof Uint8Array ? k : new TextEncoder().encode(k), {name:'HMAC',hash:'SHA-256'}, false, ['sign']);
+  return new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(d)));
+}
+async function r2Fetch(method, key, body) {
+  const {endpoint, bucket, access, secret} = settings;
+  if (!endpoint || !access || !secret) throw new Error('R2 credentials not configured');
+  const url = `${endpoint}/${bucket}/${key}`;
+  const now = new Date(), ds = now.toISOString().slice(0,10).replace(/-/g,'');
+  const az  = now.toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'') + 'Z';
+  const u   = new URL(url);
+  const bb  = body ? new TextEncoder().encode(body) : new Uint8Array(0);
+  const ph  = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bb))).map(b=>b.toString(16).padStart(2,'0')).join('');
+  const hh  = {'host':u.hostname,'x-amz-date':az,'x-amz-content-sha256':ph,...(body?{'content-type':'application/json'}:{})};
+  const hk  = Object.keys(hh).sort();
+  const can = [method,u.pathname,'',hk.map(k=>`${k}:${hh[k]}\n`).join(''),hk.join(';'),ph].join('\n');
+  const cs  = `${ds}/auto/s3/aws4_request`;
+  const sts = `AWS4-HMAC-SHA256\n${az}\n${cs}\n` + Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(can)))).map(b=>b.toString(16).padStart(2,'0')).join('');
+  const sk  = await hm(await hm(await hm(await hm('AWS4'+secret,ds),'auto'),'s3'),'aws4_request');
+  const sig = Array.from(new Uint8Array(await crypto.subtle.sign('HMAC', await crypto.subtle.importKey('raw',sk,{name:'HMAC',hash:'SHA-256'},false,['sign']), new TextEncoder().encode(sts)))).map(b=>b.toString(16).padStart(2,'0')).join('');
+  const auth = `AWS4-HMAC-SHA256 Credential=${access}/${cs}, SignedHeaders=${hk.join(';')}, Signature=${sig}`;
+  const fh = {...hh, authorization: auth}; delete fh['host'];
+  return fetch(url, {method, headers: fh, body: body || undefined});
+}
+
+// ══ STATUS HELPERS ════════════════════════════════════════════
+function setStatus(page, msg, type) {
+  const dots = {blue:'sd-blue',green:'sd-green',red:'sd-red',amber:'sd-amber'};
+  const ids  = {rs:{dot:'rs-dot',msg:'rs-msg'}, exc:{dot:'es-dot',msg:'es-msg'}};
+  const id   = ids[page];
+  if (!id) return;
+  document.getElementById(id.dot).className = 'sdot ' + (dots[type]||'sd-blue');
+  document.getElementById(id.msg).textContent = msg;
+}
+
+// ══ RESULTS TAB ══════════════════════════════════════════════
+async function loadResults() {
+  setStatus('rs', 'Loading results from R2...', 'amber');
+  try {
+    const resp = await r2Fetch('GET', 'results.json');
+    if (resp.ok) {
+      const data = await resp.json();
+      renderResults(data);
+      document.getElementById('lastRun').textContent = 'Last run: ' + new Date(data.generated_at).toLocaleString('en-IN');
+      setStatus('rs', `✅ Loaded ${data.rows.length} qualifying stocks · Quarter: ${data.quarter}`, 'green');
+    } else if (resp.status === 404) {
+      setStatus('rs', 'No results found in R2. Run the screener first.', 'blue');
+    } else {
+      setStatus('rs', `❌ Failed to load (${resp.status})`, 'red');
+    }
+  } catch(e) {
+    setStatus('rs', `❌ ${e.message} — check Settings`, 'red');
+  }
+}
+
+function renderResults(data) {
+  const rows = data.rows || [];
+  document.getElementById('results-badge').textContent = rows.length;
+  document.getElementById('st-total').textContent   = rows.length;
+  document.getElementById('st-quarter').textContent = data.quarter || '—';
+
+  if (rows.length) {
+    const avgP = (rows.reduce((s,r) => s + (r.promoter||0), 0) / rows.length).toFixed(1);
+    const avgPl= (rows.reduce((s,r) => s + (r.pledged||0), 0) / rows.length).toFixed(1);
+    document.getElementById('st-promo').textContent  = avgP + '%';
+    document.getElementById('st-pledge').textContent = avgPl + '%';
+  }
+
+  const tbody = document.getElementById('results-tbody');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="11" class="empty-table"><p>📭</p><h3>No qualifying stocks</h3><p>The screener ran but no stocks passed all filters</p></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map((r, i) => {
+    const op  = r.op_profit_70 ? '<span class="tag tag-green">YES</span>' : '<span class="tag tag-red">NO</span>';
+    const hi  = r.all_time_hi  ? '<span class="tag tag-green">YES</span>' : '<span class="tag tag-amber">NO</span>';
+    const pl  = r.pledged > 0  ? `<span class="num-lo">${r.pledged}%</span>` : `<span class="num">${r.pledged}%</span>`;
+    const wc  = r.wc_days > 100 ? `<span class="num-lo">${r.wc_days}</span>` : `<span class="num">${r.wc_days}</span>`;
+    return `<tr style="animation:fadeIn .3s ${i*40}ms both">
+      <td><span class="num">${r.sr}</span></td>
+      <td><div class="company-name">${r.name}</div><div class="company-sub">${r.company_page || ''}</div></td>
+      <td><span class="num-hi">${r.latest_q}</span></td>
+      <td><span class="num">${r.prev_q}</span></td>
+      <td>${op}</td>
+      <td>${hi}</td>
+      <td><span class="num">${r.promoter}%</span></td>
+      <td>${pl}</td>
+      <td>${wc}</td>
+      <td><span class="tag tag-blue">${r.industry_group || '—'}</span></td>
+      <td><span style="font-size:11px;color:var(--text2)">${r.industry || '—'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ══ RUN SCREENER ═════════════════════════════════════════════
+let running = false;
+function addLog(msg, color) {
+  const body = document.getElementById('run-log-body');
+  const cols = {green:'var(--green)',red:'var(--red)',blue:'var(--blue)',amber:'#f59e0b',muted:'var(--muted)'};
+  const now  = new Date().toLocaleTimeString('en-IN');
+  if (body.children.length === 1 && body.children[0].querySelector('[style*="muted"]')) body.innerHTML = '';
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = `<span class="log-time">${now}</span><div class="log-dot" style="background:${cols[color]||cols.muted}"></div><span style="color:${cols[color]||'var(--text2)'}">${msg}</span>`;
+  body.prepend(entry);
+}
+
+async function triggerRun() {
+  if (running) return;
+  if (!settings.ghtoken || !settings.ghrepo) {
+    addLog('❌ GitHub token or repo not set. Open Settings.', 'red');
+    return;
+  }
+  running = true;
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Triggering...';
+  addLog('Sending trigger to GitHub Actions...', 'blue');
+
+  try {
+    const resp = await fetch(
+      `https://api.github.com/repos/${settings.ghrepo}/actions/workflows/run_screener.yml/dispatches`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${settings.ghtoken}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/vnd.github+json'
+        },
+        body: JSON.stringify({ref: 'main'})
+      }
+    );
+
+    if (resp.status === 204) {
+      addLog('✅ Screener started on GitHub Actions!', 'green');
+      addLog('⏳ Running... this takes ~2 minutes', 'amber');
+      btn.textContent = '⏳ Running...';
+      setTimeout(() => {
+        addLog('⏳ Still running — scraping companies...', 'amber');
+      }, 30000);
+      setTimeout(() => {
+        addLog('⏳ Almost done — calculating metrics...', 'amber');
+      }, 90000);
+      setTimeout(() => {
+        addLog('✅ Should be done! Click Results tab → Refresh', 'green');
+        btn.disabled = false;
+        btn.textContent = '▶ Start Screener Run';
+        running = false;
+      }, 150000);
+    } else {
+      const txt = await resp.text();
+      addLog(`❌ Failed (${resp.status}): ${txt.slice(0,100)}`, 'red');
+      btn.disabled = false;
+      btn.textContent = '▶ Start Screener Run';
+      running = false;
+    }
+  } catch(e) {
+    addLog(`❌ Error: ${e.message}`, 'red');
+    btn.disabled = false;
+    btn.textContent = '▶ Start Screener Run';
+    running = false;
+  }
+}
+
+// ══ EXCEPTIONS TAB ════════════════════════════════════════════
+function buildExcGroups() {
+  const el = document.getElementById('exc-groups');
+  el.innerHTML = '';
+  const all = document.createElement('div');
+  all.className = 'egroup' + (excGroup===''?' active':'');
+  all.innerHTML = `<span>All Groups</span><span class="egc">${allInd.length}</span>`;
+  all.onclick = () => { excGroup=''; renderExc(); };
+  el.appendChild(all);
+  for (const [g, ii] of Object.entries(IND)) {
+    const n = ii.filter(i => excSel.has(i)).length;
+    const d = document.createElement('div');
+    d.className = 'egroup' + (excGroup===g?' active':'');
+    d.innerHTML = `<span style="font-size:11px;flex:1;padding-right:6px">${g}</span><span class="egc ${n>0?'hs':''}">${n>0?n+'/':''}${ii.length}</span>`;
+    d.onclick = () => { excGroup=g; renderExc(); };
+    el.appendChild(d);
+  }
+}
+
+function getExcVisible() {
+  const q = excQuery;
+  return allInd.filter(({i,g}) =>
+    (!q || i.toLowerCase().includes(q) || g.toLowerCase().includes(q)) &&
+    (!excGroup || g===excGroup)
+  );
+}
+
+function renderExcIndustries() {
+  const v = getExcVisible();
+  const el = document.getElementById('exc-industries');
+  el.innerHTML = '';
+  for (const {i, g} of v) {
+    const s = excSel.has(i);
+    const d = document.createElement('div');
+    d.className = 'icard' + (s?' sel':'');
+    d.innerHTML = `<input type="checkbox" ${s?'checked':''}><span class="icard-name">${i}</span><span class="icard-tag">${g}</span>`;
+    d.onclick = () => { excSel.has(i) ? excSel.delete(i) : excSel.add(i); renderExc(); };
+    el.appendChild(d);
+  }
+}
+
+function renderExcSelected() {
+  const n = excSel.size;
+  document.getElementById('exc-sel-count').textContent  = n;
+  document.getElementById('exc-sel-count2').textContent = n;
+  document.getElementById('exc-badge').textContent      = n;
+  const el = document.getElementById('exc-selected');
+  if (!n) { el.innerHTML = '<div class="exc-empty">No exceptions selected</div>'; return; }
+  el.innerHTML = [...excSel].sort().map(i =>
+    `<div class="stag"><span class="sn">${i}</span><span class="rm" onclick="excRm('${i.replace(/'/g,"\\'")}')">×</span></div>`
+  ).join('');
+}
+
+function renderExc() { buildExcGroups(); renderExcIndustries(); renderExcSelected(); }
+function excDoSearch() { excQuery = document.getElementById('exc-search').value.toLowerCase().trim(); renderExc(); }
+function excSelAll() { getExcVisible().forEach(({i}) => excSel.add(i)); renderExc(); }
+function excClear()  { if(!confirm('Clear all?')) return; excSel.clear(); renderExc(); }
+function excRm(i)    { excSel.delete(i); renderExc(); }
+
+async function loadExceptions() {
+  setStatus('exc', 'Loading from R2...', 'amber');
+  try {
+    const resp = await r2Fetch('GET', 'exceptions.json');
+    if (resp.ok) {
+      const data = await resp.json();
+      excSel = new Set(data.exceptions || []);
+      renderExc();
+      setStatus('exc', `✅ Loaded ${excSel.size} exceptions · saved ${new Date(data.updated_at).toLocaleString('en-IN')}`, 'green');
+    } else if (resp.status===404) {
+      setStatus('exc', 'No saved exceptions found. Start selecting!', 'blue');
+    } else {
+      setStatus('exc', `❌ Failed (${resp.status})`, 'red');
+    }
+  } catch(e) { setStatus('exc', `❌ ${e.message}`, 'red'); }
+}
+
+async function saveExceptions() {
+  setStatus('exc', 'Saving to R2...', 'amber');
+  try {
+    const payload = JSON.stringify({exceptions:[...excSel].sort(),updated_at:new Date().toISOString(),total_count:excSel.size},null,2);
+    const resp = await r2Fetch('PUT', 'exceptions.json', payload);
+    resp.ok || resp.status===200
+      ? setStatus('exc', `✅ Saved ${excSel.size} exceptions to R2!`, 'green')
+      : setStatus('exc', `❌ Save failed (${resp.status})`, 'red');
+  } catch(e) { setStatus('exc', `❌ ${e.message}`, 'red'); }
+}
+
+// ══ INIT ════════════════════════════════════════════════════
+renderExc();
+if (settings.endpoint && settings.access) loadResults();
+</script>
+</body>
+</html>
