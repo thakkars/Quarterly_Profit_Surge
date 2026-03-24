@@ -17,7 +17,6 @@ from openpyxl.styles import Alignment, Border, Side
 
 # ═══════════════════════════════════════════════════════════
 #  CONFIG  — credentials now come from environment variables
-#            (never hardcode passwords in code!)
 # ═══════════════════════════════════════════════════════════
 USERNAME  = os.environ.get("SCREENER_USERNAME", "")
 PASSWORD  = os.environ.get("SCREENER_PASSWORD", "")
@@ -30,8 +29,6 @@ HEADLESS   = IS_GITHUB_ACTIONS   # True on cloud, False on your laptop
 PAGE_DELAY = 1.0
 
 # ── Paths:
-# On cloud (GitHub Actions) → use temp folder, files upload to Drive only
-# On your laptop            → save to D: drive as before
 if IS_GITHUB_ACTIONS:
     FOLDER_PATH = "/tmp/screener_data"
 else:
@@ -52,17 +49,15 @@ def init_driver():
         opts.add_argument("--headless=new")
     opts.add_argument("--disable-gpu")
     opts.add_argument("--window-size=1600,900")
-    opts.add_argument("--no-sandbox")                    # required on Linux cloud
-    opts.add_argument("--disable-dev-shm-usage")         # required on Linux cloud
+    opts.add_argument("--no-sandbox")                    
+    opts.add_argument("--disable-dev-shm-usage")         
     opts.add_experimental_option("excludeSwitches", ["enable-automation"])
     opts.add_experimental_option('useAutomationExtension', False)
 
     if IS_GITHUB_ACTIONS:
-        # On GitHub Actions, Chrome is installed at a fixed path — no ChromeDriverManager needed
         opts.binary_location = "/usr/bin/google-chrome"
         return webdriver.Chrome(options=opts)
     else:
-        # On your local Windows laptop, use webdriver_manager as before
         from webdriver_manager.chrome import ChromeDriverManager
         return webdriver.Chrome(
             service=Service(ChromeDriverManager().install()),
@@ -74,7 +69,7 @@ wait   = WebDriverWait(driver, 15)
 
 
 # ═══════════════════════════════════════════════════════════
-#  HELPER FUNCTIONS  (unchanged from your original)
+#  HELPER FUNCTIONS
 # ═══════════════════════════════════════════════════════════
 def login():
     driver.get("https://www.screener.in/login/")
@@ -87,13 +82,11 @@ def login():
     except:
         pass
 
-
 def safe_text(el):
     try:
         return el.text.strip()
     except:
         return ""
-
 
 def safe_get(url, retries=1):
     global driver, wait
@@ -116,14 +109,12 @@ def safe_get(url, retries=1):
         print(f"⚠️ Unexpected error in safe_get: {e}")
         return False
 
-
 def get_company_full_name():
     try:
         h1 = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "h1.margin-0")))
         return h1.text.strip()
     except:
         return "Unknown"
-
 
 def select_consolidated_if_exists():
     try:
@@ -142,7 +133,7 @@ def select_consolidated_if_exists():
 
 
 # ═══════════════════════════════════════════════════════════
-#  METRIC EXTRACTION  (unchanged)
+#  METRIC EXTRACTION
 # ═══════════════════════════════════════════════════════════
 def get_top_dashboard_metrics():
     metrics = {"Promoter Holding": 0.0, "Pledged %": 0.0, "WC Days": 0.0}
@@ -165,7 +156,6 @@ def get_top_dashboard_metrics():
         return metrics
     except:
         return metrics
-
 
 def extract_operating_profit():
     try:
@@ -192,7 +182,6 @@ def extract_operating_profit():
 
     values = [safe_text(c) for c in target_row.find_elements(By.TAG_NAME, "td")]
     return {h: v for h, v in zip(headers[1:], values[1:])}
-
 
 def collect_all_company_data():
     if not safe_get(SCREEN_URL):
@@ -222,7 +211,6 @@ def collect_all_company_data():
 
     print(f"✅ Collected {len(company_list)} companies.")
     return company_list
-
 
 def scrape_company(company_info):
     url        = company_info['url']
@@ -263,7 +251,7 @@ def scrape_company(company_info):
 
 
 # ═══════════════════════════════════════════════════════════
-#  EXCEL HELPERS  (unchanged)
+#  EXCEL HELPERS
 # ═══════════════════════════════════════════════════════════
 def open_or_create_excel(path):
     if os.path.exists(path):
@@ -275,7 +263,6 @@ def open_or_create_excel(path):
         wb.save(path)
         return wb
 
-
 THIN_BORDER = Border(
     left   = Side(style='thin'),
     right  = Side(style='thin'),
@@ -284,14 +271,12 @@ THIN_BORDER = Border(
 )
 CENTER_ALIGN = Alignment(horizontal='center', vertical='center')
 
-
 def format_worksheet(ws, header_row=1):
     for row in ws.iter_rows():
         for cell in row:
             cell.border = THIN_BORDER
             if cell.row == header_row or cell.col_idx == 1:
                 cell.alignment = CENTER_ALIGN
-
 
 def clean_and_convert(df_in):
     def to_num(col):
@@ -309,13 +294,9 @@ def clean_and_convert(df_in):
 
 
 # ═══════════════════════════════════════════════════════════
-#  CLOUDFLARE R2 UPLOAD  (S3-compatible, works perfectly)
+#  CLOUDFLARE R2 UPLOAD
 # ═══════════════════════════════════════════════════════════
 def upload_to_cloudflare_r2():
-    """
-    Uploads Excel files to Cloudflare R2 storage.
-    Uses S3-compatible API — no quota issues, always works.
-    """
     access_key    = os.environ.get("R2_ACCESS_KEY_ID", "")
     secret_key    = os.environ.get("R2_SECRET_ACCESS_KEY", "")
     endpoint_url  = os.environ.get("R2_ENDPOINT_URL", "")
@@ -360,14 +341,12 @@ def upload_to_cloudflare_r2():
         print(f"⚠️ R2 upload failed: {e}")
         traceback.print_exc()
 
-
-# Keep old name as alias
 def upload_to_google_drive():
     upload_to_cloudflare_r2()
 
 
 # ═══════════════════════════════════════════════════════════
-#  MAIN  (all your original logic preserved exactly)
+#  MAIN
 # ═══════════════════════════════════════════════════════════
 try:
     login()
@@ -496,7 +475,6 @@ try:
             df_export["Exception_Industry"] = "No"
 
         # ── 6. FILTER LOGIC ──────────────────────────────────────────────
-        # Safety: ensure Exception_Industry always exists even if VLOOKUP was skipped
         if "Exception_Industry" not in df_export.columns:
             df_export["Exception_Industry"] = "No"
 
@@ -594,31 +572,61 @@ try:
         except PermissionError:
             print(f"\n❌ ERROR: Master File is OPEN. Please close it.\n   {MASTER_FILE_PATH}")
 
-        # ── 9B. SAVE TO RAW DATA FILE ────────────────────────────────────
-        timestamp_sheet = datetime.now().strftime("%d-%m-%y_%H-%M")
+        # ── 9B. SAVE TO RAW DATA FILE (INCREMENTAL QUARTERLY APPEND) ─────
         try:
             raw_file_exists = os.path.exists(RAW_FILE_PATH)
-            writer_kwargs   = dict(engine="openpyxl")
+            existing_raw_keys = set()
+
+            # 1. Check if the current quarter's sheet already exists in Raw Data
             if raw_file_exists:
-                writer_kwargs["mode"]            = "a"
-                writer_kwargs["if_sheet_exists"] = "replace"
+                try:
+                    df_existing_raw = pd.read_excel(RAW_FILE_PATH, sheet_name=latest_quarter_label)
+                    if "Company (Page)" in df_existing_raw.columns:
+                        existing_raw_keys = set(df_existing_raw["Company (Page)"].astype(str).tolist())
+                except Exception:
+                    pass # Sheet doesn't exist yet
+
+            # 2. Filter the scraped data to ONLY include new companies
+            df_raw_to_append = df_export.copy()
+            if existing_raw_keys and "Company (Page)" in df_raw_to_append.columns:
+                df_raw_to_append = df_raw_to_append[
+                    ~df_raw_to_append["Company (Page)"].astype(str).isin(existing_raw_keys)
+                ].copy()
+
+            # 3. Append only the new data to the quarter's sheet
+            if not df_raw_to_append.empty:
+                ew_kwargs = dict(engine="openpyxl", mode="a", if_sheet_exists="overlay") if raw_file_exists else dict(engine="openpyxl", mode="w")
+                
+                with pd.ExcelWriter(RAW_FILE_PATH, **ew_kwargs) as writer:
+                    try:
+                        try:
+                            ws_raw = writer.book[latest_quarter_label]
+                            start_row = ws_raw.max_row
+                        except KeyError:
+                            start_row = 0
+
+                        df_raw_to_append.to_excel(writer, sheet_name=latest_quarter_label,
+                                                  index=False, header=(start_row == 0),
+                                                  startrow=start_row)
+                        
+                        ws_raw = writer.sheets[latest_quarter_label]
+                        format_worksheet(ws_raw, header_row=1)
+                        
+                        print(f"✅ Appended {len(df_raw_to_append)} new companies to Raw Data → '{latest_quarter_label}'")
+                    except Exception as e:
+                        print(f"⚠️ Error writing to Raw Data sheet: {e}")
+                        traceback.print_exc()
             else:
-                writer_kwargs["mode"] = "w"
+                print(f"✅ Raw Data is up to date. No new companies to add for '{latest_quarter_label}'.")
 
-            with pd.ExcelWriter(RAW_FILE_PATH, **writer_kwargs) as writer:
-                df_export.to_excel(writer, sheet_name=timestamp_sheet, index=False)
-                ws_raw = writer.sheets[timestamp_sheet]
-                format_worksheet(ws_raw, header_row=1)
-
-            print(f"✅ Raw Data saved → sheet '{timestamp_sheet}' in {RAW_FILE_PATH}")
         except PermissionError:
             print(f"\n❌ ERROR: Raw Data file is OPEN. Please close it.\n   {RAW_FILE_PATH}")
+
 
         # ── 10. SAVE RESULTS JSON (for dashboard) ───────────────────────
         try:
             rows = []
             if not df_to_append.empty:
-                # Use the appended data (new unique rows with Sr no.)
                 df_json = df_to_append.copy()
             elif not df_master_candidates.empty:
                 df_json = df_master_candidates.copy()
@@ -627,7 +635,6 @@ try:
                 df_json = pd.DataFrame()
 
             if not df_json.empty:
-                # Get quarter column names (like "Dec 2025", "Sep 2025")
                 q_cols = [c for c in df_json.columns if any(
                     m in str(c) for m in ["Jan","Feb","Mar","Apr","May","Jun",
                                           "Jul","Aug","Sep","Oct","Nov","Dec"]
@@ -671,9 +678,8 @@ try:
 
         # ── 11. UPLOAD TO CLOUDFLARE R2 ──────────────────────────────────
         print("\n☁️  Uploading files to Cloudflare R2...")
-        upload_to_google_drive()  # this calls upload_to_cloudflare_r2()
+        upload_to_google_drive()
 
-        # Also upload results.json to R2
         try:
             results_path = os.path.join(FOLDER_PATH, "results.json")
             if os.path.exists(results_path):
