@@ -561,5 +561,93 @@ try:
                 else:
                     df[c_name] = False
                 comparison_cols.append(c_name)
-            else:
-                c_name = f"Comp_{len(comparison_cols)+1}"
+        final_comparisons = comparison_cols[:8]
+
+        # ── 4. EXPORT STRUCTURE ───────────────────────────────────────────
+        desired_order = (
+            ["Name", "Company (Page)"]
+            + final_quarters
+            + ["OP Profit > 70%", "Current Profit > in past 3 yrs"]
+            + final_comparisons
+            + ["Promoter Holding", "Pledged %", "WC Days", "Industry Group", "Industry"]
+        )
+        df_export = df.reindex(columns=desired_order)
+
+        # ── 5. ENRICHMENT ─────────────────────────────────────────────────
+        print("\n🔄 Performing VLOOKUP & Exception Check...")
+        try:
+            if os.path.exists(MASTER_FILE_PATH):
+                df_source = pd.read_excel(MASTER_FILE_PATH, sheet_name="screener_all_stocks")
+                if "Name" in df_source.columns and "Industry" in df_source.columns:
+                    df_export["Name_Clean"] = df_export["Name"].astype(str).str.strip().str.lower()
+                    df_source["Name_Clean"] = df_source["Name"].astype(str).str.strip().str.lower()
+                    industry_map = df_source.set_index("Name_Clean")["Industry"].to_dict()
+                    group_map = (
+                        df_source.set_index("Name_Clean")["Industry Group"].to_dict()
+                        if "Industry Group" in df_source.columns else {}
+                    )
+                    df_export["Industry"]       = df_export["Name_Clean"].map(industry_map).fillna(df_export["Industry"])
+                    df_export["Industry Group"] = df_export["Name_Clean"].map(group_map).fillna(df_export["Industry Group"])
+                    try:
+                        if "Exception_Industry" in df_source.columns:
+                            exception_list = df_source["Exception_Industry"].dropna().unique().tolist()
+                        else:
+                            exception_list = df_source.iloc[:, 29].dropna().unique().tolist()
+                        df_export["Exception_Industry"] = df_export["Industry"].apply(
+                            lambda x: "Yes" if x in exception_list else "No"
+                        )
+                    except:
+                        df_export["Exception_Industry"] = "No"
+                    df_export.drop(columns=["Name_Clean"], inplace=True)
+                    print("✅ Enrichment Complete.")
+        except Exception as e:
+            print(f"⚠️ VLOOKUP Failed: {e}")
+            df_export["Exception_Industry"] = "No"
+
+        if "Exception_Industry" not in df_export.columns:
+            df_export["Exception_Industry"] = "No"
+
+        # ── 6. FILTER LOGIC ───────────────────────────────────────────────
+        condition_op       = df_export["OP Profit > 70%"] == True
+        condition_max      = df_export["Current Profit > in past 3 yrs"] == True
+        condition_exc      = df_export["Exception_Industry"] == "Yes"
+        condition_promoter = df_export["Promoter Holding"].fillna(0) >= 50.0
+        condition_pledged  = df_export["Pledged %"].fillna(0) <= 10.0
+        condition_wc       = df_export["WC Days"].fillna(0) <= 150.0
+
+        has_5_qtrs = "Empty" not in final_quarters[4] if len(final_quarters) >= 5 else False
+
+        if has_5_qtrs:
+            mask = (
+                condition_op
+                & (condition_max | condition_exc)
+                & condition_promoter
+                & condition_pledged
+                & condition_wc
+            )
+            df_master_candidates = df_export[mask].copy()
+        else:
+            df_master_candidates = pd.DataFrame()
+
+        # ── 7. SAVE ONLY NEW COMPANIES TO RAW DATA QUARTER TAB ────────────
+        df_new_only = df_export[
+            ~df_export["Name"].astype(str).str.strip().isin(already_scraped)
+        ].copy()
+
+        print(f"\n📊 {len(df_export)} total | "
+              f"{len(already_scraped)} already saved | "
+              f"{len(df_new_only)} new to append")
+
+        save_to_raw_data_quarter_tab(df_new_only, current_quarter_label)
+
+        # ── 8. UPLOAD BOTH FILES BACK TO R2 ──────────────────────────────
+        upload_to_cloudflare_r2()
+
+except Exception as e:
+    print(f"\n❌ Fatal error: {e}")
+    traceback.print_exc()
+finally:
+    try:
+        driver.quit()
+    except:
+        pass
