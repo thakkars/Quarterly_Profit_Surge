@@ -21,7 +21,7 @@ from openpyxl.styles import Alignment, Border, Side
 USERNAME = os.environ.get("SCREENER_USERNAME", "")
 PASSWORD = os.environ.get("SCREENER_PASSWORD", "")
 
-SCREEN_URL = "https://www.screener.in/screens/742984/test/"
+SCREEN_URL = "https://www.screener.in/screens/3391124/test/"
 
 IS_GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS", "false").lower() == "true"
 HEADLESS = IS_GITHUB_ACTIONS
