@@ -523,4 +523,4 @@ try:
 
         # ── 7. PREPARE MASTER APPEND ─────────────────────────────────────
         cols_for_master = df_export.columns[:30].tolist()
-        df_to_append    = df_ma
+        df_to_append = df_master_candidates.copy()
