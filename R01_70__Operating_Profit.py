@@ -16,35 +16,30 @@ from openpyxl import load_workbook
 from openpyxl.styles import Alignment, Border, Side
 
 # ═══════════════════════════════════════════════════════════
-#  CONFIG  — credentials now come from environment variables
-#            (never hardcode passwords in code!)
+# CONFIG
 # ═══════════════════════════════════════════════════════════
-USERNAME  = os.environ.get("SCREENER_USERNAME", "")
-PASSWORD  = os.environ.get("SCREENER_PASSWORD", "")
+USERNAME = os.environ.get("SCREENER_USERNAME", "")
+PASSWORD = os.environ.get("SCREENER_PASSWORD", "")
 
-SCREEN_URL = "https://www.screener.in/screens/742984/test/"
+SCREEN_URL = "https://www.screener.in/screens/742984/top-growers/"
 
-# ── HEADLESS is always True when running on GitHub Actions cloud
 IS_GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS", "false").lower() == "true"
-HEADLESS   = IS_GITHUB_ACTIONS   # True on cloud, False on your laptop
+HEADLESS = IS_GITHUB_ACTIONS
 PAGE_DELAY = 1.0
 
-# ── Paths:
-# On cloud (GitHub Actions) → use temp folder, files upload to Drive only
-# On your laptop            → save to D: drive as before
 if IS_GITHUB_ACTIONS:
     FOLDER_PATH = "/tmp/screener_data"
 else:
     FOLDER_PATH = r"D:\Investment Research\Python Projects\Operating Profit more than 70% jump"
 
 MASTER_FILE_PATH = os.path.join(FOLDER_PATH, "Master File.xlsx")
-RAW_FILE_PATH    = os.path.join(FOLDER_PATH, "RawData.xlsx")
+RAW_FILE_PATH    = os.path.join(FOLDER_PATH, "Raw Data.xlsx")
 
 os.makedirs(FOLDER_PATH, exist_ok=True)
 
 
 # ═══════════════════════════════════════════════════════════
-#  DRIVER SETUP
+# DRIVER SETUP
 # ═══════════════════════════════════════════════════════════
 def init_driver():
     opts = Options()
@@ -52,17 +47,15 @@ def init_driver():
         opts.add_argument("--headless=new")
     opts.add_argument("--disable-gpu")
     opts.add_argument("--window-size=1600,900")
-    opts.add_argument("--no-sandbox")                    # required on Linux cloud
-    opts.add_argument("--disable-dev-shm-usage")         # required on Linux cloud
+    opts.add_argument("--no-sandbox")
+    opts.add_argument("--disable-dev-shm-usage")
     opts.add_experimental_option("excludeSwitches", ["enable-automation"])
     opts.add_experimental_option('useAutomationExtension', False)
 
     if IS_GITHUB_ACTIONS:
-        # On GitHub Actions, Chrome is installed at a fixed path — no ChromeDriverManager needed
         opts.binary_location = "/usr/bin/google-chrome"
         return webdriver.Chrome(options=opts)
     else:
-        # On your local Windows laptop, use webdriver_manager as before
         from webdriver_manager.chrome import ChromeDriverManager
         return webdriver.Chrome(
             service=Service(ChromeDriverManager().install()),
@@ -74,7 +67,7 @@ wait   = WebDriverWait(driver, 15)
 
 
 # ═══════════════════════════════════════════════════════════
-#  HELPER FUNCTIONS  (unchanged from your original)
+# HELPER FUNCTIONS
 # ═══════════════════════════════════════════════════════════
 def login():
     driver.get("https://www.screener.in/login/")
@@ -142,7 +135,7 @@ def select_consolidated_if_exists():
 
 
 # ═══════════════════════════════════════════════════════════
-#  METRIC EXTRACTION  (unchanged)
+# METRIC EXTRACTION
 # ═══════════════════════════════════════════════════════════
 def get_top_dashboard_metrics():
     metrics = {"Promoter Holding": 0.0, "Pledged %": 0.0, "WC Days": 0.0}
@@ -220,7 +213,7 @@ def collect_all_company_data():
         except:
             break
 
-    print(f"✅ Collected {len(company_list)} companies.")
+    print(f"✅ Collected {len(company_list)} companies from Screener.")
     return company_list
 
 
@@ -233,7 +226,7 @@ def scrape_company(company_info):
 
     main_window = driver.current_window_handle
     try:
-        _           = select_consolidated_if_exists()
+        _ = select_consolidated_if_exists()
         full_name   = get_company_full_name()
         op_data     = extract_operating_profit()
         top_metrics = get_top_dashboard_metrics()
@@ -263,7 +256,7 @@ def scrape_company(company_info):
 
 
 # ═══════════════════════════════════════════════════════════
-#  EXCEL HELPERS  (unchanged)
+# EXCEL HELPERS
 # ═══════════════════════════════════════════════════════════
 def open_or_create_excel(path):
     if os.path.exists(path):
@@ -297,85 +290,200 @@ def clean_and_convert(df_in):
     def to_num(col):
         return pd.to_numeric(col, errors='coerce').fillna(0)
     for col in df_in.columns:
-        col_str    = str(col).lower()
+        col_str  = str(col).lower()
         is_quarter = (
             any(m in col_str for m in ['sep', 'jun', 'mar', 'dec'])
             and any(c.isdigit() for c in col_str)
         )
-        is_metric  = col_str in ['promoter holding', 'pledged %', 'wc days', 'sr no.']
+        is_metric = col_str in ['promoter holding', 'pledged %', 'wc days', 'sr no.']
         if is_quarter or is_metric:
             df_in[col] = to_num(df_in[col])
     return df_in
 
 
 # ═══════════════════════════════════════════════════════════
-#  CLOUDFLARE R2 UPLOAD  (S3-compatible, works perfectly)
+# ★ NEW — CLOUDFLARE R2 HELPERS (download + upload)
 # ═══════════════════════════════════════════════════════════
-def upload_to_cloudflare_r2():
-    """
-    Uploads Excel files to Cloudflare R2 storage.
-    Uses S3-compatible API — no quota issues, always works.
-    """
-    access_key    = os.environ.get("R2_ACCESS_KEY_ID", "")
-    secret_key    = os.environ.get("R2_SECRET_ACCESS_KEY", "")
-    endpoint_url  = os.environ.get("R2_ENDPOINT_URL", "")
-    bucket_name   = os.environ.get("R2_BUCKET_NAME", "quarterly-profit-surge")
-
+def _get_r2_client():
+    """Returns a boto3 S3 client pointed at Cloudflare R2, or None if creds missing."""
+    access_key   = os.environ.get("R2_ACCESS_KEY_ID", "")
+    secret_key   = os.environ.get("R2_SECRET_ACCESS_KEY", "")
+    endpoint_url = os.environ.get("R2_ENDPOINT_URL", "")
     if not all([access_key, secret_key, endpoint_url]):
+        return None, None
+    import boto3
+    from botocore.config import Config
+    client = boto3.client(
+        "s3",
+        endpoint_url          = endpoint_url,
+        aws_access_key_id     = access_key,
+        aws_secret_access_key = secret_key,
+        config                = Config(signature_version="s3v4"),
+        region_name           = "auto"
+    )
+    bucket = os.environ.get("R2_BUCKET_NAME", "quarterly-profit-surge")
+    return client, bucket
+
+
+def download_from_r2():
+    """
+    ★ NEW
+    Downloads Raw Data.xlsx from R2 into FOLDER_PATH at the start of each run
+    so we know which companies are already saved.
+    Silently skips if the file doesn't exist yet on R2 (first-ever run).
+    """
+    s3, bucket = _get_r2_client()
+    if s3 is None:
+        print("⚠️ R2 credentials not set — skipping download.")
+        return
+
+    try:
+        s3.download_file(bucket, "Raw Data.xlsx", RAW_FILE_PATH)
+        print("✅ Downloaded Raw Data.xlsx from Cloudflare R2.")
+    except Exception as e:
+        # NoSuchKey on first run is totally normal — just log and continue
+        print(f"ℹ️ Raw Data.xlsx not found on R2 (first run?): {e}")
+
+
+def upload_to_cloudflare_r2():
+    """Uploads Master File + Raw Data back to R2 after the run."""
+    s3, bucket = _get_r2_client()
+    if s3 is None:
         print("⚠️ R2 credentials not set — skipping upload.")
         return
 
     try:
-        import boto3
-        from botocore.config import Config
-
-        s3 = boto3.client(
-            "s3",
-            endpoint_url          = endpoint_url,
-            aws_access_key_id     = access_key,
-            aws_secret_access_key = secret_key,
-            config                = Config(signature_version="s3v4"),
-            region_name           = "auto"
-        )
-
-        files_to_upload = [
+        xlsx_ct = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        for local_path, filename in [
             (MASTER_FILE_PATH, "Master File.xlsx"),
             (RAW_FILE_PATH,    "Raw Data.xlsx"),
-        ]
-
-        for local_path, filename in files_to_upload:
+        ]:
             if not os.path.exists(local_path):
                 print(f"⚠️ {filename} not found, skipping.")
                 continue
-
-            s3.upload_file(
-                local_path,
-                bucket_name,
-                filename,
-                ExtraArgs={"ContentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}
-            )
+            s3.upload_file(local_path, bucket, filename,
+                           ExtraArgs={"ContentType": xlsx_ct})
             print(f"✅ Uploaded {filename} to Cloudflare R2.")
-
     except Exception as e:
         print(f"⚠️ R2 upload failed: {e}")
         traceback.print_exc()
 
 
-# Keep old name as alias
+# Keep old alias
 def upload_to_google_drive():
     upload_to_cloudflare_r2()
 
 
 # ═══════════════════════════════════════════════════════════
-#  MAIN  (all your original logic preserved exactly)
+# ★ NEW — QUARTER TAB HELPERS
+# ═══════════════════════════════════════════════════════════
+def get_current_quarter_label(sorted_quarters):
+    """
+    ★ NEW
+    Derives the active quarter label (e.g. 'Mar 2025') from the sorted list
+    of quarter columns we detected in the scraped data.
+    Falls back to a calendar-based guess if the list is empty.
+    """
+    if sorted_quarters:
+        return sorted_quarters[0]   # already sorted newest-first
+
+    # Fallback: map today's month to the most recently *completed* quarter
+    month = datetime.now().month
+    year  = datetime.now().year
+    if   month in (1, 2, 3):   return f"Dec {year - 1}"
+    elif month in (4, 5, 6):   return f"Mar {year}"
+    elif month in (7, 8, 9):   return f"Jun {year}"
+    else:                       return f"Sep {year}"
+
+
+def get_already_scraped_names(quarter_label):
+    """
+    ★ NEW
+    Opens Raw Data.xlsx (if it exists) and returns a set of company names
+    that are already saved in the tab for `quarter_label`.
+    Returns an empty set if the file or tab doesn't exist yet.
+    """
+    if not os.path.exists(RAW_FILE_PATH):
+        return set()
+
+    try:
+        all_sheets = pd.read_excel(RAW_FILE_PATH, sheet_name=None)
+        if quarter_label not in all_sheets:
+            print(f"ℹ️ No existing tab for '{quarter_label}' — will create a new one.")
+            return set()
+
+        df_existing = all_sheets[quarter_label]
+        if "Name" not in df_existing.columns:
+            return set()
+
+        names = set(df_existing["Name"].dropna().astype(str).str.strip())
+        print(f"✅ Found {len(names)} already-scraped companies in '{quarter_label}' tab.")
+        return names
+
+    except Exception as e:
+        print(f"⚠️ Could not read existing Raw Data: {e}")
+        return set()
+
+
+def save_to_raw_data_quarter_tab(df_new_rows, quarter_label):
+    """
+    ★ NEW
+    Appends df_new_rows to the correct quarter tab in Raw Data.xlsx.
+    - If the tab already exists  → reads existing rows and appends
+    - If the tab does not exist  → creates it fresh
+    All other quarter tabs are left completely untouched.
+    """
+    if df_new_rows.empty:
+        print("ℹ️ No new rows to save to Raw Data.")
+        return
+
+    # ── Load existing workbook (or create blank one) ──────────────────────
+    wb = open_or_create_excel(RAW_FILE_PATH)
+
+    # ── Merge with any existing rows for this quarter ─────────────────────
+    if quarter_label in wb.sheetnames:
+        # Read what's already there so we can stack
+        df_existing = pd.read_excel(RAW_FILE_PATH, sheet_name=quarter_label)
+        df_combined = pd.concat([df_existing, df_new_rows], ignore_index=True)
+
+        # Overwrite the sheet (openpyxl can't append to a specific sheet easily)
+        del wb[quarter_label]
+    else:
+        df_combined = df_new_rows.copy()
+
+    ws = wb.create_sheet(title=quarter_label)
+
+    # ── Write header + data ───────────────────────────────────────────────
+    headers = list(df_combined.columns)
+    ws.append(headers)
+    for _, row in df_combined.iterrows():
+        ws.append([row[col] for col in headers])
+
+    # ── Format ────────────────────────────────────────────────────────────
+    format_worksheet(ws)
+
+    # ── Remove the placeholder _init sheet if present ────────────────────
+    if "_init" in wb.sheetnames and len(wb.sheetnames) > 1:
+        del wb["_init"]
+
+    wb.save(RAW_FILE_PATH)
+    print(f"✅ Saved {len(df_new_rows)} new rows to Raw Data.xlsx → '{quarter_label}' tab.")
+
+
+# ═══════════════════════════════════════════════════════════
+# MAIN
 # ═══════════════════════════════════════════════════════════
 try:
+    # ── STEP 0 ★ NEW: Pull existing Raw Data from R2 before anything else ──
+    download_from_r2()
+
     login()
     company_data_list = collect_all_company_data()
 
     if company_data_list:
         data  = []
         total = len(company_data_list)
+
         for i, info in enumerate(company_data_list, start=1):
             row = scrape_company(info)
             data.append(row)
@@ -384,25 +492,30 @@ try:
 
         df = pd.DataFrame(data)
 
-        # ── 1. IDENTIFY QUARTERS & SORT ──────────────────────────────────
+        # ── 1. IDENTIFY QUARTERS & SORT ───────────────────────────────────
         non_quarter_cols = [
             "Name", "Company (Page)", "Promoter Holding",
             "Pledged %", "WC Days", "Industry Group", "Industry"
         ]
-        raw_quarters  = [c for c in df.columns if c not in non_quarter_cols]
-        quarter_dates = pd.to_datetime(raw_quarters, format="%b %Y", errors='coerce')
+        raw_quarters   = [c for c in df.columns if c not in non_quarter_cols]
+        quarter_dates  = pd.to_datetime(raw_quarters, format="%b %Y", errors='coerce')
         valid_quarters = [
             (d, c) for d, c in zip(quarter_dates, raw_quarters) if not pd.isna(d)
         ]
         valid_quarters.sort(key=lambda x: x[0], reverse=True)
         sorted_quarters = [x[1] for x in valid_quarters]
 
+        # ★ NEW: determine the active quarter label for tab naming
+        current_quarter_label = get_current_quarter_label(sorted_quarters)
+        print(f"\n📅 Active quarter tab: {current_quarter_label}")
+
+        # ★ NEW: find which companies are already saved for this quarter
+        already_scraped = get_already_scraped_names(current_quarter_label)
+
         if sorted_quarters:
             latest_quarter_label = sorted_quarters[0]
         else:
-            latest_quarter_label = datetime.now().strftime("%b %Y")
-
-        print(f"\n📅 Latest quarter detected: {latest_quarter_label}")
+            latest_quarter_label = current_quarter_label
 
         final_quarters = sorted_quarters[:13]
         while len(final_quarters) < 13:
@@ -412,7 +525,7 @@ try:
         numeric_quarters = df[sorted_quarters[:13]].apply(pd.to_numeric, errors="coerce")
         df[final_quarters] = numeric_quarters
 
-        # ── 2. CALCULATE OP PROFIT LOGIC ─────────────────────────────────
+        # ── 2. CALCULATE OP PROFIT LOGIC ──────────────────────────────────
         latest_col = final_quarters[0]
         try:
             latest_dt  = pd.to_datetime(latest_col, format="%b %Y")
@@ -435,7 +548,7 @@ try:
             df["OP Profit > 70%"]                = False
             df["Current Profit > in past 3 yrs"] = False
 
-        # ── 3. YoY COMPARISONS ───────────────────────────────────────────
+        # ── 3. YoY COMPARISONS ────────────────────────────────────────────
         comparison_cols = []
         comp_pairs = [(1,5),(2,6),(3,7),(4,8),(5,9),(6,10),(7,11),(8,12)]
         for n_idx, o_idx in comp_pairs:
@@ -449,78 +562,4 @@ try:
                     df[c_name] = False
                 comparison_cols.append(c_name)
             else:
-                c_name = f"Comp_{len(comparison_cols)+1}"
-                df[c_name] = False
-                comparison_cols.append(c_name)
-        final_comparisons = comparison_cols[:8]
-
-        # ── 4. EXPORT STRUCTURE ──────────────────────────────────────────
-        desired_order = (
-            ["Name", "Company (Page)"]
-            + final_quarters
-            + ["OP Profit > 70%", "Current Profit > in past 3 yrs"]
-            + final_comparisons
-            + ["Promoter Holding", "Pledged %", "WC Days", "Industry Group", "Industry"]
-        )
-        df_export = df.reindex(columns=desired_order)
-
-        # ── 5. ENRICHMENT (VLOOKUP & EXCEPTION) ──────────────────────────
-        print("\n🔄 Performing VLOOKUP & Exception Check...")
-        try:
-            if os.path.exists(MASTER_FILE_PATH):
-                df_source = pd.read_excel(MASTER_FILE_PATH, sheet_name="screener_all_stocks")
-                if "Name" in df_source.columns and "Industry" in df_source.columns:
-                    df_export["Name_Clean"] = df_export["Name"].astype(str).str.strip().str.lower()
-                    df_source["Name_Clean"] = df_source["Name"].astype(str).str.strip().str.lower()
-                    industry_map = df_source.set_index("Name_Clean")["Industry"].to_dict()
-                    group_map    = (
-                        df_source.set_index("Name_Clean")["Industry Group"].to_dict()
-                        if "Industry Group" in df_source.columns else {}
-                    )
-                    df_export["Industry"]       = df_export["Name_Clean"].map(industry_map).fillna(df_export["Industry"])
-                    df_export["Industry Group"] = df_export["Name_Clean"].map(group_map).fillna(df_export["Industry Group"])
-                    try:
-                        if "Exception_Industry" in df_source.columns:
-                            exception_list = df_source["Exception_Industry"].dropna().unique().tolist()
-                        else:
-                            exception_list = df_source.iloc[:, 29].dropna().unique().tolist()
-                        df_export["Exception_Industry"] = df_export["Industry"].apply(
-                            lambda x: "Yes" if x in exception_list else "No"
-                        )
-                    except:
-                        df_export["Exception_Industry"] = "No"
-                    df_export.drop(columns=["Name_Clean"], inplace=True)
-                    print("✅ Enrichment Complete.")
-        except Exception as e:
-            print(f"⚠️ VLOOKUP Failed: {e}")
-            df_export["Exception_Industry"] = "No"
-
-        # ── 6. FILTER LOGIC ──────────────────────────────────────────────
-        # Safety: ensure Exception_Industry always exists even if VLOOKUP was skipped
-        if "Exception_Industry" not in df_export.columns:
-            df_export["Exception_Industry"] = "No"
-
-        condition_op       = df_export["OP Profit > 70%"]               == True
-        condition_max      = df_export["Current Profit > in past 3 yrs"] == True
-        condition_exc      = df_export["Exception_Industry"]             == "Yes"
-        condition_promoter = df_export["Promoter Holding"].fillna(0)    >= 50.0
-        condition_pledged  = df_export["Pledged %"].fillna(0)           <= 10.0
-        condition_wc       = df_export["WC Days"].fillna(0)             <= 150.0
-
-        has_5_qtrs = "Empty" not in final_quarters[4] if len(final_quarters) >= 5 else False
-
-        if has_5_qtrs:
-            mask = (
-                condition_op
-                & (condition_max | condition_exc)
-                & condition_promoter
-                & condition_pledged
-                & condition_wc
-            )
-            df_master_candidates = df_export[mask].copy()
-        else:
-            df_master_candidates = pd.DataFrame()
-
-        # ── 7. PREPARE MASTER APPEND ─────────────────────────────────────
-        cols_for_master = df_export.columns[:30].tolist()
-        df_to_append = df_master_candidates.copy()
+                c_name = f"Comp_{len(co
