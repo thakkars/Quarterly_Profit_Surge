@@ -562,4 +562,4 @@ try:
                     df[c_name] = False
                 comparison_cols.append(c_name)
             else:
-                c_name = f"Comp_{len(co
+                c_name = f"Comp_{len(comparison_cols)+1}"
