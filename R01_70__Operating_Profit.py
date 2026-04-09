@@ -21,7 +21,7 @@ from openpyxl.styles import Alignment, Border, Side
 USERNAME = os.environ.get("SCREENER_USERNAME", "")
 PASSWORD = os.environ.get("SCREENER_PASSWORD", "")
 
-SCREEN_URL = "https://www.screener.in/screens/742984/top-growers/"
+SCREEN_URL = "https://www.screener.in/screens/742984/test/"
 
 IS_GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS", "false").lower() == "true"
 HEADLESS = IS_GITHUB_ACTIONS
@@ -33,7 +33,7 @@ else:
     FOLDER_PATH = r"D:\Investment Research\Python Projects\Operating Profit more than 70% jump"
 
 MASTER_FILE_PATH = os.path.join(FOLDER_PATH, "Master File.xlsx")
-RAW_FILE_PATH    = os.path.join(FOLDER_PATH, "Raw Data.xlsx")
+RAW_FILE_PATH    = os.path.join(FOLDER_PATH, "RawData.xlsx")
 
 os.makedirs(FOLDER_PATH, exist_ok=True)
 
