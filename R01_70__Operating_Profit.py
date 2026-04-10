@@ -10,10 +10,13 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, InvalidSessionIdException
-from webdriver_manager.chrome import ChromeDriverManager
 from datetime import datetime
 import os
 from openpyxl import load_workbook
+
+# webdriver_manager only needed locally — GitHub Actions uses setup-chrome action
+if os.environ.get("GITHUB_ACTIONS", "false").lower() != "true":
+    from webdriver_manager.chrome import ChromeDriverManager
 from openpyxl.styles import Alignment, Border, Side
 
 # ═══════════════════════════════════════════════════════════
