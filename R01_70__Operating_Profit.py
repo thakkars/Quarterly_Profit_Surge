@@ -1,5 +1,5 @@
 # =========================================================
-# FINAL MASTER FIXED VERSION (NO DUPLICATES EVER)
+# FINAL STABLE VERSION (NO TIMEOUT + NO DUPLICATES)
 # =========================================================
 
 import time
@@ -31,18 +31,20 @@ else:
     FOLDER_PATH = r"D:\Investment Research\Python Projects\Operating Profit more than 70% jump"
 
 MASTER_FILE_PATH = os.path.join(FOLDER_PATH, "Master File.xlsx")
-RAW_FILE_PATH    = os.path.join(FOLDER_PATH, "Raw Data.xlsx")
 
 os.makedirs(FOLDER_PATH, exist_ok=True)
 
 # =========================================================
-# DRIVER
+# DRIVER (STABLE)
 # =========================================================
 def init_driver():
     opts = Options()
     opts.add_argument("--headless=new")
     opts.add_argument("--no-sandbox")
     opts.add_argument("--disable-dev-shm-usage")
+    opts.add_argument("--disable-gpu")
+    opts.add_argument("--window-size=1920,1080")
+    opts.add_argument("--disable-blink-features=AutomationControlled")
 
     if IS_GITHUB_ACTIONS:
         return webdriver.Chrome(options=opts)
@@ -54,24 +56,41 @@ def init_driver():
         )
 
 driver = init_driver()
-wait = WebDriverWait(driver, 15)
+driver.set_page_load_timeout(60)
+wait = WebDriverWait(driver, 25)
+
+# =========================================================
+# SAFE GET (RETRY)
+# =========================================================
+def safe_get(url, retries=2):
+    for i in range(retries):
+        try:
+            driver.get(url)
+            return True
+        except Exception:
+            print(f"Retry {i+1} for {url}")
+            time.sleep(3)
+    return False
 
 # =========================================================
 # LOGIN
 # =========================================================
 def login():
-    driver.get("https://www.screener.in/login/")
-    wait.until(EC.presence_of_element_located((By.NAME, "username")))
-    driver.find_element(By.NAME, "username").send_keys(USERNAME)
-    driver.find_element(By.NAME, "password").send_keys(PASSWORD)
-    driver.find_element(By.NAME, "password").submit()
-    time.sleep(3)
+    safe_get("https://www.screener.in/login/")
+    try:
+        wait.until(EC.presence_of_element_located((By.NAME, "username")))
+        driver.find_element(By.NAME, "username").send_keys(USERNAME)
+        driver.find_element(By.NAME, "password").send_keys(PASSWORD)
+        driver.find_element(By.NAME, "password").submit()
+        time.sleep(3)
+    except:
+        pass
 
 # =========================================================
 # SCRAPER
 # =========================================================
 def collect_all_company_data():
-    driver.get(SCREEN_URL)
+    safe_get(SCREEN_URL)
     wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "a[href*='/company/']")))
 
     companies = []
@@ -82,7 +101,7 @@ def collect_all_company_data():
         for a in rows:
             url = a.get_attribute("href")
             name = a.text.strip()
-            if url not in seen:
+            if url and url not in seen:
                 seen.add(url)
                 companies.append({"name": name, "url": url})
 
@@ -91,16 +110,20 @@ def collect_all_company_data():
             if "disabled" in nxt.get_attribute("class"):
                 break
             driver.execute_script("arguments[0].click();", nxt)
-            time.sleep(1)
+            time.sleep(2)
         except:
             break
 
     print(f"Collected {len(companies)} companies")
     return companies
 
-
+# =========================================================
+# SCRAPE COMPANY (SAFE)
+# =========================================================
 def scrape_company(c):
-    driver.get(c["url"])
+    if not safe_get(c["url"]):
+        return None
+
     try:
         name = wait.until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "h1.margin-0"))
@@ -147,8 +170,12 @@ try:
 
     data = []
     for c in new_companies:
-        data.append(scrape_company(c))
-        time.sleep(1)
+        row = scrape_company(c)
+        if row:
+            data.append(row)
+
+        # anti-block delay
+        time.sleep(2 + random.uniform(0.5, 1.5))
 
     df_new = pd.DataFrame(data)
 
@@ -178,6 +205,10 @@ try:
         )
 
     print(f"Added {len(df_new)} new companies")
+
+except Exception as e:
+    print("❌ ERROR OCCURRED:")
+    traceback.print_exc()
 
 finally:
     driver.quit()
