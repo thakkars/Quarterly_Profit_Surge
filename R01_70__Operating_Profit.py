@@ -32,7 +32,7 @@ IS_GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS", "false").lower() == "true"
 USERNAME   = os.environ.get("SCREENER_USERNAME",  "deepak.khatwani2712@gmail.com")
 PASSWORD   = os.environ.get("SCREENER_PASSWORD",  "gaurav23")
 
-SCREEN_URL = "https://www.screener.in/screens/742984/top-growers/"
+SCREEN_URL = "https://www.screener.in/screens/3391124/test/
 
 # File paths — /tmp on GitHub Actions, local drive on Windows
 if IS_GITHUB_ACTIONS:
