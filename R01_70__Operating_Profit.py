@@ -1,5 +1,4 @@
 import time
-import random
 import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -10,16 +9,20 @@ from selenium.webdriver.support import expected_conditions as EC
 from datetime import datetime
 import os
 
+# LOCAL DRIVER SUPPORT
 if os.environ.get("GITHUB_ACTIONS", "false").lower() != "true":
     from webdriver_manager.chrome import ChromeDriverManager
 
 IS_GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS", "false").lower() == "true"
 
+# LOGIN
 USERNAME = os.environ.get("SCREENER_USERNAME")
 PASSWORD = os.environ.get("SCREENER_PASSWORD")
 
+# 🔥 PUT YOUR CORRECT SCREEN HERE
 SCREEN_URL = "https://www.screener.in/screens/3391124/test/"
 
+# PATH
 FOLDER_PATH = "/tmp/screener_data" if IS_GITHUB_ACTIONS else r"D:\Investment Research\Python Projects\Operating Profit more than 70% jump"
 RAW_FILE_PATH = os.path.join(FOLDER_PATH, "Raw Data.xlsx")
 
@@ -29,7 +32,9 @@ HEADLESS = IS_GITHUB_ACTIONS
 PAGE_DELAY = 1.0
 
 
+# ─────────────────────────────────────────────
 # DRIVER
+# ─────────────────────────────────────────────
 def init_driver():
     opts = Options()
     if HEADLESS:
@@ -47,7 +52,9 @@ driver = init_driver()
 wait = WebDriverWait(driver, 15)
 
 
+# ─────────────────────────────────────────────
 # LOGIN
+# ─────────────────────────────────────────────
 def login():
     driver.get("https://www.screener.in/login/")
     wait.until(EC.presence_of_element_located((By.NAME, "username")))
@@ -65,6 +72,9 @@ def safe_get(url):
         return False
 
 
+# ─────────────────────────────────────────────
+# COLLECT COMPANY LIST
+# ─────────────────────────────────────────────
 def collect_all_company_data():
     safe_get(SCREEN_URL)
     wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "a[href*='/company/']")))
@@ -77,6 +87,7 @@ def collect_all_company_data():
         for a in rows:
             href = a.get_attribute("href")
             name = a.text.strip()
+
             if href and href not in seen:
                 seen.add(href)
                 company_list.append({"short_name": name, "url": href})
@@ -90,10 +101,13 @@ def collect_all_company_data():
         except:
             break
 
-    print(f"Collected {len(company_list)} companies")
+    print(f"📊 Collected {len(company_list)} companies")
     return company_list
 
 
+# ─────────────────────────────────────────────
+# SCRAPING HELPERS
+# ─────────────────────────────────────────────
 def get_company_full_name():
     try:
         return driver.find_element(By.CSS_SELECTOR, "h1.margin-0").text.strip()
@@ -129,71 +143,92 @@ def scrape_company(info):
     }
 
 
+# ─────────────────────────────────────────────
 # MAIN
+# ─────────────────────────────────────────────
 try:
     login()
 
+    # STEP 1 → GET COMPANY LIST
     company_data_list = collect_all_company_data()
 
-    # LOAD EXISTING
+    # STEP 2 → LOAD EXISTING RAW
     existing_urls = set()
 
     if os.path.exists(RAW_FILE_PATH):
         try:
             sheets = pd.read_excel(RAW_FILE_PATH, sheet_name=None)
+
             if sheets:
                 last_sheet = list(sheets.keys())[-1]
                 df_exist = sheets[last_sheet]
+
                 if "URL" in df_exist.columns:
                     existing_urls = set(df_exist["URL"].dropna().astype(str))
-                    print(f"Found {len(existing_urls)} existing companies")
-        except:
-            pass
 
-    # FILTER NEW
+                print(f"📂 Found {len(existing_urls)} existing companies")
+        except:
+            print("⚠️ Could not read RAW file")
+
+    # STEP 3 → FILTER NEW COMPANIES
     new_company_list = [c for c in company_data_list if c["url"] not in existing_urls]
 
-    print(f"New companies: {len(new_company_list)}")
+    print(f"🆕 New companies to scrape: {len(new_company_list)}")
 
+    # STEP 4 → SCRAPE ONLY NEW
     data = []
 
     for i, comp in enumerate(new_company_list, 1):
         row = scrape_company(comp)
+
         if row:
             data.append(row)
-        print(f"{i}/{len(new_company_list)} done")
+
+        print(f"✅ {i}/{len(new_company_list)} done")
         time.sleep(PAGE_DELAY)
 
+    # STEP 5 → SAVE RAW DATA (ROBUST)
     df_new = pd.DataFrame(data)
     sheet_name = datetime.now().strftime("%b %Y")
 
-    # SAVE RAW (FIXED)
-    if os.path.exists(RAW_FILE_PATH):
+    try:
+        # FILE DOES NOT EXIST
+        if not os.path.exists(RAW_FILE_PATH):
 
-        try:
-            df_old = pd.read_excel(RAW_FILE_PATH, sheet_name=sheet_name)
-        except:
-            df_old = pd.DataFrame()
+            print("🆕 Creating new RAW file...")
 
-        df_final = pd.concat([df_old, df_new], ignore_index=True)
+            with pd.ExcelWriter(RAW_FILE_PATH, engine="openpyxl", mode="w") as writer:
+                df_new.to_excel(writer, sheet_name=sheet_name, index=False)
 
-        with pd.ExcelWriter(
-            RAW_FILE_PATH,
-            engine="openpyxl",
-            mode="a",
-            if_sheet_exists="replace"
-        ) as writer:
-            df_final.to_excel(writer, sheet_name=sheet_name, index=False)
+            print(f"✅ RAW created → {sheet_name}")
 
-    else:
-        with pd.ExcelWriter(
-            RAW_FILE_PATH,
-            engine="openpyxl",
-            mode="w"
-        ) as writer:
-            df_new.to_excel(writer, sheet_name=sheet_name, index=False)
+        else:
+            # FILE EXISTS → CHECK SHEET
+            try:
+                df_old = pd.read_excel(RAW_FILE_PATH, sheet_name=sheet_name)
+                print(f"📂 Existing sheet found ({len(df_old)} rows)")
+            except:
+                df_old = pd.DataFrame()
+                print(f"🆕 Sheet '{sheet_name}' not found — creating new")
 
-    print(f"RAW updated successfully → {sheet_name}")
+            # APPEND
+            if not df_old.empty:
+                df_final = pd.concat([df_old, df_new], ignore_index=True)
+            else:
+                df_final = df_new
+
+            with pd.ExcelWriter(
+                RAW_FILE_PATH,
+                engine="openpyxl",
+                mode="a",
+                if_sheet_exists="replace"
+            ) as writer:
+                df_final.to_excel(writer, sheet_name=sheet_name, index=False)
+
+            print(f"✅ RAW updated → {sheet_name} ({len(df_final)} rows total)")
+
+    except Exception as e:
+        print(f"❌ RAW save error: {e}")
 
 finally:
     driver.quit()
