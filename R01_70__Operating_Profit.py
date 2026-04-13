@@ -1,18 +1,23 @@
-import time
+# ========================= IMPORTS =========================
+import time, random, traceback, os
 import pandas as pd
+import numpy as np
+from datetime import datetime
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from datetime import datetime
-import os
+from selenium.common.exceptions import TimeoutException, InvalidSessionIdException
 
-# LOCAL DRIVER SUPPORT
+from openpyxl.styles import Alignment, Border, Side
+
 if os.environ.get("GITHUB_ACTIONS", "false").lower() != "true":
     from webdriver_manager.chrome import ChromeDriverManager
 
+# ========================= ENV =========================
 IS_GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS", "false").lower() == "true"
 
 USERNAME = os.environ.get("SCREENER_USERNAME")
@@ -21,18 +26,47 @@ PASSWORD = os.environ.get("SCREENER_PASSWORD")
 SCREEN_URL = "https://www.screener.in/screens/3391124/test/"
 
 FOLDER_PATH = "/tmp/screener_data" if IS_GITHUB_ACTIONS else r"D:\Investment Research\Python Projects\Operating Profit more than 70% jump"
-RAW_FILE_PATH = os.path.join(FOLDER_PATH, "Raw Data.xlsx")
+
+MASTER_FILE_PATH = os.path.join(FOLDER_PATH, "Master File.xlsx")
+RAW_FILE_PATH    = os.path.join(FOLDER_PATH, "Raw Data.xlsx")
 
 os.makedirs(FOLDER_PATH, exist_ok=True)
 
-HEADLESS = IS_GITHUB_ACTIONS
-PAGE_DELAY = 1.0
+# ========================= R2 =========================
+R2_BUCKET = os.environ.get("R2_BUCKET_NAME")
+R2_ACCESS_KEY = os.environ.get("R2_ACCESS_KEY_ID")
+R2_SECRET_KEY = os.environ.get("R2_SECRET_ACCESS_KEY")
+R2_ENDPOINT = os.environ.get("R2_ENDPOINT_URL")
 
+def get_r2():
+    import boto3
+    return boto3.client(
+        "s3",
+        endpoint_url=R2_ENDPOINT,
+        aws_access_key_id=R2_ACCESS_KEY,
+        aws_secret_access_key=R2_SECRET_KEY,
+        region_name="auto"
+    )
 
-# DRIVER
+def r2_download(key, path):
+    try:
+        get_r2().download_file(R2_BUCKET, key, path)
+        print(f"⬇️ {key} downloaded")
+    except:
+        print(f"ℹ️ {key} not found (first run)")
+
+def r2_upload(path, key):
+    if os.path.exists(path):
+        get_r2().upload_file(path, R2_BUCKET, key)
+        print(f"⬆️ {key} uploaded")
+
+if IS_GITHUB_ACTIONS:
+    r2_download("Raw Data.xlsx", RAW_FILE_PATH)
+
+# ========================= DRIVER =========================
 def init_driver():
     opts = Options()
-    if HEADLESS:
+    if IS_GITHUB_ACTIONS:
         opts.add_argument("--headless=new")
     opts.add_argument("--no-sandbox")
     opts.add_argument("--disable-dev-shm-usage")
@@ -42,21 +76,19 @@ def init_driver():
     else:
         return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=opts)
 
-
 driver = init_driver()
 wait = WebDriverWait(driver, 15)
 
-
-# LOGIN
+# ========================= LOGIN =========================
 def login():
     driver.get("https://www.screener.in/login/")
     wait.until(EC.presence_of_element_located((By.NAME, "username")))
     driver.find_element(By.NAME, "username").send_keys(USERNAME)
     driver.find_element(By.NAME, "password").send_keys(PASSWORD)
     driver.find_element(By.NAME, "password").submit()
-    time.sleep(3)
+    time.sleep(2)
 
-
+# ========================= HELPERS =========================
 def safe_get(url):
     try:
         driver.get(url)
@@ -64,44 +96,11 @@ def safe_get(url):
     except:
         return False
 
-
-# COLLECT COMPANIES
-def collect_all_company_data():
-    safe_get(SCREEN_URL)
-    wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "a[href*='/company/']")))
-
-    company_list = []
-    seen = set()
-
-    while True:
-        rows = driver.find_elements(By.CSS_SELECTOR, "a[href*='/company/']")
-        for a in rows:
-            href = a.get_attribute("href")
-            name = a.text.strip()
-
-            if href and href not in seen:
-                seen.add(href)
-                company_list.append({"short_name": name, "url": href})
-
-        try:
-            nxt = driver.find_element(By.XPATH, "//a[contains(text(),'Next')]")
-            if "disabled" in nxt.get_attribute("class"):
-                break
-            driver.execute_script("arguments[0].click();", nxt)
-            time.sleep(1)
-        except:
-            break
-
-    print(f"Collected {len(company_list)} companies")
-    return company_list
-
-
 def get_company_full_name():
     try:
-        return driver.find_element(By.CSS_SELECTOR, "h1.margin-0").text.strip()
+        return wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "h1.margin-0"))).text.strip()
     except:
         return "Unknown"
-
 
 def extract_operating_profit():
     try:
@@ -115,118 +114,109 @@ def extract_operating_profit():
                 return dict(zip(headers[1:], values[1:]))
     except:
         pass
-
     return {}
 
+def get_top_dashboard_metrics():
+    out = {"Promoter Holding":0,"Pledged %":0,"WC Days":0}
+    try:
+        for li in driver.find_elements(By.CSS_SELECTOR,"ul#top-ratios li"):
+            try:
+                name = li.find_element(By.CSS_SELECTOR,"span.name").text.lower()
+                val  = float(li.find_element(By.CSS_SELECTOR,"span.number").text.replace(",",""))
+                if "promoter" in name: out["Promoter Holding"]=val
+                elif "pledged" in name: out["Pledged %"]=val
+                elif "wc" in name: out["WC Days"]=val
+            except: pass
+    except: pass
+    return out
 
+# ========================= COMPANY LIST =========================
+def collect_all_company_data():
+    safe_get(SCREEN_URL)
+    wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR,"a[href*='/company/']")))
+    out, seen = [], set()
+
+    while True:
+        for a in driver.find_elements(By.CSS_SELECTOR,"a[href*='/company/']"):
+            href = a.get_attribute("href")
+            if href and href not in seen:
+                seen.add(href)
+                out.append({"short_name":a.text.strip(),"url":href})
+        try:
+            nxt = driver.find_element(By.XPATH,"//a[contains(text(),'Next')]")
+            if "disabled" in nxt.get_attribute("class"): break
+            driver.execute_script("arguments[0].click();",nxt)
+            time.sleep(1)
+        except: break
+
+    print(f"📊 {len(out)} companies collected")
+    return out
+
+# ========================= SCRAPE =========================
 def scrape_company(info):
-    if not safe_get(info["url"]):
-        return None
+    if not safe_get(info["url"]): return None
 
     return {
         "Name": info["short_name"],
         "Company (Page)": get_company_full_name(),
         "URL": info["url"],
-        **extract_operating_profit()
+        **extract_operating_profit(),
+        **get_top_dashboard_metrics()
     }
 
-
-# MAIN
+# ========================= MAIN =========================
 try:
     login()
 
-    company_data_list = collect_all_company_data()
+    company_list = collect_all_company_data()
 
+    # LOAD EXISTING URLS
     existing_urls = set()
-
     if os.path.exists(RAW_FILE_PATH):
         try:
             sheets = pd.read_excel(RAW_FILE_PATH, sheet_name=None)
-            if sheets:
-                last_sheet = list(sheets.keys())[-1]
-                df_exist = sheets[last_sheet]
+            last = list(sheets.keys())[-1]
+            if "URL" in sheets[last].columns:
+                existing_urls = set(sheets[last]["URL"].astype(str))
+        except: pass
 
-                if "URL" in df_exist.columns:
-                    existing_urls = set(df_exist["URL"].dropna().astype(str))
-
-                print(f"Found {len(existing_urls)} existing companies")
-        except:
-            print("Error reading RAW file")
-
-    new_company_list = [c for c in company_data_list if c["url"] not in existing_urls]
-
-    print(f"New companies: {len(new_company_list)}")
+    new_list = [c for c in company_list if c["url"] not in existing_urls]
+    print(f"🆕 New: {len(new_list)}")
 
     data = []
+    for i,c in enumerate(new_list,1):
+        r = scrape_company(c)
+        if r: data.append(r)
+        print(f"{i}/{len(new_list)}")
 
-    for i, comp in enumerate(new_company_list, 1):
-        row = scrape_company(comp)
-        if row:
-            data.append(row)
+    df = pd.DataFrame(data)
 
-        print(f"{i}/{len(new_company_list)} done")
-        time.sleep(PAGE_DELAY)
+    # ===== DETECT QUARTER =====
+    quarters = [c for c in df.columns if any(x in c for x in ["Mar","Jun","Sep","Dec"])]
+    quarter = quarters[0] if quarters else datetime.now().strftime("%b %Y")
 
-    df_new = pd.DataFrame(data)
-    sheet_name = datetime.now().strftime("%b %Y")
-
-    # SAVE RAW
-    if not os.path.exists(RAW_FILE_PATH):
-        print("Creating new RAW file")
-
-        if df_new.empty:
-            df_new = pd.DataFrame(columns=["Name", "Company (Page)", "URL"])
-
-        with pd.ExcelWriter(RAW_FILE_PATH, engine="openpyxl", mode="w") as writer:
-            df_new.to_excel(writer, sheet_name=sheet_name, index=False)
-
-    else:
+    # ===== SAVE RAW =====
+    if os.path.exists(RAW_FILE_PATH):
         try:
-            df_old = pd.read_excel(RAW_FILE_PATH, sheet_name=sheet_name)
+            old = pd.read_excel(RAW_FILE_PATH, sheet_name=quarter)
         except:
-            df_old = pd.DataFrame()
+            old = pd.DataFrame()
+        final = pd.concat([old, df], ignore_index=True)
+        mode="a"
+    else:
+        final=df
+        mode="w"
 
-        if not df_new.empty:
-            df_final = pd.concat([df_old, df_new], ignore_index=True)
-        else:
-            df_final = df_old
+    with pd.ExcelWriter(RAW_FILE_PATH, engine="openpyxl", mode=mode, if_sheet_exists="replace" if mode=="a" else None) as w:
+        final.to_excel(w, sheet_name=quarter, index=False)
 
-        with pd.ExcelWriter(
-            RAW_FILE_PATH,
-            engine="openpyxl",
-            mode="a",
-            if_sheet_exists="replace"
-        ) as writer:
-            df_final.to_excel(writer, sheet_name=sheet_name, index=False)
+    print(f"✅ RAW saved → {quarter}")
 
-    print("RAW saved successfully")
-
-    # ───────────── R2 UPLOAD ─────────────
-    try:
-        import boto3
-
-        if os.path.exists(RAW_FILE_PATH):
-            s3 = boto3.client(
-                "s3",
-                endpoint_url=os.environ.get("R2_ENDPOINT_URL"),
-                aws_access_key_id=os.environ.get("R2_ACCESS_KEY_ID"),
-                aws_secret_access_key=os.environ.get("R2_SECRET_ACCESS_KEY"),
-                region_name="auto",
-            )
-
-            s3.upload_file(
-                RAW_FILE_PATH,
-                os.environ.get("R2_BUCKET_NAME"),
-                "Raw Data.xlsx"
-            )
-
-            print("Uploaded RAW file to R2")
-
-    except Exception as e:
-        print(f"R2 Upload failed: {e}")
+    # ===== UPLOAD =====
+    if IS_GITHUB_ACTIONS:
+        r2_upload(RAW_FILE_PATH, "Raw Data.xlsx")
 
 finally:
-    # ✅ THIS FIXES YOUR ERROR
     try:
         driver.quit()
     except:
