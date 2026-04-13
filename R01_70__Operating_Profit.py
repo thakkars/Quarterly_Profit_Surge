@@ -218,4 +218,34 @@ try:
         print(f"❌ RAW save error: {e}")
 
 finally:
+
+# ─────────────────────────────
+# UPLOAD TO R2
+# ─────────────────────────────
+try:
+    import boto3
+
+    if os.path.exists(RAW_FILE_PATH):
+
+        s3 = boto3.client(
+            "s3",
+            endpoint_url=os.environ.get("R2_ENDPOINT_URL"),
+            aws_access_key_id=os.environ.get("R2_ACCESS_KEY_ID"),
+            aws_secret_access_key=os.environ.get("R2_SECRET_ACCESS_KEY"),
+            region_name="auto",
+        )
+
+        s3.upload_file(
+            RAW_FILE_PATH,
+            os.environ.get("R2_BUCKET_NAME"),
+            "Raw Data.xlsx"
+        )
+
+        print("☁️ Uploaded RAW file to R2 successfully")
+
+    else:
+        print("⚠️ RAW file not found — cannot upload")
+
+except Exception as e:
+    print(f"❌ R2 Upload Failed: {e}")
     driver.quit()
