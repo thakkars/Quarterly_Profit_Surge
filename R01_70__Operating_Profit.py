@@ -18,7 +18,6 @@ IS_GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS", "false").lower() == "true"
 USERNAME = os.environ.get("SCREENER_USERNAME")
 PASSWORD = os.environ.get("SCREENER_PASSWORD")
 
-# ⚠️ VERIFY THIS SCREEN URL
 SCREEN_URL = "https://www.screener.in/screens/3391124/test/"
 
 FOLDER_PATH = "/tmp/screener_data" if IS_GITHUB_ACTIONS else r"D:\Investment Research\Python Projects\Operating Profit more than 70% jump"
@@ -30,7 +29,7 @@ HEADLESS = IS_GITHUB_ACTIONS
 PAGE_DELAY = 1.0
 
 
-# ───────────────── DRIVER ─────────────────
+# DRIVER
 def init_driver():
     opts = Options()
     if HEADLESS:
@@ -48,7 +47,7 @@ driver = init_driver()
 wait = WebDriverWait(driver, 15)
 
 
-# ───────────────── LOGIN ─────────────────
+# LOGIN
 def login():
     driver.get("https://www.screener.in/login/")
     wait.until(EC.presence_of_element_located((By.NAME, "username")))
@@ -66,7 +65,7 @@ def safe_get(url):
         return False
 
 
-# ───────────────── COLLECT LIST ─────────────────
+# COLLECT COMPANIES
 def collect_all_company_data():
     safe_get(SCREEN_URL)
     wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "a[href*='/company/']")))
@@ -93,11 +92,10 @@ def collect_all_company_data():
         except:
             break
 
-    print(f"📊 Collected {len(company_list)} companies")
+    print(f"Collected {len(company_list)} companies")
     return company_list
 
 
-# ───────────────── SCRAPE HELPERS ─────────────────
 def get_company_full_name():
     try:
         return driver.find_element(By.CSS_SELECTOR, "h1.margin-0").text.strip()
@@ -133,14 +131,12 @@ def scrape_company(info):
     }
 
 
-# ───────────────── MAIN ─────────────────
+# MAIN
 try:
     login()
 
-    # STEP 1
     company_data_list = collect_all_company_data()
 
-    # STEP 2 — LOAD EXISTING
     existing_urls = set()
 
     if os.path.exists(RAW_FILE_PATH):
@@ -153,99 +149,85 @@ try:
                 if "URL" in df_exist.columns:
                     existing_urls = set(df_exist["URL"].dropna().astype(str))
 
-                print(f"📂 Found {len(existing_urls)} existing companies")
+                print(f"Found {len(existing_urls)} existing companies")
         except:
-            print("⚠️ Could not read RAW file")
+            print("Error reading RAW file")
 
-    # STEP 3 — FILTER
     new_company_list = [c for c in company_data_list if c["url"] not in existing_urls]
 
-    print(f"🆕 New companies to scrape: {len(new_company_list)}")
+    print(f"New companies: {len(new_company_list)}")
 
-    # STEP 4 — SCRAPE
     data = []
 
     for i, comp in enumerate(new_company_list, 1):
         row = scrape_company(comp)
-
         if row:
             data.append(row)
 
-        print(f"✅ {i}/{len(new_company_list)} done")
+        print(f"{i}/{len(new_company_list)} done")
         time.sleep(PAGE_DELAY)
 
-    # STEP 5 — SAVE RAW (FINAL FIX)
     df_new = pd.DataFrame(data)
     sheet_name = datetime.now().strftime("%b %Y")
 
-    try:
-        if not os.path.exists(RAW_FILE_PATH):
+    # SAVE RAW
+    if not os.path.exists(RAW_FILE_PATH):
+        print("Creating new RAW file")
 
-            print("🆕 RAW file not found — creating new file")
+        if df_new.empty:
+            df_new = pd.DataFrame(columns=["Name", "Company (Page)", "URL"])
 
-            if df_new.empty:
-                df_new = pd.DataFrame(columns=["Name", "Company (Page)", "URL"])
-
-            with pd.ExcelWriter(RAW_FILE_PATH, engine="openpyxl", mode="w") as writer:
-                df_new.to_excel(writer, sheet_name=sheet_name, index=False)
-
-            print(f"✅ RAW CREATED → {sheet_name}")
-
-        else:
-            try:
-                df_old = pd.read_excel(RAW_FILE_PATH, sheet_name=sheet_name)
-                print(f"📂 Existing sheet found ({len(df_old)} rows)")
-            except:
-                df_old = pd.DataFrame()
-                print(f"🆕 Sheet '{sheet_name}' not found — creating new")
-
-            if not df_new.empty:
-                df_final = pd.concat([df_old, df_new], ignore_index=True)
-            else:
-                df_final = df_old
-
-            with pd.ExcelWriter(
-                RAW_FILE_PATH,
-                engine="openpyxl",
-                mode="a",
-                if_sheet_exists="replace"
-            ) as writer:
-                df_final.to_excel(writer, sheet_name=sheet_name, index=False)
-
-            print(f"✅ RAW UPDATED → {sheet_name} ({len(df_final)} rows total)")
-
-    except Exception as e:
-        print(f"❌ RAW save error: {e}")
-
-finally:
-
-# ─────────────────────────────
-# UPLOAD TO R2
-# ─────────────────────────────
-try:
-    import boto3
-
-    if os.path.exists(RAW_FILE_PATH):
-
-        s3 = boto3.client(
-            "s3",
-            endpoint_url=os.environ.get("R2_ENDPOINT_URL"),
-            aws_access_key_id=os.environ.get("R2_ACCESS_KEY_ID"),
-            aws_secret_access_key=os.environ.get("R2_SECRET_ACCESS_KEY"),
-            region_name="auto",
-        )
-
-        s3.upload_file(
-            RAW_FILE_PATH,
-            os.environ.get("R2_BUCKET_NAME"),
-            "Raw Data.xlsx"
-        )
-
-        print("☁️ Uploaded RAW file to R2 successfully")
+        with pd.ExcelWriter(RAW_FILE_PATH, engine="openpyxl", mode="w") as writer:
+            df_new.to_excel(writer, sheet_name=sheet_name, index=False)
 
     else:
-        print("⚠️ RAW file not found — cannot upload")
+        try:
+            df_old = pd.read_excel(RAW_FILE_PATH, sheet_name=sheet_name)
+        except:
+            df_old = pd.DataFrame()
 
-except Exception as e:
-    print(f"❌ R2 Upload Failed: {e}")
-    driver.quit()
+        if not df_new.empty:
+            df_final = pd.concat([df_old, df_new], ignore_index=True)
+        else:
+            df_final = df_old
+
+        with pd.ExcelWriter(
+            RAW_FILE_PATH,
+            engine="openpyxl",
+            mode="a",
+            if_sheet_exists="replace"
+        ) as writer:
+            df_final.to_excel(writer, sheet_name=sheet_name, index=False)
+
+    print("RAW saved successfully")
+
+    # ───────────── R2 UPLOAD ─────────────
+    try:
+        import boto3
+
+        if os.path.exists(RAW_FILE_PATH):
+            s3 = boto3.client(
+                "s3",
+                endpoint_url=os.environ.get("R2_ENDPOINT_URL"),
+                aws_access_key_id=os.environ.get("R2_ACCESS_KEY_ID"),
+                aws_secret_access_key=os.environ.get("R2_SECRET_ACCESS_KEY"),
+                region_name="auto",
+            )
+
+            s3.upload_file(
+                RAW_FILE_PATH,
+                os.environ.get("R2_BUCKET_NAME"),
+                "Raw Data.xlsx"
+            )
+
+            print("Uploaded RAW file to R2")
+
+    except Exception as e:
+        print(f"R2 Upload failed: {e}")
+
+finally:
+    # ✅ THIS FIXES YOUR ERROR
+    try:
+        driver.quit()
+    except:
+        pass
