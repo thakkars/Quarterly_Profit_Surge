@@ -1,5 +1,6 @@
 import time
 import random
+import re
 import traceback
 import pandas as pd
 import numpy as np
@@ -113,33 +114,84 @@ if IS_GITHUB_ACTIONS:
 # ═══════════════════════════════════════════════════════════
 # INDUSTRY LOOKUP  (loaded once at startup)
 # ═══════════════════════════════════════════════════════════
+
+# Module-level list used by fuzzy matching — populated in load_industry_maps()
+_IND_NAMES_LOWER = []
+
 def load_industry_maps():
     """
     Load Industry and Industry Group lookup dicts from
     Screener_Industry_Data.xlsx → sheet 'Screener Industry'.
-    Keys are lowercased company names for case-insensitive matching.
+
+    Keys are lowercased & stripped company names.
+    Also populates _IND_NAMES_LOWER for fuzzy fallback matching.
     Returns (industry_map, group_map) — both empty dicts on failure.
     """
+    global _IND_NAMES_LOWER
+
+    # ── Existence check with clear path message ──────────────────────
     if not os.path.exists(INDUSTRY_FILE_PATH):
-        print("⚠️  Screener_Industry_Data.xlsx not found — industry columns will be blank.")
+        print(f"⚠️  Industry file NOT FOUND at:\n    {INDUSTRY_FILE_PATH}")
+        print("    → Make sure Screener_Industry_Data.xlsx is uploaded to R2.")
         return {}, {}
+
     try:
         df = pd.read_excel(INDUSTRY_FILE_PATH, sheet_name="Screener Industry")
         df["Name_Clean"] = df["Name"].astype(str).str.strip().str.lower()
-        industry_map = df.set_index("Name_Clean")["Industry"].to_dict()
-        group_map    = df.set_index("Name_Clean")["Industry Group"].to_dict()
-        print(f"✅ Industry lookup loaded — {len(industry_map):,} companies.")
+
+        industry_map     = df.set_index("Name_Clean")["Industry"].to_dict()
+        group_map        = df.set_index("Name_Clean")["Industry Group"].to_dict()
+        _IND_NAMES_LOWER = list(industry_map.keys())
+
+        print(f"✅ Industry file found  : {INDUSTRY_FILE_PATH}")
+        print(f"   → {len(industry_map):,} companies loaded for matching.")
         return industry_map, group_map
+
     except Exception as e:
         print(f"⚠️  Failed to load industry data: {e}")
         return {}, {}
 
 
 def enrich_with_industry(row_dict, industry_map, group_map):
-    """Fill Industry and Industry Group in a scraped row using lookup maps."""
-    name_clean = str(row_dict.get("Name", "")).strip().lower()
-    row_dict["Industry"]       = industry_map.get(name_clean, "")
-    row_dict["Industry Group"] = group_map.get(name_clean, "")
+    """
+    Fill 'Industry' and 'Industry Group' in a scraped row using 3-tier matching:
+
+    Tier 1 — Exact lowercase match          e.g. "Ramco Systems"
+    Tier 2 — Starts-with after strip punct  e.g. "InfoBeans Tech." → "infobeans technologies"
+    Tier 3 — First-two-words prefix         e.g. "Kwality Pharma"  → "kwality pharmaceuticals"
+
+    Falls back to empty string if no match found.
+    """
+    name_raw   = str(row_dict.get("Name", "")).strip()
+    name_clean = name_raw.lower()
+
+    # ── Tier 1: exact ────────────────────────────────────────────────
+    if name_clean in industry_map:
+        row_dict["Industry"]       = industry_map[name_clean]
+        row_dict["Industry Group"] = group_map[name_clean]
+        return row_dict
+
+    # ── Tier 2: strip trailing punctuation then startswith ───────────
+    name_stripped = re.sub(r'[.\s]+$', '', name_clean)
+    matches = [n for n in _IND_NAMES_LOWER if n.startswith(name_stripped)]
+    if len(matches) == 1:
+        row_dict["Industry"]       = industry_map[matches[0]]
+        row_dict["Industry Group"] = group_map[matches[0]]
+        return row_dict
+
+    # ── Tier 3: first-two-words prefix ───────────────────────────────
+    words = name_stripped.split()
+    if len(words) >= 2:
+        prefix  = ' '.join(words[:2])
+        matches = [n for n in _IND_NAMES_LOWER if n.startswith(prefix)]
+        if len(matches) == 1:
+            row_dict["Industry"]       = industry_map[matches[0]]
+            row_dict["Industry Group"] = group_map[matches[0]]
+            return row_dict
+
+    # ── No match ─────────────────────────────────────────────────────
+    row_dict["Industry"]       = ""
+    row_dict["Industry Group"] = ""
     return row_dict
 
 
@@ -463,7 +515,7 @@ try:
         first_row = scrape_company(company_data_list[0])
         first_row = enrich_with_industry(first_row, INDUSTRY_MAP, GROUP_MAP)
         print(f"✅ [1/{total}] {company_data_list[0]['short_name']}  "
-              f"| Industry: {first_row.get('Industry', '—')}")
+              f"| Industry: {first_row.get('Industry') or '— not matched'}")
         time.sleep(PAGE_DELAY + random.uniform(0.3, 0.7))
 
         target_sheet = detect_latest_quarter(first_row)
@@ -499,12 +551,18 @@ try:
               f"(skipping {total - 1 - len(remaining)} already present)...\n")
 
         # ── STEP 5: Scrape, enrich & save in batches ────────────────────
+        unmatched_log = []   # track names that didn't get an industry
+
         for i, info in enumerate(remaining, start=2):
             row = scrape_company(info)
             row = enrich_with_industry(row, INDUSTRY_MAP, GROUP_MAP)
+
+            if not row.get("Industry"):
+                unmatched_log.append(info['short_name'])
+
             pending_rows.append(row)
             print(f"✅ [{i}/{total}] {info['short_name']}  "
-                  f"| Industry: {row.get('Industry', '—')}")
+                  f"| Industry: {row.get('Industry') or '— not matched'}")
             time.sleep(PAGE_DELAY + random.uniform(0.3, 0.7))
 
             if len(pending_rows) >= BATCH_SIZE:
@@ -516,6 +574,11 @@ try:
             append_rows_to_raw_excel(pending_rows, target_sheet)
 
         print(f"\n✅ Raw Data.xlsx → sheet '{target_sheet}' is up to date.")
+
+        if unmatched_log:
+            print(f"\n⚠️  {len(unmatched_log)} companies had no industry match:")
+            for n in unmatched_log:
+                print(f"    • {n}")
 
         # ── STEP 6: Upload to R2 ─────────────────────────────────────────
         if IS_GITHUB_ACTIONS:
