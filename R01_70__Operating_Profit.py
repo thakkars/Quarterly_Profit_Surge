@@ -36,9 +36,8 @@ if IS_GITHUB_ACTIONS:
 else:
     FOLDER_PATH = r"D:\Investment Research\Python Projects\Operating Profit more than 70% jump"
 
-MASTER_FILE_PATH   = os.path.join(FOLDER_PATH, "Master File.xlsx")
-RAW_FILE_PATH      = os.path.join(FOLDER_PATH, "Raw Data.xlsx")
-INDUSTRY_FILE_PATH = os.path.join(FOLDER_PATH, "Screener_Industry_Data.xlsx")
+MASTER_FILE_PATH = os.path.join(FOLDER_PATH, "Master File.xlsx")
+RAW_FILE_PATH    = os.path.join(FOLDER_PATH, "Raw Data.xlsx")
 
 os.makedirs(FOLDER_PATH, exist_ok=True)
 
@@ -51,9 +50,8 @@ R2_ACCESS_KEY  = os.environ.get("R2_ACCESS_KEY_ID",      "")
 R2_SECRET_KEY  = os.environ.get("R2_SECRET_ACCESS_KEY",  "")
 R2_ENDPOINT    = os.environ.get("R2_ENDPOINT_URL",       "")
 
-R2_MASTER_KEY   = "Master File.xlsx"
-R2_RAW_KEY      = "Raw Data.xlsx"
-R2_INDUSTRY_KEY = "Screener_Industry_Data.xlsx"
+R2_MASTER_KEY = "Master File.xlsx"
+R2_RAW_KEY    = "Raw Data.xlsx"
 
 print(f"🌍 Environment : {'GitHub Actions (cloud)' if IS_GITHUB_ACTIONS else 'Local Windows'}")
 print(f"📁 Working dir : {FOLDER_PATH}")
@@ -104,43 +102,9 @@ def r2_upload(local_path, r2_key):
 # ═══════════════════════════════════════════════════════════
 if IS_GITHUB_ACTIONS:
     print("\n📥 Downloading existing files from Cloudflare R2...")
-    r2_download(R2_MASTER_KEY,   MASTER_FILE_PATH)
-    r2_download(R2_RAW_KEY,      RAW_FILE_PATH)
-    r2_download(R2_INDUSTRY_KEY, INDUSTRY_FILE_PATH)
+    r2_download(R2_MASTER_KEY, MASTER_FILE_PATH)
+    r2_download(R2_RAW_KEY,    RAW_FILE_PATH)
     print("📥 Download step complete.\n")
-
-
-# ═══════════════════════════════════════════════════════════
-# INDUSTRY LOOKUP  (loaded once at startup)
-# ═══════════════════════════════════════════════════════════
-def load_industry_maps():
-    """
-    Load Industry and Industry Group lookup dicts from
-    Screener_Industry_Data.xlsx → sheet 'Screener Industry'.
-    Keys are lowercased company names for case-insensitive matching.
-    Returns (industry_map, group_map) — both empty dicts on failure.
-    """
-    if not os.path.exists(INDUSTRY_FILE_PATH):
-        print("⚠️  Screener_Industry_Data.xlsx not found — industry columns will be blank.")
-        return {}, {}
-    try:
-        df = pd.read_excel(INDUSTRY_FILE_PATH, sheet_name="Screener Industry")
-        df["Name_Clean"] = df["Name"].astype(str).str.strip().str.lower()
-        industry_map = df.set_index("Name_Clean")["Industry"].to_dict()
-        group_map    = df.set_index("Name_Clean")["Industry Group"].to_dict()
-        print(f"✅ Industry lookup loaded — {len(industry_map):,} companies.")
-        return industry_map, group_map
-    except Exception as e:
-        print(f"⚠️  Failed to load industry data: {e}")
-        return {}, {}
-
-
-def enrich_with_industry(row_dict, industry_map, group_map):
-    """Fill Industry and Industry Group in a scraped row using lookup maps."""
-    name_clean = str(row_dict.get("Name", "")).strip().lower()
-    row_dict["Industry"]       = industry_map.get(name_clean, "")
-    row_dict["Industry Group"] = group_map.get(name_clean, "")
-    return row_dict
 
 
 # ═══════════════════════════════════════════════════════════
@@ -228,6 +192,94 @@ def select_consolidated_if_exists():
         return main_window
     except:
         return driver.current_window_handle
+
+
+# ═══════════════════════════════════════════════════════════
+# INDUSTRY SCRAPING  (live — no external Excel needed)
+# ═══════════════════════════════════════════════════════════
+def get_industry_from_page():
+    """
+    Scrape Industry and Industry Group directly from the screener.in
+    company page.
+
+    Screener renders these as anchor tags inside the company sub-header,
+    e.g.:
+        <div class="company-name">
+          ...
+          <a href="/company/?industry=Chemicals">Chemicals</a>  ← Industry Group
+          <a href="/company/?industry_group=Agrochemicals">Agrochemicals</a>  ← Industry
+        </div>
+
+    The function tries several selector strategies so it stays robust
+    even if screener.in tweaks its markup slightly.
+
+    Returns
+    -------
+    (industry: str, industry_group: str)
+        Both are empty strings when nothing is found.
+    """
+    industry       = ""
+    industry_group = ""
+
+    # ── Strategy 1: links whose href contains "industry" query params ──
+    try:
+        all_links = driver.find_elements(By.CSS_SELECTOR, "a[href*='industry']")
+        for link in all_links:
+            href = (link.get_attribute("href") or "").lower()
+            text = link.text.strip()
+            if not text:
+                continue
+            # "industry_group" param → more specific → maps to "Industry"
+            if "industry_group" in href and not industry:
+                industry = text
+            # plain "industry" param (but not industry_group) → broader → "Industry Group"
+            elif "industry" in href and "industry_group" not in href and not industry_group:
+                industry_group = text
+        if industry or industry_group:
+            return industry, industry_group
+    except Exception:
+        pass
+
+    # ── Strategy 2: breadcrumb / sub-header text nodes ─────────────────
+    try:
+        breadcrumb_selectors = [
+            "div.company-name a",
+            "div.sub a",
+            "ul.sub a",
+            ".company-info a",
+            ".breadcrumb a",
+        ]
+        for sel in breadcrumb_selectors:
+            links = driver.find_elements(By.CSS_SELECTOR, sel)
+            candidates = [l.text.strip() for l in links if l.text.strip()]
+            # Heuristic: if 2 adjacent candidates look like sector labels,
+            # the first is likely the broader group and the second is the industry.
+            if len(candidates) >= 2:
+                industry_group = candidates[0]
+                industry       = candidates[1]
+                return industry, industry_group
+            elif len(candidates) == 1:
+                industry_group = candidates[0]
+                return industry, industry_group
+    except Exception:
+        pass
+
+    # ── Strategy 3: any visible text near the company name that matches
+    #    known screener label patterns ────────────────────────────────────
+    try:
+        page_src = driver.page_source
+        import re
+        # Look for JSON-LD or meta tags that might carry sector info
+        match = re.search(r'"industry"\s*:\s*"([^"]+)"', page_src)
+        if match:
+            industry = match.group(1)
+        match2 = re.search(r'"sector"\s*:\s*"([^"]+)"', page_src)
+        if match2:
+            industry_group = match2.group(1)
+    except Exception:
+        pass
+
+    return industry, industry_group
 
 
 # ═══════════════════════════════════════════════════════════
@@ -319,10 +371,11 @@ def scrape_company(company_info):
 
     main_window = driver.current_window_handle
     try:
-        _           = select_consolidated_if_exists()
-        full_name   = get_company_full_name()
-        op_data     = extract_operating_profit()
-        top_metrics = get_top_dashboard_metrics()
+        _                       = select_consolidated_if_exists()
+        full_name               = get_company_full_name()
+        op_data                 = extract_operating_profit()
+        top_metrics             = get_top_dashboard_metrics()
+        industry, industry_group = get_industry_from_page()   # ← live scrape
 
         for w in driver.window_handles:
             if w != main_window:
@@ -332,8 +385,8 @@ def scrape_company(company_info):
         return {
             "Name"           : short_name,
             "Company (Page)" : full_name,
-            "Industry Group" : "",    # filled by enrich_with_industry()
-            "Industry"       : "",    # filled by enrich_with_industry()
+            "Industry Group" : industry_group,
+            "Industry"       : industry,
             **op_data,
             **top_metrics,
         }
@@ -447,9 +500,6 @@ def append_rows_to_raw_excel(rows, sheet_name):
 # MAIN
 # ═══════════════════════════════════════════════════════════
 try:
-    # Load industry lookup ONCE before any scraping
-    INDUSTRY_MAP, GROUP_MAP = load_industry_maps()
-
     login()
     company_data_list = collect_all_company_data()
 
@@ -461,9 +511,9 @@ try:
         # ── STEP 1: Scrape company #1 → detect target quarter ──────────
         print(f"\n🔍 Scraping company #1 to detect latest quarter...")
         first_row = scrape_company(company_data_list[0])
-        first_row = enrich_with_industry(first_row, INDUSTRY_MAP, GROUP_MAP)
         print(f"✅ [1/{total}] {company_data_list[0]['short_name']}  "
-              f"| Industry: {first_row.get('Industry', '—')}")
+              f"| Industry: {first_row.get('Industry', '—')}  "
+              f"| Group: {first_row.get('Industry Group', '—')}")
         time.sleep(PAGE_DELAY + random.uniform(0.3, 0.7))
 
         target_sheet = detect_latest_quarter(first_row)
@@ -498,13 +548,13 @@ try:
         print(f"\n🔄 Scraping {len(remaining)} new companies "
               f"(skipping {total - 1 - len(remaining)} already present)...\n")
 
-        # ── STEP 5: Scrape, enrich & save in batches ────────────────────
+        # ── STEP 5: Scrape & save in batches ────────────────────────────
         for i, info in enumerate(remaining, start=2):
             row = scrape_company(info)
-            row = enrich_with_industry(row, INDUSTRY_MAP, GROUP_MAP)
             pending_rows.append(row)
             print(f"✅ [{i}/{total}] {info['short_name']}  "
-                  f"| Industry: {row.get('Industry', '—')}")
+                  f"| Industry: {row.get('Industry', '—')}  "
+                  f"| Group: {row.get('Industry Group', '—')}")
             time.sleep(PAGE_DELAY + random.uniform(0.3, 0.7))
 
             if len(pending_rows) >= BATCH_SIZE:
@@ -522,7 +572,6 @@ try:
             print("\n⬆️  Uploading updated files to Cloudflare R2...")
             r2_upload(RAW_FILE_PATH,    R2_RAW_KEY)
             r2_upload(MASTER_FILE_PATH, R2_MASTER_KEY)
-            # Screener_Industry_Data.xlsx is read-only — no need to re-upload
 
 except Exception as e:
     print(f"\n❌ Fatal error: {e}")
