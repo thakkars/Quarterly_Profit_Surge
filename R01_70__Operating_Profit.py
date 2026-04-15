@@ -110,8 +110,6 @@ if IS_GITHUB_ACTIONS:
     print("📥 Download step complete.\n")
 
 
-
-
 # ═══════════════════════════════════════════════════════════
 # INDUSTRY LOOKUP  (loaded once at startup)
 # ═══════════════════════════════════════════════════════════
@@ -323,7 +321,7 @@ def scrape_company(company_info):
     short_name = company_info['short_name']
 
     if not safe_get(url):
-        return {"Name": short_name, "Company (Page)": "Load Failed"}
+        return {"Name": short_name, "Company (Page)": "Load Failed", "trade_date": datetime.now().strftime("%Y-%m-%d")}
 
     main_window = driver.current_window_handle
     try:
@@ -344,6 +342,7 @@ def scrape_company(company_info):
             "Industry"       : "",    # filled by enrich_with_industry()
             **op_data,
             **top_metrics,
+            "trade_date"     : datetime.now().strftime("%Y-%m-%d")
         }
     except Exception as e:
         print(f"⚠️  Error scraping {short_name}: {e}")
@@ -351,7 +350,7 @@ def scrape_company(company_info):
             if w != main_window:
                 driver.close()
         driver.switch_to.window(main_window)
-        return {"Name": short_name, "Company (Page)": "Error"}
+        return {"Name": short_name, "Company (Page)": "Error", "trade_date": datetime.now().strftime("%Y-%m-%d")}
 
 
 # ═══════════════════════════════════════════════════════════
@@ -381,7 +380,7 @@ def detect_latest_quarter(row_dict):
     """
     non_quarter_keys = {
         "Name", "Company (Page)", "Industry Group", "Industry",
-        "Promoter Holding", "Pledged %", "WC Days"
+        "Promoter Holding", "Pledged %", "WC Days", "trade_date"
     }
     quarter_candidates = []
     for k in row_dict:
