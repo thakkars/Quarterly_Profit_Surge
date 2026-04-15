@@ -38,6 +38,7 @@ else:
 
 MASTER_FILE_PATH   = os.path.join(FOLDER_PATH, "Master File.xlsx")
 RAW_FILE_PATH      = os.path.join(FOLDER_PATH, "Raw Data.xlsx")
+INDUSTRY_FILE_PATH = os.path.join(FOLDER_PATH, "Screener_Industry_Data.xlsx")
 
 os.makedirs(FOLDER_PATH, exist_ok=True)
 
@@ -52,6 +53,7 @@ R2_ENDPOINT    = os.environ.get("R2_ENDPOINT_URL",       "")
 
 R2_MASTER_KEY   = "Master File.xlsx"
 R2_RAW_KEY      = "Raw Data.xlsx"
+R2_INDUSTRY_KEY = "Screener_Industry_Data.xlsx"
 
 print(f"🌍 Environment : {'GitHub Actions (cloud)' if IS_GITHUB_ACTIONS else 'Local Windows'}")
 print(f"📁 Working dir : {FOLDER_PATH}")
@@ -104,7 +106,49 @@ if IS_GITHUB_ACTIONS:
     print("\n📥 Downloading existing files from Cloudflare R2...")
     r2_download(R2_MASTER_KEY,   MASTER_FILE_PATH)
     r2_download(R2_RAW_KEY,      RAW_FILE_PATH)
+    r2_download(R2_INDUSTRY_KEY, INDUSTRY_FILE_PATH)
     print("📥 Download step complete.\n")
+
+
+
+
+# ═══════════════════════════════════════════════════════════
+# INDUSTRY LOOKUP  (loaded once at startup)
+# ═══════════════════════════════════════════════════════════
+def load_industry_maps():
+    """
+    Load Industry and Industry Group lookup dicts from
+    Screener_Industry_Data.xlsx → sheet 'Screener Industry'.
+    Keys are lowercased FULL company names for case-insensitive matching.
+    Returns (industry_map, group_map) — both empty dicts on failure.
+    """
+    if not os.path.exists(INDUSTRY_FILE_PATH):
+        print("⚠️  Screener_Industry_Data.xlsx not found — industry columns will be blank.")
+        return {}, {}
+    try:
+        df = pd.read_excel(INDUSTRY_FILE_PATH, sheet_name="Screener Industry")
+        
+        # Changed "Name" to "Full Name" to match Column A of your Excel file
+        df["Name_Clean"] = df["Full Name"].astype(str).str.strip().str.lower()
+        
+        industry_map = df.set_index("Name_Clean")["Industry"].to_dict()
+        group_map    = df.set_index("Name_Clean")["Industry Group"].to_dict()
+        print(f"✅ Industry lookup loaded — {len(industry_map):,} companies.")
+        return industry_map, group_map
+    except Exception as e:
+        print(f"⚠️  Failed to load industry data: {e}")
+        return {}, {}
+
+
+def enrich_with_industry(row_dict, industry_map, group_map):
+    """Fill Industry and Industry Group in a scraped row using lookup maps."""
+    
+    # Changed from "Name" to "Company (Page)" to VLOOKUP using the full name
+    name_clean = str(row_dict.get("Company (Page)", "")).strip().lower()
+    
+    row_dict["Industry"]       = industry_map.get(name_clean, "Not Found")
+    row_dict["Industry Group"] = group_map.get(name_clean, "Not Found")
+    return row_dict
 
 
 # ═══════════════════════════════════════════════════════════
@@ -197,22 +241,6 @@ def select_consolidated_if_exists():
 # ═══════════════════════════════════════════════════════════
 # METRIC EXTRACTION
 # ═══════════════════════════════════════════════════════════
-def get_sector_and_industry():
-    """Scrapes Sector (Industry Group) and Industry directly from the Screener company page."""
-    info = {"Industry Group": "", "Industry": ""}
-    try:
-        # Screener classifies 'Industry Group' as 'Sector' internally
-        sector_el = driver.find_elements(By.XPATH, "//a[contains(@href, '/explore/sector/')]")
-        if sector_el:
-            info["Industry Group"] = sector_el[0].text.strip()
-
-        industry_el = driver.find_elements(By.XPATH, "//a[contains(@href, '/explore/industry/')]")
-        if industry_el:
-            info["Industry"] = industry_el[0].text.strip()
-    except Exception as e:
-        pass
-    return info
-
 def get_top_dashboard_metrics():
     metrics = {"Promoter Holding": 0.0, "Pledged %": 0.0, "WC Days": 0.0}
     try:
@@ -299,11 +327,10 @@ def scrape_company(company_info):
 
     main_window = driver.current_window_handle
     try:
-        _            = select_consolidated_if_exists()
-        full_name    = get_company_full_name()
-        sector_ind   = get_sector_and_industry()
-        op_data      = extract_operating_profit()
-        top_metrics  = get_top_dashboard_metrics()
+        _           = select_consolidated_if_exists()
+        full_name   = get_company_full_name()
+        op_data     = extract_operating_profit()
+        top_metrics = get_top_dashboard_metrics()
 
         for w in driver.window_handles:
             if w != main_window:
@@ -313,8 +340,8 @@ def scrape_company(company_info):
         return {
             "Name"           : short_name,
             "Company (Page)" : full_name,
-            "Industry Group" : sector_ind.get("Industry Group", ""),
-            "Industry"       : sector_ind.get("Industry", ""),
+            "Industry Group" : "",    # filled by enrich_with_industry()
+            "Industry"       : "",    # filled by enrich_with_industry()
             **op_data,
             **top_metrics,
         }
@@ -428,6 +455,9 @@ def append_rows_to_raw_excel(rows, sheet_name):
 # MAIN
 # ═══════════════════════════════════════════════════════════
 try:
+    # Load industry lookup ONCE before any scraping
+    INDUSTRY_MAP, GROUP_MAP = load_industry_maps()
+
     login()
     company_data_list = collect_all_company_data()
 
@@ -439,6 +469,7 @@ try:
         # ── STEP 1: Scrape company #1 → detect target quarter ──────────
         print(f"\n🔍 Scraping company #1 to detect latest quarter...")
         first_row = scrape_company(company_data_list[0])
+        first_row = enrich_with_industry(first_row, INDUSTRY_MAP, GROUP_MAP)
         print(f"✅ [1/{total}] {company_data_list[0]['short_name']}  "
               f"| Industry: {first_row.get('Industry', '—')}")
         time.sleep(PAGE_DELAY + random.uniform(0.3, 0.7))
@@ -478,6 +509,7 @@ try:
         # ── STEP 5: Scrape, enrich & save in batches ────────────────────
         for i, info in enumerate(remaining, start=2):
             row = scrape_company(info)
+            row = enrich_with_industry(row, INDUSTRY_MAP, GROUP_MAP)
             pending_rows.append(row)
             print(f"✅ [{i}/{total}] {info['short_name']}  "
                   f"| Industry: {row.get('Industry', '—')}")
@@ -498,6 +530,7 @@ try:
             print("\n⬆️  Uploading updated files to Cloudflare R2...")
             r2_upload(RAW_FILE_PATH,    R2_RAW_KEY)
             r2_upload(MASTER_FILE_PATH, R2_MASTER_KEY)
+            # Screener_Industry_Data.xlsx is read-only — no need to re-upload
 
 except Exception as e:
     print(f"\n❌ Fatal error: {e}")
