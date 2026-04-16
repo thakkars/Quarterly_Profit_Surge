@@ -439,7 +439,6 @@ def transform_and_order_data(df):
                 matrix_cols.append(jump_col)
                 
                 condition = (temp_df[col_current] >= 1.7 * temp_df[col_prev]) & (temp_df[col_prev] > 0)
-                # Changed from "No" to ""
                 df[jump_col] = np.where(condition, "Yes", "")
         except Exception:
             pass
@@ -512,7 +511,7 @@ def generate_qualified_stocks(sheet_name):
         # READ ONLY: Load the raw data
         df = pd.read_excel(RAW_FILE_PATH, sheet_name=sheet_name)
         
-        # Ensure the columns exist before filtering
+        # 1. Ensure the metrics exist before filtering
         metrics = ["Promoter Holding", "Pledged %", "WC Days"]
         for col in metrics:
             if col not in df.columns:
@@ -525,12 +524,38 @@ def generate_qualified_stocks(sheet_name):
             else:
                 df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
         
-        # Apply strict filtering criteria
+        # 2. Apply strict baseline filtering criteria
         qualified_df = df[
             (df["Promoter Holding"] >= 50.0) &
             (df["Pledged %"] <= 10.0) &
             (df["WC Days"] <= 150.0)
         ].copy()
+
+        # 3. Dynamic 70% Growth Matrix Filter (Latest Quarter Only)
+        # Find the latest quarter from the available columns
+        quarter_candidates = []
+        for col in qualified_df.columns:
+            if col not in ["date", "Name", "Company (Page)", "Industry", "Industry Group", "Promoter Holding", "Pledged %", "WC Days"] and "(>70%)" not in col:
+                try:
+                    quarter_candidates.append((pd.to_datetime(col, format="%b %Y"), col))
+                except: pass
+        
+        if quarter_candidates:
+            # Sort to find the latest quarter date
+            quarter_candidates.sort(key=lambda x: x[0], reverse=True)
+            latest_dt = quarter_candidates[0][0]
+            latest_q_col = quarter_candidates[0][1]
+            
+            # Calculate exactly 1 year ago to construct the target matrix column name
+            prev_year_col = latest_dt.replace(year=latest_dt.year - 1).strftime("%b %Y")
+            target_matrix_col = f"{latest_q_col} vs {prev_year_col} (>70%)"
+            
+            # Check if this matrix column was generated and filter where it is "Yes"
+            if target_matrix_col in qualified_df.columns:
+                qualified_df = qualified_df[qualified_df[target_matrix_col] == "Yes"]
+                print(f"🔍  Applied 70% Growth check for latest quarter: '{target_matrix_col}'")
+            else:
+                print(f"⚠️  Growth matrix column '{target_matrix_col}' not found. Cannot apply 70% jump filter.")
 
         if qualified_df.empty:
             print("ℹ️  No stocks met the Qualified Criteria in this batch.")
@@ -538,7 +563,7 @@ def generate_qualified_stocks(sheet_name):
             
         print(f"🎯  Found {len(qualified_df)} Qualified Stocks!")
 
-        # Save to Qualified_Stocks.xlsx
+        # 4. Save to Qualified_Stocks.xlsx
         if os.path.exists(QUALIFIED_FILE_PATH):
             with pd.ExcelWriter(QUALIFIED_FILE_PATH, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
                 qualified_df.to_excel(writer, sheet_name=sheet_name, index=False)
@@ -546,7 +571,7 @@ def generate_qualified_stocks(sheet_name):
             with pd.ExcelWriter(QUALIFIED_FILE_PATH, engine='openpyxl') as writer:
                 qualified_df.to_excel(writer, sheet_name=sheet_name, index=False)
 
-        # Apply standard formatting
+        # 5. Apply standard formatting
         wb = load_workbook(QUALIFIED_FILE_PATH)
         ws = wb[sheet_name]
         format_worksheet(ws)
