@@ -36,9 +36,10 @@ if IS_GITHUB_ACTIONS:
 else:
     FOLDER_PATH = r"D:\Investment Research\Python Projects\Operating Profit more than 70% jump"
 
-MASTER_FILE_PATH   = os.path.join(FOLDER_PATH, "Master File.xlsx")
-RAW_FILE_PATH      = os.path.join(FOLDER_PATH, "Raw Data.xlsx")
-INDUSTRY_FILE_PATH = os.path.join(FOLDER_PATH, "Screener_Industry_Data.xlsx")
+MASTER_FILE_PATH    = os.path.join(FOLDER_PATH, "Master File.xlsx")
+RAW_FILE_PATH       = os.path.join(FOLDER_PATH, "Raw Data.xlsx")
+QUALIFIED_FILE_PATH = os.path.join(FOLDER_PATH, "Qualified_Stocks.xlsx")
+INDUSTRY_FILE_PATH  = os.path.join(FOLDER_PATH, "Screener_Industry_Data.xlsx")
 
 os.makedirs(FOLDER_PATH, exist_ok=True)
 
@@ -51,9 +52,10 @@ R2_ACCESS_KEY  = os.environ.get("R2_ACCESS_KEY_ID",      "")
 R2_SECRET_KEY  = os.environ.get("R2_SECRET_ACCESS_KEY",  "")
 R2_ENDPOINT    = os.environ.get("R2_ENDPOINT_URL",       "")
 
-R2_MASTER_KEY   = "Master File.xlsx"
-R2_RAW_KEY      = "Raw Data.xlsx"
-R2_INDUSTRY_KEY = "Screener_Industry_Data.xlsx"
+R2_MASTER_KEY    = "Master File.xlsx"
+R2_RAW_KEY       = "Raw Data.xlsx"
+R2_QUALIFIED_KEY = "Qualified_Stocks.xlsx"
+R2_INDUSTRY_KEY  = "Screener_Industry_Data.xlsx"
 
 print(f"🌍 Environment : {'GitHub Actions (cloud)' if IS_GITHUB_ACTIONS else 'Local Windows'}")
 print(f"📁 Working dir : {FOLDER_PATH}")
@@ -104,9 +106,10 @@ def r2_upload(local_path, r2_key):
 # ═══════════════════════════════════════════════════════════
 if IS_GITHUB_ACTIONS:
     print("\n📥 Downloading existing files from Cloudflare R2...")
-    r2_download(R2_MASTER_KEY,   MASTER_FILE_PATH)
-    r2_download(R2_RAW_KEY,      RAW_FILE_PATH)
-    r2_download(R2_INDUSTRY_KEY, INDUSTRY_FILE_PATH)
+    r2_download(R2_MASTER_KEY,    MASTER_FILE_PATH)
+    r2_download(R2_RAW_KEY,       RAW_FILE_PATH)
+    r2_download(R2_QUALIFIED_KEY, QUALIFIED_FILE_PATH)
+    r2_download(R2_INDUSTRY_KEY,  INDUSTRY_FILE_PATH)
     print("📥 Download step complete.\n")
 
 
@@ -494,6 +497,78 @@ def append_rows_to_raw_excel(rows, sheet_name):
 
 
 # ═══════════════════════════════════════════════════════════
+# QUALIFIED STOCKS FILTERING
+# ═══════════════════════════════════════════════════════════
+def generate_qualified_stocks(sheet_name):
+    """Reads Raw Data, applies strict criteria, and creates/updates Qualified_Stocks.xlsx"""
+    if not os.path.exists(RAW_FILE_PATH):
+        print("⚠️  Raw Data file missing. Cannot generate Qualified Stocks.")
+        return
+
+    print(f"\n⚙️  Applying filters to generate Qualified_Stocks.xlsx for '{sheet_name}'...")
+    
+    try:
+        # READ ONLY: Load the raw data
+        df = pd.read_excel(RAW_FILE_PATH, sheet_name=sheet_name)
+        
+        # Ensure the columns exist before filtering
+        metrics = ["Promoter Holding", "Pledged %", "WC Days"]
+        for col in metrics:
+            if col not in df.columns:
+                print(f"⚠️  Missing column '{col}' in raw data. Cannot filter.")
+                return
+            
+            # Convert to numeric. For WC Days, fill missing with 999 so it safely fails the <= 150 filter.
+            if col == "WC Days":
+                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(999) 
+            else:
+                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+        
+        # Apply strict filtering criteria
+        qualified_df = df[
+            (df["Promoter Holding"] >= 50.0) &
+            (df["Pledged %"] <= 10.0) &
+            (df["WC Days"] <= 150.0)
+        ].copy()
+
+        if qualified_df.empty:
+            print("ℹ️  No stocks met the Qualified Criteria in this batch.")
+            return
+            
+        print(f"🎯  Found {len(qualified_df)} Qualified Stocks!")
+
+        # Save to Qualified_Stocks.xlsx
+        if os.path.exists(QUALIFIED_FILE_PATH):
+            with pd.ExcelWriter(QUALIFIED_FILE_PATH, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+                qualified_df.to_excel(writer, sheet_name=sheet_name, index=False)
+        else:
+            with pd.ExcelWriter(QUALIFIED_FILE_PATH, engine='openpyxl') as writer:
+                qualified_df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+        # Apply standard formatting
+        wb = load_workbook(QUALIFIED_FILE_PATH)
+        ws = wb[sheet_name]
+        format_worksheet(ws)
+        
+        # Auto-adjust column widths
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except: pass
+            ws.column_dimensions[column_letter].width = max_length + 2
+
+        wb.save(QUALIFIED_FILE_PATH)
+        print(f"✅  Saved and formatted Qualified_Stocks.xlsx")
+
+    except Exception as e:
+        print(f"⚠️  Error generating Qualified Stocks: {e}")
+
+
+# ═══════════════════════════════════════════════════════════
 # MAIN
 # ═══════════════════════════════════════════════════════════
 try:
@@ -560,10 +635,14 @@ try:
 
         print(f"\n✅ Raw Data.xlsx → sheet '{target_sheet}' is up to date.")
 
+        # ── NEW: GENERATE QUALIFIED STOCKS ───────────────────────────────
+        generate_qualified_stocks(target_sheet)
+
         if IS_GITHUB_ACTIONS:
             print("\n⬆️  Uploading updated files to Cloudflare R2...")
-            r2_upload(RAW_FILE_PATH,    R2_RAW_KEY)
-            r2_upload(MASTER_FILE_PATH, R2_MASTER_KEY)
+            r2_upload(RAW_FILE_PATH,       R2_RAW_KEY)
+            r2_upload(QUALIFIED_FILE_PATH, R2_QUALIFIED_KEY)
+            r2_upload(MASTER_FILE_PATH,    R2_MASTER_KEY)
 
 except Exception as e:
     print(f"\n❌ Fatal error: {e}")
