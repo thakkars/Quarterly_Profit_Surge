@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qualified Stocks Dashboard</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f4f4f9; padding: 15px; margin: 0; }
+        h2 { text-align: center; color: #333; }
+        .table-container { overflow-x: auto; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #2563eb; color: white; font-weight: 600; }
+        tr:hover { background-color: #f1f5f9; }
+        .badge-yes { background: #10b981; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85em; }
+        #loader { text-align: center; margin-top: 50px; font-weight: bold; color: #555; }
+    </style>
+</head>
+<body>
+
+    <h2>📈 Qualified Stocks Dashboard</h2>
+    <div id="loader">Fetching latest data from R2 Storage...</div>
+    
+    <div class="table-container">
+        <table id="stocksTable" style="display: none;">
+            <thead>
+                <tr id="tableHeaders"></tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        // Your exact public R2 URL pointing to the JSON file
+        const R2_JSON_URL = "https://pub-9afc232687c44eebbb8cae359c7ac460.r2.dev/Qualified_Stocks.json";
+
+        async function loadStocks() {
+            try {
+                // Fetch the data from your Cloudflare R2 bucket
+                const response = await fetch(R2_JSON_URL + '?t=' + new Date().getTime());
+                const data = await response.json();
+
+                if (data.length === 0) {
+                    document.getElementById("loader").innerText = "No qualified stocks found.";
+                    return;
+                }
+
+                // Create the Table Headers
+                const columns = Object.keys(data[0]);
+                const thead = document.getElementById("tableHeaders");
+                columns.forEach(col => {
+                    const th = document.createElement("th");
+                    th.innerText = col;
+                    thead.appendChild(th);
+                });
+
+                // Create the Table Rows
+                const tbody = document.getElementById("tableBody");
+                data.forEach(row => {
+                    const tr = document.createElement("tr");
+                    columns.forEach(col => {
+                        const td = document.createElement("td");
+                        let cellValue = row[col];
+                        
+                        // Make the "Yes" pop out with a green badge
+                        if (cellValue === "Yes") {
+                            td.innerHTML = `<span class="badge-yes">Yes</span>`;
+                        } else {
+                            td.innerText = cellValue !== null ? cellValue : "";
+                        }
+                        
+                        tr.appendChild(td);
+                    });
+                    tbody.appendChild(tr);
+                });
+
+                // Hide the loader and show the table
+                document.getElementById("loader").style.display = "none";
+                document.getElementById("stocksTable").style.display = "table";
+
+            } catch (error) {
+                console.error("Error loading JSON:", error);
+                document.getElementById("loader").innerText = "Failed to load data. Is your R2 URL public and correct?";
+            }
+        }
+
+        loadStocks();
+    </script>
+</body>
+</html>
