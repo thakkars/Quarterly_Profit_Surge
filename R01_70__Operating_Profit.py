@@ -311,7 +311,7 @@ def scrape_company(company_info):
     short_name = company_info['short_name']
 
     if not safe_get(url):
-        return {"Name": short_name, "Company (Page)": "Load Failed", "trade_date": datetime.now().strftime("%Y-%m-%d")}
+        return {"Name": short_name, "Company (Page)": "Load Failed", "date": datetime.now().strftime("%Y-%m-%d")}
 
     main_window = driver.current_window_handle
     try:
@@ -332,7 +332,7 @@ def scrape_company(company_info):
             "Industry"       : "",    
             **op_data,
             **top_metrics,
-            "trade_date"     : datetime.now().strftime("%Y-%m-%d")
+            "date"           : datetime.now().strftime("%Y-%m-%d")
         }
     except Exception as e:
         print(f"⚠️  Error scraping {short_name}: {e}")
@@ -340,7 +340,7 @@ def scrape_company(company_info):
             if w != main_window:
                 driver.close()
         driver.switch_to.window(main_window)
-        return {"Name": short_name, "Company (Page)": "Error", "trade_date": datetime.now().strftime("%Y-%m-%d")}
+        return {"Name": short_name, "Company (Page)": "Error", "date": datetime.now().strftime("%Y-%m-%d")}
 
 
 # ═══════════════════════════════════════════════════════════
@@ -366,7 +366,7 @@ def format_worksheet(ws, header_row=1):
 def detect_latest_quarter(row_dict):
     non_quarter_keys = {
         "Name", "Company (Page)", "Industry Group", "Industry",
-        "Promoter Holding", "Pledged %", "WC Days", "trade_date"
+        "Promoter Holding", "Pledged %", "WC Days", "date"
     }
     quarter_candidates = []
     for k in row_dict:
@@ -404,7 +404,7 @@ def transform_and_order_data(df):
     Reorders columns and creates dynamic YoY 70% growth matrix columns.
     Expected order: Base Cols -> Sorted Quarters -> Metrics -> Matrix
     """
-    base_cols = ["trade_date", "Name", "Company (Page)", "Industry", "Industry Group"]
+    base_cols = ["date", "Name", "Company (Page)", "Industry", "Industry Group"]
     metric_cols = ["Pledged %", "Promoter Holding", "WC Days"]
     
     for col in base_cols + metric_cols:
@@ -439,7 +439,8 @@ def transform_and_order_data(df):
                 matrix_cols.append(jump_col)
                 
                 condition = (temp_df[col_current] >= 1.7 * temp_df[col_prev]) & (temp_df[col_prev] > 0)
-                df[jump_col] = np.where(condition, "Yes", "No")
+                # Changed from "No" to ""
+                df[jump_col] = np.where(condition, "Yes", "")
         except Exception:
             pass
 
