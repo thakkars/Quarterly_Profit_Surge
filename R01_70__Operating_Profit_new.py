@@ -12,36 +12,135 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, InvalidSessionIdException
 from datetime import datetime
 import os
-from openpyxl import load_workbook
+from openpyxl import load_workbook, Workbook
 from openpyxl.styles import Alignment, Border, Side
 
-# ═══════════════════════════════════════════════════════════
-#  CONFIG  — credentials now come from environment variables
-# ═══════════════════════════════════════════════════════════
-USERNAME  = os.environ.get("SCREENER_USERNAME", "")
-PASSWORD  = os.environ.get("SCREENER_PASSWORD", "")
+# webdriver_manager only needed locally — GitHub Actions uses setup-chrome action
+if os.environ.get("GITHUB_ACTIONS", "false").lower() != "true":
+    from webdriver_manager.chrome import ChromeDriverManager
 
-SCREEN_URL = "https://www.screener.in/screens/742984/top-growers/"
-
-# ── HEADLESS is always True when running on GitHub Actions cloud
+# ═══════════════════════════════════════════════════════════
+# ENVIRONMENT DETECTION
+# ═══════════════════════════════════════════════════════════
 IS_GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS", "false").lower() == "true"
-HEADLESS   = IS_GITHUB_ACTIONS   # True on cloud, False on your laptop
-PAGE_DELAY = 1.0
 
-# ── Paths:
+# ═══════════════════════════════════════════════════════════
+# CONFIG
+# ═══════════════════════════════════════════════════════════
+USERNAME   = os.environ.get("SCREENER_USERNAME", "deepak.khatwani2712@gmail.com")
+PASSWORD   = os.environ.get("SCREENER_PASSWORD", "gaurav23")
+SCREEN_URL = "https://www.screener.in/screens/3391124/test/"
+
 if IS_GITHUB_ACTIONS:
     FOLDER_PATH = "/tmp/screener_data"
 else:
     FOLDER_PATH = r"D:\Investment Research\Python Projects\Operating Profit more than 70% jump"
 
-MASTER_FILE_PATH = os.path.join(FOLDER_PATH, "Master File.xlsx")
-RAW_FILE_PATH    = os.path.join(FOLDER_PATH, "Raw Data.xlsx")
+MASTER_FILE_PATH    = os.path.join(FOLDER_PATH, "Master File.xlsx")
+RAW_FILE_PATH       = os.path.join(FOLDER_PATH, "Raw Data.xlsx")
+QUALIFIED_FILE_PATH = os.path.join(FOLDER_PATH, "Qualified_Stocks.xlsx")
+INDUSTRY_FILE_PATH  = os.path.join(FOLDER_PATH, "Screener_Industry_Data.xlsx")
 
 os.makedirs(FOLDER_PATH, exist_ok=True)
 
+HEADLESS   = IS_GITHUB_ACTIONS
+PAGE_DELAY = 1.0
+
+# ─── R2 CONFIG ─────────────────────────────────────────────
+R2_BUCKET      = os.environ.get("R2_BUCKET_NAME",        "quarterly-profit-surge")
+R2_ACCESS_KEY  = os.environ.get("R2_ACCESS_KEY_ID",      "")
+R2_SECRET_KEY  = os.environ.get("R2_SECRET_ACCESS_KEY",  "")
+R2_ENDPOINT    = os.environ.get("R2_ENDPOINT_URL",       "")
+
+R2_MASTER_KEY    = "Master File.xlsx"
+R2_RAW_KEY       = "Raw Data.xlsx"
+R2_QUALIFIED_KEY = "Qualified_Stocks.xlsx"
+R2_INDUSTRY_KEY  = "Screener_Industry_Data.xlsx"
+
+print(f"🌍 Environment : {'GitHub Actions (cloud)' if IS_GITHUB_ACTIONS else 'Local Windows'}")
+print(f"📁 Working dir : {FOLDER_PATH}")
+
 
 # ═══════════════════════════════════════════════════════════
-#  DRIVER SETUP
+# R2 HELPERS
+# ═══════════════════════════════════════════════════════════
+def get_r2_client():
+    import boto3
+    return boto3.client(
+        "s3",
+        endpoint_url          = R2_ENDPOINT,
+        aws_access_key_id     = R2_ACCESS_KEY,
+        aws_secret_access_key = R2_SECRET_KEY,
+        region_name           = "auto",
+    )
+
+def r2_download(r2_key, local_path):
+    try:
+        client = get_r2_client()
+        client.download_file(R2_BUCKET, r2_key, local_path)
+        print(f"⬇️  Downloaded from R2: {r2_key} → {local_path}")
+        return True
+    except Exception as e:
+        if "NoSuchKey" in str(e) or "404" in str(e):
+            print(f"ℹ️  {r2_key} not found in R2 (first run — will create fresh).")
+        else:
+            print(f"⚠️  R2 download failed for {r2_key}: {e}")
+        return False
+
+def r2_upload(local_path, r2_key):
+    try:
+        if not os.path.exists(local_path):
+            print(f"⚠️  Skipping R2 upload — file not found: {local_path}")
+            return False
+        client = get_r2_client()
+        client.upload_file(local_path, R2_BUCKET, r2_key)
+        print(f"⬆️  Uploaded to R2 : {local_path} → {r2_key}")
+        return True
+    except Exception as e:
+        print(f"⚠️  R2 upload failed for {r2_key}: {e}")
+        return False
+
+
+# ═══════════════════════════════════════════════════════════
+# STEP 0 — DOWNLOAD FILES FROM R2 (GitHub Actions only)
+# ═══════════════════════════════════════════════════════════
+if IS_GITHUB_ACTIONS:
+    print("\n📥 Downloading existing files from Cloudflare R2...")
+    r2_download(R2_MASTER_KEY,    MASTER_FILE_PATH)
+    r2_download(R2_RAW_KEY,       RAW_FILE_PATH)
+    r2_download(R2_QUALIFIED_KEY, QUALIFIED_FILE_PATH)
+    r2_download(R2_INDUSTRY_KEY,  INDUSTRY_FILE_PATH)
+    print("📥 Download step complete.\n")
+
+
+# ═══════════════════════════════════════════════════════════
+# INDUSTRY LOOKUP  (loaded once at startup)
+# ═══════════════════════════════════════════════════════════
+def load_industry_maps():
+    if not os.path.exists(INDUSTRY_FILE_PATH):
+        print("⚠️  Screener_Industry_Data.xlsx not found — industry columns will be blank.")
+        return {}, {}
+    try:
+        df = pd.read_excel(INDUSTRY_FILE_PATH, sheet_name="Screener Industry")
+        df["Name_Clean"] = df["Full Name"].astype(str).str.strip().str.lower()
+        industry_map = df.set_index("Name_Clean")["Industry"].to_dict()
+        group_map    = df.set_index("Name_Clean")["Industry Group"].to_dict()
+        print(f"✅ Industry lookup loaded — {len(industry_map):,} companies.")
+        return industry_map, group_map
+    except Exception as e:
+        print(f"⚠️  Failed to load industry data: {e}")
+        return {}, {}
+
+
+def enrich_with_industry(row_dict, industry_map, group_map):
+    name_clean = str(row_dict.get("Company (Page)", "")).strip().lower()
+    row_dict["Industry"]       = industry_map.get(name_clean, "Not Found")
+    row_dict["Industry Group"] = group_map.get(name_clean, "Not Found")
+    return row_dict
+
+
+# ═══════════════════════════════════════════════════════════
+# DRIVER SETUP
 # ═══════════════════════════════════════════════════════════
 def init_driver():
     opts = Options()
@@ -49,19 +148,15 @@ def init_driver():
         opts.add_argument("--headless=new")
     opts.add_argument("--disable-gpu")
     opts.add_argument("--window-size=1600,900")
-    opts.add_argument("--no-sandbox")                    
-    opts.add_argument("--disable-dev-shm-usage")         
+    opts.add_argument("--no-sandbox")
+    opts.add_argument("--disable-dev-shm-usage")
     opts.add_experimental_option("excludeSwitches", ["enable-automation"])
-    opts.add_experimental_option('useAutomationExtension', False)
-
+    opts.add_experimental_option("useAutomationExtension", False)
     if IS_GITHUB_ACTIONS:
-        opts.binary_location = "/usr/bin/google-chrome"
         return webdriver.Chrome(options=opts)
     else:
-        from webdriver_manager.chrome import ChromeDriverManager
         return webdriver.Chrome(
-            service=Service(ChromeDriverManager().install()),
-            options=opts
+            service=Service(ChromeDriverManager().install()), options=opts
         )
 
 driver = init_driver()
@@ -69,7 +164,7 @@ wait   = WebDriverWait(driver, 15)
 
 
 # ═══════════════════════════════════════════════════════════
-#  HELPER FUNCTIONS
+# HELPER FUNCTIONS
 # ═══════════════════════════════════════════════════════════
 def login():
     driver.get("https://www.screener.in/login/")
@@ -94,7 +189,7 @@ def safe_get(url, retries=1):
         driver.get(url)
         return True
     except InvalidSessionIdException:
-        print("⚠️ Session died. Restarting Chrome...")
+        print("⚠️  Session died. Restarting Chrome...")
         try:
             driver.quit()
         except:
@@ -106,7 +201,7 @@ def safe_get(url, retries=1):
             return safe_get(url, retries - 1)
         return False
     except Exception as e:
-        print(f"⚠️ Unexpected error in safe_get: {e}")
+        print(f"⚠️  Unexpected error in safe_get: {e}")
         return False
 
 def get_company_full_name():
@@ -122,8 +217,7 @@ def select_consolidated_if_exists():
         tab = driver.find_element(By.LINK_TEXT, "Consolidated")
         tab.click()
         time.sleep(1.5)
-        all_windows = driver.window_handles
-        for w in all_windows:
+        for w in driver.window_handles:
             if w != main_window:
                 driver.switch_to.window(w)
                 return main_window
@@ -133,7 +227,7 @@ def select_consolidated_if_exists():
 
 
 # ═══════════════════════════════════════════════════════════
-#  METRIC EXTRACTION
+# METRIC EXTRACTION
 # ═══════════════════════════════════════════════════════════
 def get_top_dashboard_metrics():
     metrics = {"Promoter Holding": 0.0, "Pledged %": 0.0, "WC Days": 0.0}
@@ -153,9 +247,9 @@ def get_top_dashboard_metrics():
                     metrics["WC Days"] = value
             except:
                 continue
-        return metrics
     except:
-        return metrics
+        pass
+    return metrics
 
 def extract_operating_profit():
     try:
@@ -209,7 +303,7 @@ def collect_all_company_data():
         except:
             break
 
-    print(f"✅ Collected {len(company_list)} companies.")
+    print(f"✅ Collected {len(company_list)} companies from screen.")
     return company_list
 
 def scrape_company(company_info):
@@ -217,7 +311,7 @@ def scrape_company(company_info):
     short_name = company_info['short_name']
 
     if not safe_get(url):
-        return {"Name": short_name, "Company (Page)": "Load Failed"}
+        return {"Name": short_name, "Company (Page)": "Load Failed", "date": datetime.now().strftime("%Y-%m-%d")}
 
     main_window = driver.current_window_handle
     try:
@@ -226,8 +320,7 @@ def scrape_company(company_info):
         op_data     = extract_operating_profit()
         top_metrics = get_top_dashboard_metrics()
 
-        all_windows = driver.window_handles
-        for w in all_windows:
+        for w in driver.window_handles:
             if w != main_window:
                 driver.close()
         driver.switch_to.window(main_window)
@@ -235,39 +328,27 @@ def scrape_company(company_info):
         return {
             "Name"           : short_name,
             "Company (Page)" : full_name,
-            "Industry Group" : "",
-            "Industry"       : "",
+            "Industry Group" : "",    
+            "Industry"       : "",    
             **op_data,
-            **top_metrics
+            **top_metrics,
+            "date"           : datetime.now().strftime("%Y-%m-%d")
         }
     except Exception as e:
-        print(f"⚠️ Error scraping {short_name}: {e}")
-        all_windows = driver.window_handles
-        for w in all_windows:
+        print(f"⚠️  Error scraping {short_name}: {e}")
+        for w in driver.window_handles:
             if w != main_window:
                 driver.close()
         driver.switch_to.window(main_window)
-        return {"Name": short_name, "Company (Page)": "Error"}
+        return {"Name": short_name, "Company (Page)": "Error", "date": datetime.now().strftime("%Y-%m-%d")}
 
 
 # ═══════════════════════════════════════════════════════════
-#  EXCEL HELPERS
+# FORMATTING HELPERS
 # ═══════════════════════════════════════════════════════════
-def open_or_create_excel(path):
-    if os.path.exists(path):
-        return load_workbook(path)
-    else:
-        from openpyxl import Workbook
-        wb = Workbook()
-        wb.active.title = "_init"
-        wb.save(path)
-        return wb
-
-THIN_BORDER = Border(
-    left   = Side(style='thin'),
-    right  = Side(style='thin'),
-    top    = Side(style='thin'),
-    bottom = Side(style='thin')
+THIN_BORDER  = Border(
+    left=Side(style='thin'), right=Side(style='thin'),
+    top=Side(style='thin'),  bottom=Side(style='thin'),
 )
 CENTER_ALIGN = Alignment(horizontal='center', vertical='center')
 
@@ -278,438 +359,335 @@ def format_worksheet(ws, header_row=1):
             if cell.row == header_row or cell.col_idx == 1:
                 cell.alignment = CENTER_ALIGN
 
-def clean_and_convert(df_in):
-    def to_num(col):
-        return pd.to_numeric(col, errors='coerce').fillna(0)
-    for col in df_in.columns:
-        col_str    = str(col).lower()
-        is_quarter = (
-            any(m in col_str for m in ['sep', 'jun', 'mar', 'dec'])
-            and any(c.isdigit() for c in col_str)
-        )
-        is_metric  = col_str in ['promoter holding', 'pledged %', 'wc days', 'sr no.']
-        if is_quarter or is_metric:
-            df_in[col] = to_num(df_in[col])
-    return df_in
-
 
 # ═══════════════════════════════════════════════════════════
-#  CLOUDFLARE R2 UPLOAD
+# DATA TRANSFORMATION & SAVING HELPERS
 # ═══════════════════════════════════════════════════════════
-def upload_to_cloudflare_r2():
-    access_key    = os.environ.get("R2_ACCESS_KEY_ID", "")
-    secret_key    = os.environ.get("R2_SECRET_ACCESS_KEY", "")
-    endpoint_url  = os.environ.get("R2_ENDPOINT_URL", "")
-    bucket_name   = os.environ.get("R2_BUCKET_NAME", "quarterly-profit-surge")
-
-    if not all([access_key, secret_key, endpoint_url]):
-        print("⚠️ R2 credentials not set — skipping upload.")
-        return
-
-    try:
-        import boto3
-        from botocore.config import Config
-
-        s3 = boto3.client(
-            "s3",
-            endpoint_url          = endpoint_url,
-            aws_access_key_id     = access_key,
-            aws_secret_access_key = secret_key,
-            config                = Config(signature_version="s3v4"),
-            region_name           = "auto"
-        )
-
-        files_to_upload = [
-            (MASTER_FILE_PATH, "Master File.xlsx"),
-            (RAW_FILE_PATH,    "Raw Data.xlsx"),
-        ]
-
-        for local_path, filename in files_to_upload:
-            if not os.path.exists(local_path):
-                print(f"⚠️ {filename} not found, skipping.")
-                continue
-
-            s3.upload_file(
-                local_path,
-                bucket_name,
-                filename,
-                ExtraArgs={"ContentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}
-            )
-            print(f"✅ Uploaded {filename} to Cloudflare R2.")
-
-    except Exception as e:
-        print(f"⚠️ R2 upload failed: {e}")
-        traceback.print_exc()
-
-def upload_to_google_drive():
-    upload_to_cloudflare_r2()
-
-
-# ═══════════════════════════════════════════════════════════
-#  MAIN
-# ═══════════════════════════════════════════════════════════
-try:
-    login()
-    company_data_list = collect_all_company_data()
-
-    if company_data_list:
-        data  = []
-        total = len(company_data_list)
-        for i, info in enumerate(company_data_list, start=1):
-            row = scrape_company(info)
-            data.append(row)
-            print(f"✅ [{i}/{total}] {info['short_name']}")
-            time.sleep(PAGE_DELAY + random.uniform(0.3, 0.7))
-
-        df = pd.DataFrame(data)
-
-        # ── 1. IDENTIFY QUARTERS & SORT ──────────────────────────────────
-        non_quarter_cols = [
-            "Name", "Company (Page)", "Promoter Holding",
-            "Pledged %", "WC Days", "Industry Group", "Industry"
-        ]
-        raw_quarters  = [c for c in df.columns if c not in non_quarter_cols]
-        quarter_dates = pd.to_datetime(raw_quarters, format="%b %Y", errors='coerce')
-        valid_quarters = [
-            (d, c) for d, c in zip(quarter_dates, raw_quarters) if not pd.isna(d)
-        ]
-        valid_quarters.sort(key=lambda x: x[0], reverse=True)
-        sorted_quarters = [x[1] for x in valid_quarters]
-
-        if sorted_quarters:
-            latest_quarter_label = sorted_quarters[0]
-        else:
-            latest_quarter_label = datetime.now().strftime("%b %Y")
-
-        print(f"\n📅 Latest quarter detected: {latest_quarter_label}")
-
-        final_quarters = sorted_quarters[:13]
-        while len(final_quarters) < 13:
-            final_quarters.append(f"Empty_Q{len(final_quarters)+1}")
-            df[final_quarters[-1]] = 0
-
-        numeric_quarters = df[sorted_quarters[:13]].apply(pd.to_numeric, errors="coerce")
-        df[final_quarters] = numeric_quarters
-
-        # ── 2. CALCULATE OP PROFIT LOGIC ─────────────────────────────────
-        latest_col = final_quarters[0]
+def detect_latest_quarter(row_dict):
+    non_quarter_keys = {
+        "Sr no", "Name", "Company (Page)", "Industry Group", "Industry",
+        "Promoter Holding", "Pledged %", "WC Days", "date"
+    }
+    quarter_candidates = []
+    for k in row_dict:
+        if k in non_quarter_keys or "(>70%)" in k:
+            continue
         try:
-            latest_dt  = pd.to_datetime(latest_col, format="%b %Y")
-            target_dt  = latest_dt.replace(year=latest_dt.year - 1)
-            prev_year_col = next(
-                (c for c in final_quarters
-                 if pd.to_datetime(c, format="%b %Y", errors='coerce') == target_dt),
-                None
-            )
-            latest_vals = numeric_quarters[latest_col].fillna(0)
-            if prev_year_col:
-                prev_vals = numeric_quarters[prev_year_col].fillna(0)
-                df["OP Profit > 70%"] = latest_vals > 1.7 * prev_vals
-            else:
-                df["OP Profit > 70%"] = False
-
-            max_past = numeric_quarters.max(axis=1).fillna(0)
-            df["Current Profit > in past 3 yrs"] = latest_vals >= max_past
-        except:
-            df["OP Profit > 70%"]                = False
-            df["Current Profit > in past 3 yrs"] = False
-
-        # ── 3. YoY COMPARISONS ───────────────────────────────────────────
-        comparison_cols = []
-        comp_pairs = [(1,5),(2,6),(3,7),(4,8),(5,9),(6,10),(7,11),(8,12)]
-        for n_idx, o_idx in comp_pairs:
-            n, o = n_idx - 1, o_idx - 1
-            if n < len(final_quarters) and o < len(final_quarters):
-                c_new, c_old = final_quarters[n], final_quarters[o]
-                c_name = f"{c_new} > 1.7*{c_old}"
-                if "Empty" not in c_new:
-                    df[c_name] = numeric_quarters[c_new] > 1.7 * numeric_quarters[c_old]
-                else:
-                    df[c_name] = False
-                comparison_cols.append(c_name)
-            else:
-                c_name = f"Comp_{len(comparison_cols)+1}"
-                df[c_name] = False
-                comparison_cols.append(c_name)
-        final_comparisons = comparison_cols[:8]
-
-        # ── 4. EXPORT STRUCTURE ──────────────────────────────────────────
-        desired_order = (
-            ["Name", "Company (Page)"]
-            + final_quarters
-            + ["OP Profit > 70%", "Current Profit > in past 3 yrs"]
-            + final_comparisons
-            + ["Promoter Holding", "Pledged %", "WC Days", "Industry Group", "Industry"]
-        )
-        df_export = df.reindex(columns=desired_order)
-
-        # ── 5. ENRICHMENT (VLOOKUP & EXCEPTION) ──────────────────────────
-        print("\n🔄 Performing VLOOKUP & Exception Check...")
-        try:
-            if os.path.exists(MASTER_FILE_PATH):
-                df_source = pd.read_excel(MASTER_FILE_PATH, sheet_name="screener_all_stocks")
-                if "Name" in df_source.columns and "Industry" in df_source.columns:
-                    df_export["Name_Clean"] = df_export["Name"].astype(str).str.strip().str.lower()
-                    df_source["Name_Clean"] = df_source["Name"].astype(str).str.strip().str.lower()
-                    industry_map = df_source.set_index("Name_Clean")["Industry"].to_dict()
-                    group_map    = (
-                        df_source.set_index("Name_Clean")["Industry Group"].to_dict()
-                        if "Industry Group" in df_source.columns else {}
-                    )
-                    df_export["Industry"]       = df_export["Name_Clean"].map(industry_map).fillna(df_export["Industry"])
-                    df_export["Industry Group"] = df_export["Name_Clean"].map(group_map).fillna(df_export["Industry Group"])
-                    try:
-                        if "Exception_Industry" in df_source.columns:
-                            exception_list = df_source["Exception_Industry"].dropna().unique().tolist()
-                        else:
-                            exception_list = df_source.iloc[:, 29].dropna().unique().tolist()
-                        df_export["Exception_Industry"] = df_export["Industry"].apply(
-                            lambda x: "Yes" if x in exception_list else "No"
-                        )
-                    except:
-                        df_export["Exception_Industry"] = "No"
-                    df_export.drop(columns=["Name_Clean"], inplace=True)
-                    print("✅ Enrichment Complete.")
-        except Exception as e:
-            print(f"⚠️ VLOOKUP Failed: {e}")
-            df_export["Exception_Industry"] = "No"
-
-        # ── 6. FILTER LOGIC ──────────────────────────────────────────────
-        if "Exception_Industry" not in df_export.columns:
-            df_export["Exception_Industry"] = "No"
-
-        condition_op       = df_export["OP Profit > 70%"]               == True
-        condition_max      = df_export["Current Profit > in past 3 yrs"] == True
-        condition_exc      = df_export["Exception_Industry"]             == "Yes"
-        condition_promoter = df_export["Promoter Holding"].fillna(0)    >= 50.0
-        condition_pledged  = df_export["Pledged %"].fillna(0)           <= 10.0
-        condition_wc       = df_export["WC Days"].fillna(0)             <= 150.0
-
-        has_5_qtrs = "Empty" not in final_quarters[4] if len(final_quarters) >= 5 else False
-
-        if has_5_qtrs:
-            mask = (
-                condition_op
-                & (condition_max | condition_exc)
-                & condition_promoter
-                & condition_pledged
-                & condition_wc
-            )
-            df_master_candidates = df_export[mask].copy()
-        else:
-            df_master_candidates = pd.DataFrame()
-
-        # ── 7. PREPARE MASTER APPEND ─────────────────────────────────────
-        cols_for_master = df_export.columns[:30].tolist()
-        df_to_append    = df_master_candidates[cols_for_master].copy()
-
-        max_sr_no     = 0
-        existing_keys = set()
-        try:
-            if os.path.exists(MASTER_FILE_PATH):
-                try:
-                    df_current_qtr = pd.read_excel(MASTER_FILE_PATH, sheet_name=latest_quarter_label)
-                    if "Sr no." in df_current_qtr.columns:
-                        max_sr_no = pd.to_numeric(df_current_qtr["Sr no."], errors='coerce').max()
-                        if pd.isna(max_sr_no):
-                            max_sr_no = 0
-                    if "Company (Page)" in df_current_qtr.columns:
-                        existing_keys = set(df_current_qtr["Company (Page)"].astype(str).tolist())
-                except Exception:
-                    pass
+            dt = pd.to_datetime(k, format="%b %Y")
+            quarter_candidates.append((dt, k))
         except Exception:
             pass
 
-        if existing_keys and "Company (Page)" in df_to_append.columns:
-            df_to_append = df_to_append[
-                ~df_to_append["Company (Page)"].astype(str).isin(existing_keys)
-            ].copy()
+    if not quarter_candidates:
+        return None
 
-        if not df_to_append.empty:
-            start_seq = int(max_sr_no) + 1
-            df_to_append.insert(0, "Sr no.", range(start_seq, start_seq + len(df_to_append)))
+    quarter_candidates.sort(key=lambda x: x[0], reverse=True)
+    return quarter_candidates[0][0].strftime("%b %y")
 
-        # ── 8. TYPE CONVERSION ───────────────────────────────────────────
-        df_to_append = clean_and_convert(df_to_append)
-        df_export    = clean_and_convert(df_export)
+def get_existing_companies_in_sheet(sheet_name):
+    if not os.path.exists(RAW_FILE_PATH):
+        return set()
+    try:
+        xl = pd.ExcelFile(RAW_FILE_PATH)
+        if sheet_name not in xl.sheet_names:
+            return set()
+        df_existing = pd.read_excel(RAW_FILE_PATH, sheet_name=sheet_name)
+        if "Name" in df_existing.columns:
+            return set(df_existing["Name"].dropna().astype(str).str.strip())
+        return set()
+    except Exception as e:
+        print(f"⚠️  Could not read sheet '{sheet_name}': {e}")
+        return set()
 
-        # ── 9A. SAVE TO MASTER FILE ──────────────────────────────────────
+def transform_and_order_data(df):
+    """
+    Reorders columns and creates dynamic YoY 70% growth matrix columns.
+    Expected order: Base Cols -> Sorted Quarters -> Metrics -> Matrix
+    """
+    base_cols = ["Sr no", "date", "Name", "Company (Page)", "Industry", "Industry Group"]
+    metric_cols = ["Pledged %", "Promoter Holding", "WC Days"]
+    
+    for col in base_cols + metric_cols:
+        if col not in df.columns:
+            df[col] = ""
+
+    quarter_cols_raw = [c for c in df.columns if c not in base_cols and c not in metric_cols and "(>70%)" not in c]
+
+    parsed_dates = []
+    for c in quarter_cols_raw:
         try:
-            master_exists = os.path.exists(MASTER_FILE_PATH)
-            if master_exists:
-                ew_kwargs = dict(engine="openpyxl", mode="a", if_sheet_exists="overlay")
-            else:
-                ew_kwargs = dict(engine="openpyxl", mode="w")
+            dt = pd.to_datetime(c, format="%b %Y")
+            parsed_dates.append((dt, c))
+        except Exception:
+            pass 
+    
+    parsed_dates.sort(key=lambda x: x[0], reverse=True)
+    sorted_quarter_cols = [x[1] for x in parsed_dates]
 
-            with pd.ExcelWriter(MASTER_FILE_PATH, **ew_kwargs) as writer:
-                if not df_to_append.empty:
-                    try:
-                        try:
-                            ws_qtr    = writer.book[latest_quarter_label]
-                            start_row = ws_qtr.max_row
-                        except KeyError:
-                            start_row = 0
+    temp_df = pd.DataFrame()
+    for c in sorted_quarter_cols:
+        temp_df[c] = pd.to_numeric(df[c].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
 
-                        df_to_append.to_excel(writer, sheet_name=latest_quarter_label,
-                                              index=False, header=(start_row == 0),
-                                              startrow=start_row)
-                        print(f"✅ Appended {len(df_to_append)} rows to '{latest_quarter_label}'.")
-
-                        ws_qtr        = writer.sheets[latest_quarter_label]
-                        row_start_idx = 1 if start_row == 0 else start_row + 1
-                        for row in ws_qtr.iter_rows(min_row=row_start_idx, max_row=ws_qtr.max_row):
-                            for cell in row:
-                                cell.border = THIN_BORDER
-                                if cell.col_idx == 1:
-                                    cell.alignment = CENTER_ALIGN
-                    except Exception as e:
-                        print(f"⚠️ Error writing to quarter sheet: {e}")
-                        traceback.print_exc()
-                else:
-                    print(f"⚠️ No new unique candidates for '{latest_quarter_label}'.")
-
-            print(f"✅ Master File saved: {MASTER_FILE_PATH}")
-        except PermissionError:
-            print(f"\n❌ ERROR: Master File is OPEN. Please close it.\n   {MASTER_FILE_PATH}")
-
-        # ── 9B. SAVE TO RAW DATA FILE (INCREMENTAL QUARTERLY APPEND) ─────
+    matrix_cols = []
+    for dt, col_current in parsed_dates:
         try:
-            raw_file_exists = os.path.exists(RAW_FILE_PATH)
-            existing_raw_keys = set()
-
-            # 1. Check if the current quarter's sheet already exists in Raw Data
-            if raw_file_exists:
-                try:
-                    df_existing_raw = pd.read_excel(RAW_FILE_PATH, sheet_name=latest_quarter_label)
-                    if "Company (Page)" in df_existing_raw.columns:
-                        existing_raw_keys = set(df_existing_raw["Company (Page)"].astype(str).tolist())
-                except Exception:
-                    pass # Sheet doesn't exist yet
-
-            # 2. Filter the scraped data to ONLY include new companies
-            df_raw_to_append = df_export.copy()
-            if existing_raw_keys and "Company (Page)" in df_raw_to_append.columns:
-                df_raw_to_append = df_raw_to_append[
-                    ~df_raw_to_append["Company (Page)"].astype(str).isin(existing_raw_keys)
-                ].copy()
-
-            # 3. Append only the new data to the quarter's sheet
-            if not df_raw_to_append.empty:
-                ew_kwargs = dict(engine="openpyxl", mode="a", if_sheet_exists="overlay") if raw_file_exists else dict(engine="openpyxl", mode="w")
+            dt_prev_year = dt.replace(year=dt.year - 1)
+            col_prev = dt_prev_year.strftime("%b %Y")
+            
+            if col_prev in temp_df.columns:
+                # Format: "Dec25 (>70%) Dec24"
+                curr_short = dt.strftime("%b%y")
+                prev_short = dt_prev_year.strftime("%b%y")
+                jump_col = f"{curr_short} (>70%) {prev_short}"
+                matrix_cols.append(jump_col)
                 
-                with pd.ExcelWriter(RAW_FILE_PATH, **ew_kwargs) as writer:
-                    try:
-                        try:
-                            ws_raw = writer.book[latest_quarter_label]
-                            start_row = ws_raw.max_row
-                        except KeyError:
-                            start_row = 0
+                condition = (temp_df[col_current] >= 1.7 * temp_df[col_prev]) & (temp_df[col_prev] > 0)
+                df[jump_col] = np.where(condition, "Yes", "")
+        except Exception:
+            pass
 
-                        df_raw_to_append.to_excel(writer, sheet_name=latest_quarter_label,
-                                                  index=False, header=(start_row == 0),
-                                                  startrow=start_row)
-                        
-                        ws_raw = writer.sheets[latest_quarter_label]
-                        format_worksheet(ws_raw, header_row=1)
-                        
-                        print(f"✅ Appended {len(df_raw_to_append)} new companies to Raw Data → '{latest_quarter_label}'")
-                    except Exception as e:
-                        print(f"⚠️ Error writing to Raw Data sheet: {e}")
-                        traceback.print_exc()
-            else:
-                print(f"✅ Raw Data is up to date. No new companies to add for '{latest_quarter_label}'.")
+    final_cols = base_cols + sorted_quarter_cols + metric_cols + matrix_cols
+    
+    # Apply column ordering
+    df = df[final_cols].copy()
+    
+    # Auto-generate Serial Numbers starting from 1
+    df["Sr no"] = range(1, len(df) + 1)
+    
+    return df
 
-        except PermissionError:
-            print(f"\n❌ ERROR: Raw Data file is OPEN. Please close it.\n   {RAW_FILE_PATH}")
+BATCH_SIZE = 10
 
+def append_rows_to_raw_excel(rows, sheet_name):
+    """Append row-dicts to the quarter sheet with dynamic transformations."""
+    if not rows:
+        return
 
-        # ── 10. SAVE RESULTS JSON (for dashboard) ───────────────────────
+    df_new = transform_and_order_data(pd.DataFrame(rows))
+
+    if os.path.exists(RAW_FILE_PATH):
         try:
-            rows = []
-            if not df_to_append.empty:
-                df_json = df_to_append.copy()
-            elif not df_master_candidates.empty:
-                df_json = df_master_candidates.copy()
-                df_json.insert(0, "Sr no.", range(1, len(df_json) + 1))
+            wb = load_workbook(RAW_FILE_PATH)
+            if sheet_name in wb.sheetnames:
+                df_existing = pd.read_excel(RAW_FILE_PATH, sheet_name=sheet_name)
+                df_combined = pd.concat([df_existing, df_new], ignore_index=True)
+                df_final = transform_and_order_data(df_combined)
             else:
-                df_json = pd.DataFrame()
-
-            if not df_json.empty:
-                q_cols = [c for c in df_json.columns if any(
-                    m in str(c) for m in ["Jan","Feb","Mar","Apr","May","Jun",
-                                          "Jul","Aug","Sep","Oct","Nov","Dec"]
-                ) and any(ch.isdigit() for ch in str(c)) and ">" not in str(c)]
-
-                latest_q_col = q_cols[0] if len(q_cols) > 0 else None
-                prev_q_col   = q_cols[4] if len(q_cols) > 4 else None
-
-                for _, row in df_json.iterrows():
-                    rows.append({
-                        "sr"           : int(row.get("Sr no.", 0)),
-                        "name"         : str(row.get("Name", "")),
-                        "company_page" : str(row.get("Company (Page)", "")),
-                        "latest_q"     : float(row[latest_q_col]) if latest_q_col and pd.notna(row.get(latest_q_col)) else 0,
-                        "prev_q"       : float(row[prev_q_col])   if prev_q_col   and pd.notna(row.get(prev_q_col))   else 0,
-                        "op_profit_70" : bool(row.get("OP Profit > 70%", False)),
-                        "all_time_hi"  : bool(row.get("Current Profit > in past 3 yrs", False)),
-                        "promoter"     : float(row.get("Promoter Holding", 0) or 0),
-                        "pledged"      : float(row.get("Pledged %", 0) or 0),
-                        "wc_days"      : float(row.get("WC Days", 0) or 0),
-                        "industry_group": str(row.get("Industry Group", "") or ""),
-                        "industry"     : str(row.get("Industry", "") or ""),
-                    })
-
-            import json as _json
-            results_payload = _json.dumps({
-                "quarter"      : latest_quarter_label,
-                "generated_at" : datetime.now().isoformat(),
-                "total_count"  : len(rows),
-                "rows"         : rows
-            }, indent=2)
-
-            results_path = os.path.join(FOLDER_PATH, "results.json")
-            with open(results_path, "w") as f:
-                f.write(results_payload)
-            print(f"✅ results.json saved → {len(rows)} rows")
-
+                df_final = df_new
+            wb.close()
+            
+            with pd.ExcelWriter(RAW_FILE_PATH, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+                df_final.to_excel(writer, sheet_name=sheet_name, index=False)
+                
         except Exception as e:
-            print(f"⚠️ results.json generation failed: {e}")
-            traceback.print_exc()
+            print(f"⚠️  Error appending to existing Excel: {e}")
+            return
+    else:
+        with pd.ExcelWriter(RAW_FILE_PATH, engine='openpyxl') as writer:
+            df_new.to_excel(writer, sheet_name=sheet_name, index=False)
 
-        # ── 11. UPLOAD TO CLOUDFLARE R2 ──────────────────────────────────
-        print("\n☁️  Uploading files to Cloudflare R2...")
-        upload_to_google_drive()
+    wb = load_workbook(RAW_FILE_PATH)
+    ws = wb[sheet_name]
+    format_worksheet(ws)
+    
+    # Auto-adjust column widths for better readability
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        ws.column_dimensions[column_letter].width = max_length + 2
 
-        try:
-            results_path = os.path.join(FOLDER_PATH, "results.json")
-            if os.path.exists(results_path):
-                access_key   = os.environ.get("R2_ACCESS_KEY_ID", "")
-                secret_key   = os.environ.get("R2_SECRET_ACCESS_KEY", "")
-                endpoint_url = os.environ.get("R2_ENDPOINT_URL", "")
-                bucket_name  = os.environ.get("R2_BUCKET_NAME", "quarterly-profit-surge")
+    wb.save(RAW_FILE_PATH)
+    print(f"  ↳ Saved and formatted {len(rows)} rows to sheet '{sheet_name}'.")
 
-                if all([access_key, secret_key, endpoint_url]):
-                    import boto3
-                    from botocore.config import Config
-                    s3 = boto3.client(
-                        "s3",
-                        endpoint_url          = endpoint_url,
-                        aws_access_key_id     = access_key,
-                        aws_secret_access_key = secret_key,
-                        config                = Config(signature_version="s3v4"),
-                        region_name           = "auto"
-                    )
-                    s3.upload_file(
-                        results_path, bucket_name, "results.json",
-                        ExtraArgs={"ContentType": "application/json"}
-                    )
-                    print("✅ Uploaded results.json to Cloudflare R2.")
-        except Exception as e:
-            print(f"⚠️ results.json R2 upload failed: {e}")
-            traceback.print_exc()
 
+# ═══════════════════════════════════════════════════════════
+# QUALIFIED STOCKS FILTERING
+# ═══════════════════════════════════════════════════════════
+def generate_qualified_stocks(sheet_name):
+    """Reads Raw Data, applies strict criteria, and creates/updates Qualified_Stocks.xlsx"""
+    if not os.path.exists(RAW_FILE_PATH):
+        print("⚠️  Raw Data file missing. Cannot generate Qualified Stocks.")
+        return
+
+    print(f"\n⚙️  Applying filters to generate Qualified_Stocks.xlsx for '{sheet_name}'...")
+    
+    try:
+        # READ ONLY: Load the raw data
+        df = pd.read_excel(RAW_FILE_PATH, sheet_name=sheet_name)
+        
+        # 1. Ensure the metrics exist before filtering
+        metrics = ["Promoter Holding", "Pledged %", "WC Days"]
+        for col in metrics:
+            if col not in df.columns:
+                print(f"⚠️  Missing column '{col}' in raw data. Cannot filter.")
+                return
+            
+            # Convert to numeric. For WC Days, fill missing with 999 so it safely fails the <= 150 filter.
+            if col == "WC Days":
+                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(999) 
+            else:
+                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+        
+        # 2. Apply strict baseline filtering criteria
+        qualified_df = df[
+            (df["Promoter Holding"] >= 50.0) &
+            (df["Pledged %"] <= 10.0) &
+            (df["WC Days"] <= 150.0)
+        ].copy()
+
+        # 3. Dynamic 70% Growth Matrix Filter (Latest Quarter Only)
+        quarter_candidates = []
+        for col in qualified_df.columns:
+            if col not in ["Sr no", "date", "Name", "Company (Page)", "Industry", "Industry Group", "Promoter Holding", "Pledged %", "WC Days"] and "(>70%)" not in col:
+                try:
+                    quarter_candidates.append((pd.to_datetime(col, format="%b %Y"), col))
+                except: pass
+        
+        if quarter_candidates:
+            # Sort to find the latest quarter date
+            quarter_candidates.sort(key=lambda x: x[0], reverse=True)
+            latest_dt = quarter_candidates[0][0]
+            
+            # Formulate the target matrix column format: "Dec25 (>70%) Dec24"
+            latest_short = latest_dt.strftime("%b%y")
+            prev_year_short = latest_dt.replace(year=latest_dt.year - 1).strftime("%b%y")
+            target_matrix_col = f"{latest_short} (>70%) {prev_year_short}"
+            
+            # Check if this matrix column was generated and filter where it is "Yes"
+            if target_matrix_col in qualified_df.columns:
+                qualified_df = qualified_df[qualified_df[target_matrix_col] == "Yes"].copy()
+                print(f"🔍  Applied 70% Growth check for latest quarter: '{target_matrix_col}'")
+            else:
+                print(f"⚠️  Growth matrix column '{target_matrix_col}' not found. Cannot apply 70% jump filter.")
+
+        if qualified_df.empty:
+            print("ℹ️  No stocks met the Qualified Criteria in this batch.")
+            return
+            
+        print(f"🎯  Found {len(qualified_df)} Qualified Stocks!")
+
+        # Fix the Serial Number so it restarts from 1
+        qualified_df["Sr no"] = range(1, len(qualified_df) + 1)
+
+        # 4. Save to Qualified_Stocks.xlsx
+        if os.path.exists(QUALIFIED_FILE_PATH):
+            with pd.ExcelWriter(QUALIFIED_FILE_PATH, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+                qualified_df.to_excel(writer, sheet_name=sheet_name, index=False)
+        else:
+            with pd.ExcelWriter(QUALIFIED_FILE_PATH, engine='openpyxl') as writer:
+                qualified_df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+        # 5. Apply standard formatting
+        wb = load_workbook(QUALIFIED_FILE_PATH)
+        ws = wb[sheet_name]
+        format_worksheet(ws)
+        
+        # Auto-adjust column widths
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except: pass
+            ws.column_dimensions[column_letter].width = max_length + 2
+
+        wb.save(QUALIFIED_FILE_PATH)
+        print(f"✅  Saved and formatted Qualified_Stocks.xlsx")
+
+    except Exception as e:
+        print(f"⚠️  Error generating Qualified Stocks: {e}")
+
+
+# ═══════════════════════════════════════════════════════════
+# MAIN
+# ═══════════════════════════════════════════════════════════
+try:
+    INDUSTRY_MAP, GROUP_MAP = load_industry_maps()
+
+    login()
+    company_data_list = collect_all_company_data()
+
+    if not company_data_list:
+        print("⚠️  No companies found on the screen. Exiting.")
+    else:
+        total = len(company_data_list)
+
+        print(f"\n🔍 Scraping company #1 to detect latest quarter...")
+        first_row = scrape_company(company_data_list[0])
+        first_row = enrich_with_industry(first_row, INDUSTRY_MAP, GROUP_MAP)
+        print(f"✅ [1/{total}] {company_data_list[0]['short_name']}  "
+              f"| Industry: {first_row.get('Industry', '—')}")
+        time.sleep(PAGE_DELAY + random.uniform(0.3, 0.7))
+
+        target_sheet = detect_latest_quarter(first_row)
+        if not target_sheet:
+            target_sheet = datetime.now().strftime("%b %y")
+            print(f"⚠️  Could not detect quarter — using today: '{target_sheet}'")
+        else:
+            print(f"\n📅 Detected latest quarter : '{target_sheet}'")
+
+        existing_names = get_existing_companies_in_sheet(target_sheet)
+        if existing_names:
+            print(f"📋 Sheet '{target_sheet}' already has {len(existing_names)} "
+                  f"companies — those will be skipped.")
+        else:
+            print(f"📋 Sheet '{target_sheet}' is empty / new — scraping all companies.")
+
+        first_name   = str(first_row.get("Name", "")).strip()
+        pending_rows = []
+
+        if first_name in existing_names:
+            print(f"ℹ️  '{first_name}' already in sheet — not saving again.")
+        else:
+            pending_rows.append(first_row)
+
+        remaining = [
+            c for c in company_data_list[1:]
+            if str(c['short_name']).strip() not in existing_names
+        ]
+        print(f"\n🔄 Scraping {len(remaining)} new companies "
+              f"(skipping {total - 1 - len(remaining)} already present)...\n")
+
+        for i, info in enumerate(remaining, start=2):
+            row = scrape_company(info)
+            row = enrich_with_industry(row, INDUSTRY_MAP, GROUP_MAP)
+            pending_rows.append(row)
+            print(f"✅ [{i}/{total}] {info['short_name']}  "
+                  f"| Industry: {row.get('Industry', '—')}")
+            time.sleep(PAGE_DELAY + random.uniform(0.3, 0.7))
+
+            if len(pending_rows) >= BATCH_SIZE:
+                append_rows_to_raw_excel(pending_rows, target_sheet)
+                pending_rows = []
+
+        if pending_rows:
+            append_rows_to_raw_excel(pending_rows, target_sheet)
+
+        print(f"\n✅ Raw Data.xlsx → sheet '{target_sheet}' is up to date.")
+
+        # ── NEW: GENERATE QUALIFIED STOCKS ───────────────────────────────
+        generate_qualified_stocks(target_sheet)
+
+        if IS_GITHUB_ACTIONS:
+            print("\n⬆️  Uploading updated files to Cloudflare R2...")
+            r2_upload(RAW_FILE_PATH,       R2_RAW_KEY)
+            r2_upload(QUALIFIED_FILE_PATH, R2_QUALIFIED_KEY)
+            r2_upload(MASTER_FILE_PATH,    R2_MASTER_KEY)
+
+except Exception as e:
+    print(f"\n❌ Fatal error: {e}")
+    traceback.print_exc()
 finally:
     try:
         driver.quit()
     except:
         pass
+    print("\n🏁 Script finished.")
