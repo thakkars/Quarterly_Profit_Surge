@@ -365,7 +365,7 @@ def format_worksheet(ws, header_row=1):
 # ═══════════════════════════════════════════════════════════
 def detect_latest_quarter(row_dict):
     non_quarter_keys = {
-        "Name", "Company (Page)", "Industry Group", "Industry",
+        "Sr no", "Name", "Company (Page)", "Industry Group", "Industry",
         "Promoter Holding", "Pledged %", "WC Days", "date"
     }
     quarter_candidates = []
@@ -404,7 +404,7 @@ def transform_and_order_data(df):
     Reorders columns and creates dynamic YoY 70% growth matrix columns.
     Expected order: Base Cols -> Sorted Quarters -> Metrics -> Matrix
     """
-    base_cols = ["date", "Name", "Company (Page)", "Industry", "Industry Group"]
+    base_cols = ["Sr no", "date", "Name", "Company (Page)", "Industry", "Industry Group"]
     metric_cols = ["Pledged %", "Promoter Holding", "WC Days"]
     
     for col in base_cols + metric_cols:
@@ -435,7 +435,10 @@ def transform_and_order_data(df):
             col_prev = dt_prev_year.strftime("%b %Y")
             
             if col_prev in temp_df.columns:
-                jump_col = f"{col_current} vs {col_prev} (>70%)"
+                # Format: "Dec25 (>70%) Dec24"
+                curr_short = dt.strftime("%b%y")
+                prev_short = dt_prev_year.strftime("%b%y")
+                jump_col = f"{curr_short} (>70%) {prev_short}"
                 matrix_cols.append(jump_col)
                 
                 condition = (temp_df[col_current] >= 1.7 * temp_df[col_prev]) & (temp_df[col_prev] > 0)
@@ -444,7 +447,14 @@ def transform_and_order_data(df):
             pass
 
     final_cols = base_cols + sorted_quarter_cols + metric_cols + matrix_cols
-    return df[final_cols]
+    
+    # Apply column ordering
+    df = df[final_cols].copy()
+    
+    # Auto-generate Serial Numbers starting from 1
+    df["Sr no"] = range(1, len(df) + 1)
+    
+    return df
 
 BATCH_SIZE = 10
 
@@ -532,10 +542,9 @@ def generate_qualified_stocks(sheet_name):
         ].copy()
 
         # 3. Dynamic 70% Growth Matrix Filter (Latest Quarter Only)
-        # Find the latest quarter from the available columns
         quarter_candidates = []
         for col in qualified_df.columns:
-            if col not in ["date", "Name", "Company (Page)", "Industry", "Industry Group", "Promoter Holding", "Pledged %", "WC Days"] and "(>70%)" not in col:
+            if col not in ["Sr no", "date", "Name", "Company (Page)", "Industry", "Industry Group", "Promoter Holding", "Pledged %", "WC Days"] and "(>70%)" not in col:
                 try:
                     quarter_candidates.append((pd.to_datetime(col, format="%b %Y"), col))
                 except: pass
@@ -544,15 +553,15 @@ def generate_qualified_stocks(sheet_name):
             # Sort to find the latest quarter date
             quarter_candidates.sort(key=lambda x: x[0], reverse=True)
             latest_dt = quarter_candidates[0][0]
-            latest_q_col = quarter_candidates[0][1]
             
-            # Calculate exactly 1 year ago to construct the target matrix column name
-            prev_year_col = latest_dt.replace(year=latest_dt.year - 1).strftime("%b %Y")
-            target_matrix_col = f"{latest_q_col} vs {prev_year_col} (>70%)"
+            # Formulate the target matrix column format: "Dec25 (>70%) Dec24"
+            latest_short = latest_dt.strftime("%b%y")
+            prev_year_short = latest_dt.replace(year=latest_dt.year - 1).strftime("%b%y")
+            target_matrix_col = f"{latest_short} (>70%) {prev_year_short}"
             
             # Check if this matrix column was generated and filter where it is "Yes"
             if target_matrix_col in qualified_df.columns:
-                qualified_df = qualified_df[qualified_df[target_matrix_col] == "Yes"]
+                qualified_df = qualified_df[qualified_df[target_matrix_col] == "Yes"].copy()
                 print(f"🔍  Applied 70% Growth check for latest quarter: '{target_matrix_col}'")
             else:
                 print(f"⚠️  Growth matrix column '{target_matrix_col}' not found. Cannot apply 70% jump filter.")
@@ -562,6 +571,9 @@ def generate_qualified_stocks(sheet_name):
             return
             
         print(f"🎯  Found {len(qualified_df)} Qualified Stocks!")
+
+        # Fix the Serial Number so it restarts from 1
+        qualified_df["Sr no"] = range(1, len(qualified_df) + 1)
 
         # 4. Save to Qualified_Stocks.xlsx
         if os.path.exists(QUALIFIED_FILE_PATH):
