@@ -19,6 +19,7 @@
         #export-btn { background-color: #4a5568; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
         #export-btn:hover { background-color: #2d3748; }
 
+        /* Updated Rules Engine Button */
         #exceptions-btn { background-color: #e53e3e; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
         #exceptions-btn:hover { background-color: #c53030; }
 
@@ -57,7 +58,7 @@
         .action-links a { text-decoration: none; font-size: 11px; padding: 3px 6px; border-radius: 4px; background: #e2e8f0; color: #2b6cb0; font-weight: bold; transition: 0.2s; border: 1px solid #cbd5e0; }
         .action-links a:hover { background: #cbd5e0; color: #1a365d; border-color: #a0aec0;}
 
-        /* EXCEPTIONS MODAL & ACCORDION TREE STYLES */
+        /* RULES ENGINE MODAL & ACCORDION STYLES */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(2px); }
         .modal-content { background: white; width: 95%; max-width: 600px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); display: flex; flex-direction: column; max-height: 85vh; overflow: hidden; }
         .modal-header { padding: 15px 20px; background: #1a365d; color: white; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
@@ -68,13 +69,30 @@
         .accordion-item { border: 1px solid #cbd5e0; border-radius: 6px; margin-bottom: 8px; background: white; overflow: hidden; }
         .accordion-header { display: flex; align-items: center; padding: 12px 15px; cursor: pointer; transition: 0.2s; user-select: none; }
         .accordion-header:hover { background: #ebf8ff; }
-        .accordion-header input { margin-right: 12px; transform: scale(1.3); cursor: pointer; }
         .accordion-title { flex: 1; font-weight: 600; color: #2d3748; font-size: 14px; }
         .accordion-toggle { color: #718096; font-size: 12px; font-weight: bold; transition: transform 0.2s; }
         .accordion-toggle.open { transform: rotate(180deg); }
-        .accordion-body { border-top: 1px solid #cbd5e0; padding: 12px 15px 12px 40px; display: none; flex-direction: column; gap: 10px; background: #fafafa; }
-        .accordion-body label { display: flex; align-items: center; cursor: pointer; font-size: 13px; color: #4a5568; }
-        .accordion-body input { margin-right: 10px; transform: scale(1.2); cursor: pointer; }
+        .accordion-body { border-top: 1px solid #cbd5e0; padding: 10px; display: none; flex-direction: column; gap: 5px; background: #fafafa; }
+        
+        /* New Group Master Controls */
+        .group-master-controls { background: #e2e8f0; padding: 10px; border-radius: 6px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .group-master-controls select { padding: 6px; border-radius: 4px; border: 1px solid #cbd5e0; font-size: 13px; flex: 1; min-width: 150px; }
+        .group-master-controls button { background: #4a5568; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        
+        /* Sub-Item Rules Layout */
+        .sub-item { border-bottom: 1px solid #edf2f7; padding: 8px 5px; }
+        .sub-item:last-child { border-bottom: none; }
+        .sub-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 4px 0; }
+        .sub-header:hover { color: #2b6cb0; }
+        .sub-title { font-size: 13.5px; font-weight: 600; }
+        .sub-settings { display: none; flex-direction: column; gap: 8px; padding: 12px; background: #edf2f7; margin-top: 8px; border-radius: 6px; border: 1px solid #e2e8f0; }
+        .sub-settings label { font-size: 12.5px; color: #2d3748; cursor: pointer; display: flex; align-items: center; }
+        .sub-settings input { margin-right: 8px; transform: scale(1.1); }
+        .settings-divider { height: 1px; background: #cbd5e0; margin: 4px 0; }
+        
+        /* Rule Badges */
+        .badge-ban { font-size: 11px; background: #fed7d7; color: #c53030; padding: 2px 6px; border-radius: 10px; border: 1px solid #feb2b2; font-weight: bold; }
+        .badge-bypass { font-size: 11px; background: #ebf8ff; color: #2b6cb0; padding: 2px 6px; border-radius: 10px; border: 1px solid #bee3f8; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -84,7 +102,7 @@
             
             <div class="action-panel">
                 <button id="run-btn" onclick="triggerWorkflow()">▶️ Run Backend Scraper</button>
-                <button id="exceptions-btn" onclick="openExceptionsModal()">🚫 Exceptions</button>
+                <button id="exceptions-btn" onclick="openExceptionsModal()">⚙️ Advanced Rules Engine</button>
                 <button id="export-btn" onclick="exportToCSV()">📥 Export CSV</button>
                 <span id="workflow-status">Status: Idle</span>
             </div>
@@ -92,7 +110,7 @@
         
         <div class="controls">
             <div class="filter-group">
-                <h3>🎯 Strict Filters (Exclude Noise)</h3>
+                <h3>🎯 Strict Filters (Will apply unless exempted)</h3>
                 <label class="checkbox-label"><input type="checkbox" id="filter-promoter"> Promoter Holding ≥ 50%</label>
                 <label class="checkbox-label"><input type="checkbox" id="filter-pledged"> Pledged Shares ≤ 10%</label>
                 <label class="checkbox-label"><input type="checkbox" id="filter-wc"> Working Capital Days ≤ 150</label>
@@ -124,14 +142,14 @@
     <div id="exceptions-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <span>🚫 Master Exceptions List</span>
+                <span>⚙️ Advanced Rules & Exemptions</span>
                 <button class="modal-close" onclick="closeExceptionsModal()">&times;</button>
             </div>
             <div class="modal-body" id="exceptions-tree-container">
                 </div>
             <div class="modal-footer">
-                <span id="exception-count" style="font-size: 14px; font-weight: bold; color: #e53e3e;">0 Sub-Industries Banished</span>
-                <button class="btn-done" onclick="closeExceptionsModal()">Done</button>
+                <span id="exception-count" style="font-size: 13px; font-weight: bold; color: #4a5568;">Active Rules Applied Automatically</span>
+                <button class="btn-done" style="background:#2b6cb0;" onclick="closeExceptionsModal()">Apply Rules & Close</button>
             </div>
         </div>
     </div>
@@ -152,6 +170,10 @@
         let matrixColumnName = "";
         let sortColumn = "Sr no"; 
         let sortAscending = true;
+
+        // --- THE BRAIN: INDUSTRY SPECIFIC RULES ---
+        // Example structure: { "Edible Oil": { banished: false, bypassWc: true, bypassPromoter: false } }
+        let industryRules = {};
 
         // --- HARDCODED MASTER EXCLUSION LIST FROM EXCEL ---
         const MASTER_INDUSTRY_MAP = {
@@ -215,10 +237,6 @@
             "Transport Services": ["Airline", "Logistics Solution Provider", "Road Transport", "Shipping", "Transport Related Services"]
         };
 
-        // This Set holds all banned Sub-Industries
-        let excludedIndustries = new Set(); 
-
-        // --- HELPER TO RENAME COLUMNS ON SCREEN ---
         function getDisplayName(col) {
             if (col === "Company (Page)") return "Company";
             if (col === "date") return "Date";
@@ -226,7 +244,7 @@
         }
 
         // ═══════════════════════════════════════════════════════════
-        // EXCEPTIONS LOGIC (ACCORDION TREE)
+        // ADVANCED RULES ENGINE UI
         // ═══════════════════════════════════════════════════════════
         function renderExceptionsTree() {
             const container = document.getElementById("exceptions-tree-container");
@@ -234,40 +252,64 @@
             
             Object.keys(MASTER_INDUSTRY_MAP).forEach(group => {
                 const subs = MASTER_INDUSTRY_MAP[group];
+                const safeId = group.replace(/\W/g, '');
                 
                 const item = document.createElement("div");
                 item.className = "accordion-item";
                 
-                const safeId = group.replace(/\W/g, '');
-                
-                let headerHtml = `
-                    <div class="accordion-header" onclick="toggleAccordion(event, '${safeId}')">
-                        <input type="checkbox" id="chk-grp-${safeId}" onchange="toggleGroup(event, '${group}')">
-                        <span class="accordion-title" id="title-${safeId}">${group} <span style="color:#a0aec0; font-size: 12px; font-weight: normal;">(0/${subs.length})</span></span>
+                let html = `
+                    <div class="accordion-header" onclick="toggleAccordion('${safeId}')">
+                        <span class="accordion-title" id="title-${safeId}">${group}</span>
                         <span class="accordion-toggle" id="arrow-${safeId}">▼</span>
                     </div>
                     <div class="accordion-body" id="body-${safeId}">
-                        ${subs.map((sub, index) => `
-                            <label onclick="event.stopPropagation()">
-                                <input type="checkbox" onchange="toggleSub('${sub}', '${group}')">
-                                ${sub}
-                            </label>
-                        `).join('')}
-                    </div>
+                        <div class="group-master-controls">
+                            <span style="font-size:12px; font-weight:bold; color:#2d3748;">Quick Apply to Group:</span>
+                            <select id="group-action-${safeId}">
+                                <option value="">-- Select Rule --</option>
+                                <option value="banished_true">🚫 Banish Entire Group</option>
+                                <option value="bypassAll_true">🔓 Exempt from ALL Strict Filters</option>
+                                <option value="bypassWc_true">🔓 Exempt from WC Days Only</option>
+                                <option value="clear_all">🧹 Clear All Rules</option>
+                            </select>
+                            <button onclick="applyGroupAction('${group}', '${safeId}')">Apply</button>
+                        </div>
                 `;
-                item.innerHTML = headerHtml;
+                
+                subs.forEach(sub => {
+                    let subId = sub.replace(/\W/g, '');
+                    html += `
+                        <div class="sub-item">
+                            <div class="sub-header" onclick="toggleSubSettings('${subId}')">
+                                <span class="sub-title">${sub}</span>
+                                <span id="badges-${subId}"></span>
+                            </div>
+                            <div class="sub-settings" id="settings-${subId}">
+                                <label style="color:#c53030; font-weight:bold;">
+                                    <input type="checkbox" id="chk-ban-${subId}" onchange="setRule('${sub}', 'banished', this.checked)"> 
+                                    🚫 Banish Completely (Hide Always)
+                                </label>
+                                <div class="settings-divider"></div>
+                                <div style="font-size:11px; font-weight:bold; color:#718096; margin-bottom:2px;">EXEMPT FROM STRICT FILTERS:</div>
+                                <label><input type="checkbox" id="chk-prom-${subId}" onchange="setRule('${sub}', 'bypassPromoter', this.checked)"> 🔓 Bypass Promoter Holding ≥ 50%</label>
+                                <label><input type="checkbox" id="chk-pledge-${subId}" onchange="setRule('${sub}', 'bypassPledged', this.checked)"> 🔓 Bypass Pledged Shares ≤ 10%</label>
+                                <label><input type="checkbox" id="chk-wc-${subId}" onchange="setRule('${sub}', 'bypassWc', this.checked)"> 🔓 Bypass Working Capital Days</label>
+                                <label><input type="checkbox" id="chk-grw-${subId}" onchange="setRule('${sub}', 'bypassGrowth', this.checked)"> 🔓 Bypass 70% YoY Profit Surge</label>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `</div>`;
+                item.innerHTML = html;
                 container.appendChild(item);
             });
-            updateTreeVisuals(); // Sync checkboxes with internal Set state
+            updateTreeVisuals(); 
         }
 
-        function toggleAccordion(event, safeId) {
-            // Prevent toggling accordion if user clicks the checkbox itself
-            if(event.target.tagName.toLowerCase() === 'input') return; 
-            
+        function toggleAccordion(safeId) {
             const body = document.getElementById(`body-${safeId}`);
             const arrow = document.getElementById(`arrow-${safeId}`);
-            
             if (body.style.display === "flex") {
                 body.style.display = "none";
                 arrow.classList.remove("open");
@@ -277,57 +319,109 @@
             }
         }
 
-        function toggleGroup(event, group) {
-            event.stopPropagation();
-            const isChecked = event.target.checked;
-            MASTER_INDUSTRY_MAP[group].forEach(sub => {
-                if (isChecked) excludedIndustries.add(sub);
-                else excludedIndustries.delete(sub);
-            });
+        function toggleSubSettings(subId) {
+            const settingsBox = document.getElementById(`settings-${subId}`);
+            settingsBox.style.display = (settingsBox.style.display === "flex") ? "none" : "flex";
+        }
+
+        // --- RULE STATE MANAGEMENT ---
+        function setRule(sub, key, val) {
+            if (!industryRules[sub]) industryRules[sub] = {};
+            industryRules[sub][key] = val;
+            
+            // If banished, uncheck bypasses to keep logic clean
+            if (key === 'banished' && val === true) {
+                industryRules[sub].bypassPromoter = false;
+                industryRules[sub].bypassPledged = false;
+                industryRules[sub].bypassWc = false;
+                industryRules[sub].bypassGrowth = false;
+            }
             updateTreeVisuals();
         }
 
-        function toggleSub(sub, group) {
-            if (excludedIndustries.has(sub)) excludedIndustries.delete(sub);
-            else excludedIndustries.add(sub);
+        function applyGroupAction(group, safeId) {
+            const select = document.getElementById(`group-action-${safeId}`);
+            const action = select.value;
+            if (!action) return;
+            
+            MASTER_INDUSTRY_MAP[group].forEach(sub => {
+                if (!industryRules[sub]) industryRules[sub] = {};
+                
+                if (action === 'clear_all') {
+                    industryRules[sub] = {};
+                } else if (action === 'bypassAll_true') {
+                    industryRules[sub].banished = false;
+                    industryRules[sub].bypassPromoter = true;
+                    industryRules[sub].bypassPledged = true;
+                    industryRules[sub].bypassWc = true;
+                    industryRules[sub].bypassGrowth = true;
+                } else {
+                    let parts = action.split('_');
+                    let key = parts[0];
+                    let val = parts[1] === 'true';
+                    industryRules[sub][key] = val;
+                    if (key === 'banished' && val === true) {
+                        industryRules[sub].bypassPromoter = false;
+                        industryRules[sub].bypassPledged = false;
+                        industryRules[sub].bypassWc = false;
+                        industryRules[sub].bypassGrowth = false;
+                    }
+                }
+            });
+            
+            select.value = ""; // Reset dropdown
             updateTreeVisuals();
         }
 
         function updateTreeVisuals() {
             Object.keys(MASTER_INDUSTRY_MAP).forEach(group => {
-                const subs = MASTER_INDUSTRY_MAP[group];
-                const safeId = group.replace(/\W/g, '');
+                let banishedCount = 0;
+                let exemptedCount = 0;
                 
-                let checkedCount = 0;
-                
-                // Update the inner checkboxes
-                const body = document.getElementById(`body-${safeId}`);
-                if (body) {
-                    const subCbs = body.querySelectorAll('input[type="checkbox"]');
-                    subs.forEach((sub, index) => {
-                        const isChecked = excludedIndustries.has(sub);
-                        if (isChecked) checkedCount++;
-                        if (subCbs[index]) subCbs[index].checked = isChecked;
-                    });
-                }
-                
-                // Update Parent Group Checkbox
-                const groupCb = document.getElementById(`chk-grp-${safeId}`);
-                if (groupCb) {
-                    let isAll = checkedCount === subs.length;
-                    let isIndeterminate = checkedCount > 0 && checkedCount < subs.length;
+                MASTER_INDUSTRY_MAP[group].forEach(sub => {
+                    let rules = industryRules[sub] || {};
+                    let subId = sub.replace(/\W/g, '');
                     
-                    groupCb.checked = isAll;
-                    groupCb.indeterminate = isIndeterminate;
+                    // Update UI Checkboxes to match internal state
+                    if(document.getElementById(`chk-ban-${subId}`)) document.getElementById(`chk-ban-${subId}`).checked = !!rules.banished;
+                    if(document.getElementById(`chk-prom-${subId}`)) document.getElementById(`chk-prom-${subId}`).checked = !!rules.bypassPromoter;
+                    if(document.getElementById(`chk-pledge-${subId}`)) document.getElementById(`chk-pledge-${subId}`).checked = !!rules.bypassPledged;
+                    if(document.getElementById(`chk-wc-${subId}`)) document.getElementById(`chk-wc-${subId}`).checked = !!rules.bypassWc;
+                    if(document.getElementById(`chk-grw-${subId}`)) document.getElementById(`chk-grw-${subId}`).checked = !!rules.bypassGrowth;
                     
-                    const titleSpan = document.getElementById(`title-${safeId}`);
-                    if (titleSpan) {
-                         titleSpan.innerHTML = `${group} <span style="color:#a0aec0; font-size: 12px; font-weight: normal;">(${checkedCount}/${subs.length})</span>`;
+                    // Generate Visual Badges
+                    let badgeHtml = '';
+                    if (rules.banished) {
+                        badgeHtml = '<span class="badge-ban">🚫 Banished</span>';
+                        banishedCount++;
+                    } else {
+                        let bypasses = [];
+                        if (rules.bypassPromoter) bypasses.push('Prom');
+                        if (rules.bypassPledged) bypasses.push('Pledge');
+                        if (rules.bypassWc) bypasses.push('WC');
+                        if (rules.bypassGrowth) bypasses.push('Grw');
+                        
+                        if (bypasses.length > 0) {
+                            badgeHtml = `<span class="badge-bypass">🔓 Bypass: ${bypasses.join(', ')}</span>`;
+                            exemptedCount++;
+                        }
                     }
+                    if(document.getElementById(`badges-${subId}`)) {
+                        document.getElementById(`badges-${subId}`).innerHTML = badgeHtml;
+                    }
+                });
+                
+                // Update Group Header Title
+                let safeId = group.replace(/\W/g, '');
+                let titleHtml = `${group} <span style="color:#718096; font-size:12px; font-weight:normal; margin-left:8px;">`;
+                if (banishedCount > 0) titleHtml += `<span style="color:#c53030;">(🚫 ${banishedCount})</span> `;
+                if (exemptedCount > 0) titleHtml += `<span style="color:#2b6cb0;">(🔓 ${exemptedCount})</span>`;
+                titleHtml += `</span>`;
+                
+                if(document.getElementById(`title-${safeId}`)) {
+                    document.getElementById(`title-${safeId}`).innerHTML = titleHtml;
                 }
             });
-            
-            document.getElementById("exception-count").innerText = `${excludedIndustries.size} Sub-Industries Banished`;
         }
 
         function openExceptionsModal() {
@@ -339,7 +433,7 @@
 
         function closeExceptionsModal() {
             document.getElementById("exceptions-modal").style.display = "none";
-            applyFiltersAndRender(); // Apply bans to the table
+            applyFiltersAndRender(); // Re-run the main table filters
         }
 
         // ═══════════════════════════════════════════════════════════
@@ -443,7 +537,6 @@
                 rawData = await response.json();
                 
                 if(rawData.length > 0) {
-                    // Remove internal "Name" field from UI selection
                     allColumns = Object.keys(rawData[0]).filter(col => col !== "Name");
                     matrixColumnName = allColumns.find(col => col.includes("(>70%)")) || "";
 
@@ -468,7 +561,6 @@
             const orderedVisibleCols = allColumns.filter(col => visibleColumns.has(col));
             let csvLines = [];
             
-            // Clean Header row
             csvLines.push(orderedVisibleCols.map(c => `"${getDisplayName(c)}"`).join(','));
             
             currentFilteredData.forEach((row, index) => {
@@ -493,7 +585,7 @@
         }
 
         // ═══════════════════════════════════════════════════════════
-        // RENDERING (TABLE)
+        // RENDERING & FILTERING THE TABLE
         // ═══════════════════════════════════════════════════════════
         function renderColumnToggles() {
             const container = document.getElementById('column-dropdown');
@@ -527,15 +619,18 @@
             const filterGrowth = document.getElementById('filter-growth').checked;
 
             let filteredData = rawData.filter(row => {
-                if (filterPromoter && (parseFloat(row["Promoter Holding"]) || 0) < 50) return false;
-                if (filterPledged && (parseFloat(row["Pledged %"]) || 0) > 10) return false;
-                if (filterWc && (parseFloat(row["WC Days"]) || 999) > 150) return false;
-                if (filterGrowth && matrixColumnName && row[matrixColumnName] !== "Yes") return false;
-                
-                // Exceptions Engine Logic
                 let subIndustry = row["Industry"] || "Not Found";
-                if (excludedIndustries.has(subIndustry)) return false;
+                let rules = industryRules[subIndustry] || {};
+                
+                // 1. If industry is completely banished, hide immediately
+                if (rules.banished) return false;
 
+                // 2. Process Strict Filters (Applying the Exceptions/Bypasses)
+                if (filterPromoter && !rules.bypassPromoter && (parseFloat(row["Promoter Holding"]) || 0) < 50) return false;
+                if (filterPledged && !rules.bypassPledged && (parseFloat(row["Pledged %"]) || 0) > 10) return false;
+                if (filterWc && !rules.bypassWc && (parseFloat(row["WC Days"]) || 999) > 150) return false;
+                if (filterGrowth && !rules.bypassGrowth && matrixColumnName && row[matrixColumnName] !== "Yes") return false;
+                
                 return true; 
             });
 
@@ -579,12 +674,10 @@
 
             tbody.innerHTML = data.map((row, index) => {
                 return '<tr>' + orderedVisibleCols.map(col => {
-                    
                     if (col === "Sr no") {
                         let displayIndex = sortAscending ? (index + 1) : (data.length - index);
                         return `<td>${displayIndex}</td>`;
                     }
-                    
                     if (col === "Company (Page)") {
                         let fullName = row["Company (Page)"];
                         let shortName = encodeURIComponent(row["Name"]); 
@@ -596,7 +689,6 @@
                             </div>
                         </td>`;
                     }
-                    
                     let val = row[col];
                     if (val === "Yes") return `<td><span class="badge-yes">Yes</span></td>`;
                     if (val === null || val === 0 || val === "") val = "-";
