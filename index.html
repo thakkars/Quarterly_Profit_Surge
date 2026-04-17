@@ -32,7 +32,7 @@
         .checkbox-label { display: block; margin-bottom: 10px; cursor: pointer; font-size: 14px; font-weight: 500; }
         .checkbox-label input { margin-right: 8px; transform: scale(1.2); cursor: pointer;}
         
-        /* Sleek Dropdown for Columns */
+        /* Dropdown for Columns */
         .dropdown { width: 100%; }
         .dropdown-btn { background-color: #fff; border: 1px solid #cbd5e0; padding: 10px 15px; border-radius: 6px; font-size: 14px; font-weight: 600; color: #2b6cb0; cursor: pointer; width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
         .dropdown-btn:hover { background-color: #ebf8ff; border-color: #3182ce; }
@@ -57,24 +57,24 @@
         .action-links a { text-decoration: none; font-size: 11px; padding: 3px 6px; border-radius: 4px; background: #e2e8f0; color: #2b6cb0; font-weight: bold; transition: 0.2s; border: 1px solid #cbd5e0; }
         .action-links a:hover { background: #cbd5e0; color: #1a365d; border-color: #a0aec0;}
 
-        /* EXCEPTIONS MODAL STYLES */
+        /* EXCEPTIONS MODAL & ACCORDION TREE STYLES */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(2px); }
-        .modal-content { background: white; width: 95%; max-width: 800px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); display: flex; flex-direction: column; max-height: 85vh; overflow: hidden; }
+        .modal-content { background: white; width: 95%; max-width: 600px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); display: flex; flex-direction: column; max-height: 85vh; overflow: hidden; }
         .modal-header { padding: 15px 20px; background: #1a365d; color: white; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
-        .modal-close { background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
-        .modal-body { display: flex; flex: 1; overflow: hidden; }
-        .modal-left { width: 45%; border-right: 1px solid #e2e8f0; overflow-y: auto; background: #f7fafc; padding: 10px; }
-        .modal-right { width: 55%; overflow-y: auto; padding: 15px; background: white; }
-        .group-item { padding: 10px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; transition: 0.2s; margin-bottom: 5px; }
-        .group-item:hover { background: #edf2f7; }
-        .group-item.active { background: #e2e8f0; border-left: 4px solid #2b6cb0; font-weight: 600; }
-        .group-item input { margin-right: 10px; transform: scale(1.2); cursor: pointer; }
-        .sub-industry-item { padding: 8px 10px; display: flex; align-items: center; cursor: pointer; border-bottom: 1px solid #edf2f7; }
-        .sub-industry-item:hover { background: #f7fafc; }
-        .sub-industry-item input { margin-right: 10px; transform: scale(1.2); cursor: pointer; }
-        .modal-footer { padding: 15px; background: #edf2f7; border-top: 1px solid #cbd5e0; text-align: right; }
-        .btn-done { background: #2b6cb0; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .btn-done:hover { background: #1a365d; }
+        .modal-close { background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0; line-height: 1; }
+        .modal-body { flex: 1; overflow-y: auto; padding: 15px; background: #f4f7f9; }
+        .modal-footer { padding: 15px; background: #edf2f7; border-top: 1px solid #cbd5e0; text-align: right; display: flex; justify-content: space-between; align-items: center; }
+        
+        .accordion-item { border: 1px solid #cbd5e0; border-radius: 6px; margin-bottom: 8px; background: white; overflow: hidden; }
+        .accordion-header { display: flex; align-items: center; padding: 12px 15px; cursor: pointer; transition: 0.2s; user-select: none; }
+        .accordion-header:hover { background: #ebf8ff; }
+        .accordion-header input { margin-right: 12px; transform: scale(1.3); cursor: pointer; }
+        .accordion-title { flex: 1; font-weight: 600; color: #2d3748; font-size: 14px; }
+        .accordion-toggle { color: #718096; font-size: 12px; font-weight: bold; transition: transform 0.2s; }
+        .accordion-toggle.open { transform: rotate(180deg); }
+        .accordion-body { border-top: 1px solid #cbd5e0; padding: 12px 15px 12px 40px; display: none; flex-direction: column; gap: 10px; background: #fafafa; }
+        .accordion-body label { display: flex; align-items: center; cursor: pointer; font-size: 13px; color: #4a5568; }
+        .accordion-body input { margin-right: 10px; transform: scale(1.2); cursor: pointer; }
     </style>
 </head>
 <body>
@@ -124,20 +124,13 @@
     <div id="exceptions-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <span>🚫 Industry Exceptions (Check to Banish)</span>
+                <span>🚫 Master Exceptions List</span>
                 <button class="modal-close" onclick="closeExceptionsModal()">&times;</button>
             </div>
-            <div class="modal-body">
-                <div class="modal-left" id="modal-groups">
-                    </div>
-                <div class="modal-right" id="modal-subs">
-                    <div style="padding: 20px; color: #718096; text-align: center; margin-top: 50px;">
-                        👈 Select an Industry Group on the left to view sub-industries.
-                    </div>
+            <div class="modal-body" id="exceptions-tree-container">
                 </div>
-            </div>
             <div class="modal-footer">
-                <span id="exception-count" style="margin-right: 15px; font-size: 14px; font-weight: bold; color: #e53e3e;">0 Industries Banished</span>
+                <span id="exception-count" style="font-size: 14px; font-weight: bold; color: #e53e3e;">0 Sub-Industries Banished</span>
                 <button class="btn-done" onclick="closeExceptionsModal()">Done</button>
             </div>
         </div>
@@ -160,9 +153,69 @@
         let sortColumn = "Sr no"; 
         let sortAscending = true;
 
-        // --- EXCEPTIONS STATE (THE BRAIN) ---
-        let industryMap = {}; 
-        let activeModalGroup = null;
+        // --- HARDCODED MASTER EXCLUSION LIST FROM EXCEL ---
+        const MASTER_INDUSTRY_MAP = {
+            "Aerospace & Defense": ["Aerospace & Defense"],
+            "Agricultural Food & other Products": ["Edible Oil", "Other Agricultural Products", "Sugar", "Tea & Coffee"],
+            "Agricultural, Commercial & Construction Vehicles": ["Commercial Vehicles", "Construction Vehicles", "Dealers-Commercial Vehicles, Tractors, Construction Vehicles", "Tractors"],
+            "Auto Components": ["Auto Components & Equipments", "Trading - Auto components", "Tyres & Rubber Products"],
+            "Automobiles": ["2/3 Wheelers", "Auto Dealer", "Passenger Cars & Utility Vehicles"],
+            "Banks": ["Other Bank", "Private Sector Bank", "Public Sector Bank"],
+            "Beverages": ["Breweries & Distilleries", "Other Beverages"],
+            "Capital Markets": ["Asset Management Company", "Depositories, Clearing Houses and Other Intermediaries", "Exchange and Data Platform", "Financial Products Distributor", "Other Capital Market related Services", "Ratings", "Stockbroking & Allied"],
+            "Cement & Cement Products": ["Cement & Cement Products"],
+            "Chemicals & Petrochemicals": ["Carbon Black", "Commodity Chemicals", "Dyes And Pigments", "Explosives", "Industrial Gases", "Petrochemicals", "Printing Inks", "Specialty Chemicals", "Trading - Chemicals"],
+            "Cigarettes & Tobacco Products": ["Cigarettes & Tobacco Products"],
+            "Commercial Services & Supplies": ["Business Process Outsourcing (BPO)/ Knowledge Process Outsourcing (KPO)", "Consulting Services", "Data Processing Services", "Diversified Commercial Services", "Trading & Distributors"],
+            "Construction": ["Civil Construction"],
+            "Consumable Fuels": ["Coal", "Trading - Coal"],
+            "Consumer Durables": ["Ceramics", "Consumer Electronics", "Cycles", "Diversified consumer products", "Footwear", "Furniture, Home Furnishing", "Gems, Jewellery And Watches", "Glass - Consumer", "Granites & Marbles", "Household Appliances", "Houseware", "Leather And Leather Products", "Leisure Products", "Paints", "Plastic Products - Consumer", "Plywood Boards/ Laminates", "Sanitary Ware"],
+            "Diversified": ["Diversified"],
+            "Diversified FMCG": ["Diversified FMCG"],
+            "Diversified Metals": ["Diversified Metals"],
+            "Electrical Equipment": ["Heavy Electrical Equipment", "Other Electrical Equipment"],
+            "Engineering Services": ["Dredging"],
+            "Entertainment": ["Digital Entertainment", "Film Production, Distribution & Exhibition", "Media & Entertainment", "TV Broadcasting & Software Production"],
+            "Ferrous Metals": ["Ferro & Silica Manganese", "Iron & Steel", "Pig Iron", "Sponge Iron"],
+            "Fertilizers & Agrochemicals": ["Fertilizers", "Pesticides & Agrochemicals"],
+            "Finance": ["Financial Institution", "Holding Company", "Housing Finance Company", "Investment Company", "Microfinance Institutions", "Non Banking Financial Company (NBFC)", "Other Financial Services"],
+            "Financial Technology (Fintech)": ["Financial Technology (Fintech)"],
+            "Food Products": ["Animal Feed", "Dairy Products", "Meat Products including Poultry", "Other Food Products", "Packaged Foods", "Seafood"],
+            "Gas": ["Gas Transmission/Marketing", "LPG/CNG/PNG/LNG Supplier", "Trading - Gas"],
+            "Healthcare Equipment & Supplies": ["Medical Equipment & Supplies"],
+            "Healthcare Services": ["Healthcare Research, Analytics & Technology", "Healthcare Service Provider", "Hospital"],
+            "Household Products": ["Household Products", "Stationary"],
+            "IT - Hardware": ["Computers Hardware & Equipments"],
+            "IT - Services": ["IT Enabled Services"],
+            "IT - Software": ["Computers - Software & Consulting", "Software Products"],
+            "Industrial Manufacturing": ["Industrial Products", "Railway Wagons", "Ship Building & Allied Services"],
+            "Industrial Products": ["Abrasives & Bearings", "Aluminium, Copper & Zinc Products", "Cables - Electricals", "Castings & Forgings", "Compressors, Pumps & Diesel Engines", "Electrodes & Refractories", "Glass - Industrial", "Iron & Steel Products", "Other Industrial Products", "Packaging", "Plastic Products - Industrial", "Rubber"],
+            "Insurance": ["General Insurance", "Insurance Distributors", "Life Insurance"],
+            "Leisure Services": ["Amusement Parks/ Other Recreation", "Hotels & Resorts", "Restaurants", "Tour, Travel Related Services", "Wellness"],
+            "Media": ["Advertising & Media Agencies", "Electronic Media", "Print Media", "Web based media and service"],
+            "Metals & Minerals Trading": ["Trading - Metals", "Trading - Minerals"],
+            "Minerals & Mining": ["Industrial Minerals"],
+            "Non - Ferrous Metals": ["Aluminium", "Copper", "Precious Metals", "Zinc"],
+            "Oil": ["Offshore Support Solution Drilling", "Oil Equipment & Services", "Oil Exploration & Production", "Oil Storage & Transportation"],
+            "Other Construction Materials": ["Other Construction Materials"],
+            "Other Consumer Services": ["E-Learning", "Education", "Food Storage Facilities", "Other Consumer Services"],
+            "Other Utilities": ["Multi Utilities", "Other Utilities", "Waste Management", "Water Supply & Management"],
+            "Paper, Forest & Jute Products": ["Forest Products", "Jute & Jute Products", "Paper & Paper Products"],
+            "Personal Products": ["Personal Care"],
+            "Petroleum Products": ["Lubricants", "Refineries & Marketing"],
+            "Pharmaceuticals & Biotechnology": ["Biotechnology", "Pharmaceuticals"],
+            "Power": ["Integrated Power Utilities", "Power - Transmission", "Power Distribution", "Power Generation", "Power Trading"],
+            "Printing & Publication": ["Printing & Publication"],
+            "Realty": ["Real Estate Investment Trusts (REITs)", "Real Estate related services", "Residential, Commercial Projects"],
+            "Retailing": ["Distributors", "Diversified Retail", "E-Retail/ E-Commerce", "Internet & Catalogue Retail", "Pharmacy Retail", "Speciality Retail"],
+            "Telecom -  Equipment & Accessories": ["Telecom -  Equipment & Accessories"],
+            "Telecom - Services": ["Other Telecom Services", "Telecom - Cellular & Fixed line services", "Telecom - Infrastructure"],
+            "Textiles & Apparels": ["Garments & Apparels", "Other Textile Products", "Trading - Textile Products"],
+            "Transport Infrastructure": ["Airport & Airport services", "Port & Port services", "Road AssetsToll, Annuity, Hybrid-Annuity"],
+            "Transport Services": ["Airline", "Logistics Solution Provider", "Road Transport", "Shipping", "Transport Related Services"]
+        };
+
+        // This Set holds all banned Sub-Industries
         let excludedIndustries = new Set(); 
 
         // --- HELPER TO RENAME COLUMNS ON SCREEN ---
@@ -173,109 +226,120 @@
         }
 
         // ═══════════════════════════════════════════════════════════
-        // EXCEPTIONS LOGIC & MODAL
+        // EXCEPTIONS LOGIC (ACCORDION TREE)
         // ═══════════════════════════════════════════════════════════
-        function buildIndustryMap() {
-            industryMap = {};
-            rawData.forEach(row => {
-                let group = row["Industry Group"] || "Uncategorized";
-                let sub = row["Industry"] || "Uncategorized";
-                if (group.trim() === "" || group === "0") group = "Not Found";
-                if (sub.trim() === "" || sub === "0") sub = "Not Found";
+        function renderExceptionsTree() {
+            const container = document.getElementById("exceptions-tree-container");
+            container.innerHTML = "";
+            
+            Object.keys(MASTER_INDUSTRY_MAP).forEach(group => {
+                const subs = MASTER_INDUSTRY_MAP[group];
                 
-                if (!industryMap[group]) industryMap[group] = new Set();
-                industryMap[group].add(sub);
+                const item = document.createElement("div");
+                item.className = "accordion-item";
+                
+                const safeId = group.replace(/\W/g, '');
+                
+                let headerHtml = `
+                    <div class="accordion-header" onclick="toggleAccordion(event, '${safeId}')">
+                        <input type="checkbox" id="chk-grp-${safeId}" onchange="toggleGroup(event, '${group}')">
+                        <span class="accordion-title" id="title-${safeId}">${group} <span style="color:#a0aec0; font-size: 12px; font-weight: normal;">(0/${subs.length})</span></span>
+                        <span class="accordion-toggle" id="arrow-${safeId}">▼</span>
+                    </div>
+                    <div class="accordion-body" id="body-${safeId}">
+                        ${subs.map((sub, index) => `
+                            <label onclick="event.stopPropagation()">
+                                <input type="checkbox" onchange="toggleSub('${sub}', '${group}')">
+                                ${sub}
+                            </label>
+                        `).join('')}
+                    </div>
+                `;
+                item.innerHTML = headerHtml;
+                container.appendChild(item);
             });
-            Object.keys(industryMap).forEach(group => {
-                industryMap[group] = Array.from(industryMap[group]).sort();
+            updateTreeVisuals(); // Sync checkboxes with internal Set state
+        }
+
+        function toggleAccordion(event, safeId) {
+            // Prevent toggling accordion if user clicks the checkbox itself
+            if(event.target.tagName.toLowerCase() === 'input') return; 
+            
+            const body = document.getElementById(`body-${safeId}`);
+            const arrow = document.getElementById(`arrow-${safeId}`);
+            
+            if (body.style.display === "flex") {
+                body.style.display = "none";
+                arrow.classList.remove("open");
+            } else {
+                body.style.display = "flex";
+                arrow.classList.add("open");
+            }
+        }
+
+        function toggleGroup(event, group) {
+            event.stopPropagation();
+            const isChecked = event.target.checked;
+            MASTER_INDUSTRY_MAP[group].forEach(sub => {
+                if (isChecked) excludedIndustries.add(sub);
+                else excludedIndustries.delete(sub);
             });
+            updateTreeVisuals();
+        }
+
+        function toggleSub(sub, group) {
+            if (excludedIndustries.has(sub)) excludedIndustries.delete(sub);
+            else excludedIndustries.add(sub);
+            updateTreeVisuals();
+        }
+
+        function updateTreeVisuals() {
+            Object.keys(MASTER_INDUSTRY_MAP).forEach(group => {
+                const subs = MASTER_INDUSTRY_MAP[group];
+                const safeId = group.replace(/\W/g, '');
+                
+                let checkedCount = 0;
+                
+                // Update the inner checkboxes
+                const body = document.getElementById(`body-${safeId}`);
+                if (body) {
+                    const subCbs = body.querySelectorAll('input[type="checkbox"]');
+                    subs.forEach((sub, index) => {
+                        const isChecked = excludedIndustries.has(sub);
+                        if (isChecked) checkedCount++;
+                        if (subCbs[index]) subCbs[index].checked = isChecked;
+                    });
+                }
+                
+                // Update Parent Group Checkbox
+                const groupCb = document.getElementById(`chk-grp-${safeId}`);
+                if (groupCb) {
+                    let isAll = checkedCount === subs.length;
+                    let isIndeterminate = checkedCount > 0 && checkedCount < subs.length;
+                    
+                    groupCb.checked = isAll;
+                    groupCb.indeterminate = isIndeterminate;
+                    
+                    const titleSpan = document.getElementById(`title-${safeId}`);
+                    if (titleSpan) {
+                         titleSpan.innerHTML = `${group} <span style="color:#a0aec0; font-size: 12px; font-weight: normal;">(${checkedCount}/${subs.length})</span>`;
+                    }
+                }
+            });
+            
+            document.getElementById("exception-count").innerText = `${excludedIndustries.size} Sub-Industries Banished`;
         }
 
         function openExceptionsModal() {
             document.getElementById("exceptions-modal").style.display = "flex";
-            renderModalGroups();
+            if(document.getElementById("exceptions-tree-container").innerHTML === "") {
+                renderExceptionsTree();
+            }
         }
 
         function closeExceptionsModal() {
             document.getElementById("exceptions-modal").style.display = "none";
-            applyFiltersAndRender(); 
-        }
-
-        function renderModalGroups() {
-            const groupContainer = document.getElementById("modal-groups");
-            groupContainer.innerHTML = "";
-            
-            let sortedGroups = Object.keys(industryMap).sort();
-
-            sortedGroups.forEach(group => {
-                const subs = industryMap[group];
-                if(subs.length === 0) return;
-
-                let excludedCount = subs.filter(sub => excludedIndustries.has(sub)).length;
-                let isAllExcluded = excludedCount === subs.length;
-                let isIndeterminate = excludedCount > 0 && excludedCount < subs.length;
-
-                const div = document.createElement("div");
-                div.className = `group-item ${activeModalGroup === group ? 'active' : ''}`;
-                
-                div.innerHTML = `
-                    <input type="checkbox" id="chk-grp-${group}" 
-                        ${isAllExcluded ? 'checked' : ''} 
-                        title="Ban entire group">
-                    <div style="flex:1" onclick="selectModalGroup('${group}')">${group} <span style="font-size:11px; color:#718096">(${subs.length})</span></div>
-                `;
-                
-                groupContainer.appendChild(div);
-
-                const cb = document.getElementById(`chk-grp-${group}`);
-                if (isIndeterminate) cb.indeterminate = true;
-
-                cb.addEventListener('change', (e) => {
-                    const isChecked = e.target.checked;
-                    subs.forEach(sub => {
-                        if (isChecked) excludedIndustries.add(sub);
-                        else excludedIndustries.delete(sub);
-                    });
-                    renderModalGroups(); 
-                    if (activeModalGroup === group) renderModalSubs(group); 
-                    updateExceptionCount();
-                });
-            });
-            updateExceptionCount();
-        }
-
-        function selectModalGroup(group) {
-            activeModalGroup = group;
-            renderModalGroups(); 
-            renderModalSubs(group);
-        }
-
-        function renderModalSubs(group) {
-            const subContainer = document.getElementById("modal-subs");
-            subContainer.innerHTML = `<h3 style="margin-top:0; color:#1a365d; border-bottom:2px solid #e2e8f0; padding-bottom:10px;">${group}</h3>`;
-            
-            const subs = industryMap[group];
-            subs.forEach(sub => {
-                const isExcluded = excludedIndustries.has(sub);
-                const label = document.createElement("label");
-                label.className = "sub-industry-item";
-                label.innerHTML = `
-                    <input type="checkbox" ${isExcluded ? 'checked' : ''} onchange="toggleExceptionSub('${sub}', this.checked, '${group}')">
-                    <span>${sub}</span>
-                `;
-                subContainer.appendChild(label);
-            });
-        }
-
-        function toggleExceptionSub(sub, isChecked, parentGroup) {
-            if (isChecked) excludedIndustries.add(sub);
-            else excludedIndustries.delete(sub);
-            renderModalGroups();
-            updateExceptionCount();
-        }
-
-        function updateExceptionCount() {
-            document.getElementById("exception-count").innerText = `${excludedIndustries.size} Sub-Industries Banished`;
+            applyFiltersAndRender(); // Apply bans to the table
         }
 
         // ═══════════════════════════════════════════════════════════
@@ -323,11 +387,7 @@
 
                 const dispatchRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/dispatches`, {
                     method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/vnd.github.v3+json',
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ref: BRANCH })
                 });
 
@@ -335,7 +395,6 @@
                 
                 statusText.innerHTML = `<span class="spinner"></span> Engine spinning up...`;
                 setTimeout(() => pollWorkflowStatus(token), 5000);
-
             } catch (error) {
                 statusText.innerHTML = `❌ Error starting`;
                 btn.disabled = false;
@@ -384,7 +443,7 @@
                 rawData = await response.json();
                 
                 if(rawData.length > 0) {
-                    // Filter "Name" completely out of the UI
+                    // Remove internal "Name" field from UI selection
                     allColumns = Object.keys(rawData[0]).filter(col => col !== "Name");
                     matrixColumnName = allColumns.find(col => col.includes("(>70%)")) || "";
 
@@ -393,7 +452,6 @@
                     
                     visibleColumns = new Set(defaultCols.filter(c => allColumns.includes(c)));
                     
-                    buildIndustryMap(); 
                     renderColumnToggles();
                     applyFiltersAndRender();
                 }
@@ -410,16 +468,13 @@
             const orderedVisibleCols = allColumns.filter(col => visibleColumns.has(col));
             let csvLines = [];
             
-            // Export uses the pretty Display Names
+            // Clean Header row
             csvLines.push(orderedVisibleCols.map(c => `"${getDisplayName(c)}"`).join(','));
             
             currentFilteredData.forEach((row, index) => {
                 let rowArray = orderedVisibleCols.map(col => {
                     let val = row[col];
-                    // Export uses dynamic serial number
-                    if (col === "Sr no") {
-                        val = sortAscending ? (index + 1) : (currentFilteredData.length - index);
-                    }
+                    if (col === "Sr no") val = sortAscending ? (index + 1) : (currentFilteredData.length - index);
                     if (val === null || val === undefined) val = "";
                     let strVal = String(val).replace(/"/g, '""'); 
                     return `"${strVal}"`;
@@ -443,7 +498,6 @@
         function renderColumnToggles() {
             const container = document.getElementById('column-dropdown');
             container.innerHTML = '';
-            
             allColumns.forEach(col => {
                 const label = document.createElement('label');
                 const isChecked = visibleColumns.has(col) ? 'checked' : '';
@@ -478,6 +532,7 @@
                 if (filterWc && (parseFloat(row["WC Days"]) || 999) > 150) return false;
                 if (filterGrowth && matrixColumnName && row[matrixColumnName] !== "Yes") return false;
                 
+                // Exceptions Engine Logic
                 let subIndustry = row["Industry"] || "Not Found";
                 if (excludedIndustries.has(subIndustry)) return false;
 
@@ -525,7 +580,6 @@
             tbody.innerHTML = data.map((row, index) => {
                 return '<tr>' + orderedVisibleCols.map(col => {
                     
-                    // Dynamic Sr No Logic
                     if (col === "Sr no") {
                         let displayIndex = sortAscending ? (index + 1) : (data.length - index);
                         return `<td>${displayIndex}</td>`;
@@ -555,7 +609,9 @@
             cb.addEventListener('change', applyFiltersAndRender);
         });
 
+        // Initialize App
         fetchData();
+        renderExceptionsTree(); 
     </script>
 </body>
 </html>
