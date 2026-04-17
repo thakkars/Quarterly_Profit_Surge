@@ -10,12 +10,16 @@
         .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
         h1 { color: #1a365d; margin: 0; }
         
-        /* New Action Button Styles */
-        .action-panel { display: flex; align-items: center; gap: 10px; background: #edf2f7; padding: 10px 15px; border-radius: 8px; border: 1px solid #cbd5e0; }
+        /* Action Button Styles */
+        .action-panel { display: flex; align-items: center; gap: 10px; background: #edf2f7; padding: 10px 15px; border-radius: 8px; border: 1px solid #cbd5e0; flex-wrap: wrap;}
         #run-btn { background-color: #2b6cb0; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
         #run-btn:hover { background-color: #2c5282; }
         #run-btn:disabled { background-color: #a0aec0; cursor: not-allowed; }
-        #workflow-status { font-size: 13px; font-weight: 600; color: #4a5568; }
+        
+        #export-btn { background-color: #4a5568; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
+        #export-btn:hover { background-color: #2d3748; }
+
+        #workflow-status { font-size: 13px; font-weight: 600; color: #4a5568; margin-left: auto; }
         .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(0,0,0,0.1); border-radius: 50%; border-top-color: #2b6cb0; animation: spin 1s ease-in-out infinite; vertical-align: middle; margin-right: 5px; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -24,6 +28,7 @@
         .filter-group h3 { margin-top: 0; font-size: 16px; color: #2d3748; margin-bottom: 12px; border-bottom: 1px solid #cbd5e0; padding-bottom: 5px; }
         .checkbox-label { display: block; margin-bottom: 10px; cursor: pointer; font-size: 14px; font-weight: 500; }
         .checkbox-label input { margin-right: 8px; transform: scale(1.2); cursor: pointer;}
+        
         .column-toggles { display: flex; flex-wrap: wrap; gap: 8px; }
         .column-toggles label { background: #fff; padding: 6px 10px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; cursor: pointer; user-select: none; transition: 0.2s; }
         .column-toggles label:hover { border-color: #3182ce; }
@@ -31,14 +36,24 @@
         .column-toggles input:checked + span { font-weight: bold; color: #2b6cb0; }
         .column-toggles label:has(input:checked) { background-color: #ebf8ff; border-color: #63b3ed; }
         
-        .table-container { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
+        .table-container { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; max-height: 70vh;}
         table { width: 100%; border-collapse: collapse; font-size: 14px; background: white; }
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
-        th { background-color: #2b6cb0; color: white; position: sticky; top: 0; font-weight: 600; z-index: 10; }
+        
+        /* Sortable Header Styles */
+        th { background-color: #2b6cb0; color: white; position: sticky; top: 0; font-weight: 600; z-index: 10; cursor: pointer; transition: background 0.2s; user-select: none; }
+        th:hover { background-color: #1a365d; }
+        .sort-icon { font-size: 12px; margin-left: 5px; opacity: 0.7; }
+        
         tr:hover { background-color: #ebf8ff; }
         .badge-yes { background-color: #48bb78; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
         .loading { text-align: center; padding: 40px; font-size: 18px; color: #718096; }
         .stats { text-align: right; font-size: 14px; color: #4a5568; margin-bottom: 10px; font-weight: 600; }
+
+        /* Quick Action Links */
+        .action-links { margin-top: 6px; display: flex; gap: 5px; }
+        .action-links a { text-decoration: none; font-size: 11px; padding: 3px 6px; border-radius: 4px; background: #e2e8f0; color: #2b6cb0; font-weight: bold; transition: 0.2s; border: 1px solid #cbd5e0; }
+        .action-links a:hover { background: #cbd5e0; color: #1a365d; border-color: #a0aec0;}
     </style>
 </head>
 <body>
@@ -48,6 +63,7 @@
             
             <div class="action-panel">
                 <button id="run-btn" onclick="triggerWorkflow()">▶️ Run Backend Scraper</button>
+                <button id="export-btn" onclick="exportToCSV()">📥 Export CSV</button>
                 <span id="workflow-status">Status: Idle</span>
             </div>
         </div>
@@ -81,40 +97,42 @@
     </div>
 
     <script>
-        // --- CONFIGURATION FOR GITHUB ACTIONS ---
-        const GITHUB_OWNER = "thakkars"; // Your GitHub username
-        const GITHUB_REPO = "Quarterly_Profit_Surge"; // Your repository name
-        const WORKFLOW_FILE = "run_screener.yml"; // UPDATED to match your screenshot
-        const BRANCH = "main"; // The branch to run on
-        
-        // --- CONFIGURATION FOR DATA ---
+        // --- CONFIGURATION ---
+        const GITHUB_OWNER = "thakkars"; 
+        const GITHUB_REPO = "Quarterly_Profit_Surge"; 
+        const WORKFLOW_FILE = "run_screener.yml"; 
+        const BRANCH = "main"; 
         const DATA_URL = "https://pub-9afc232687c44eebbb8cae359c7ac460.r2.dev/rawdata.json";
         
+        // --- STATE VARIABLES ---
         let rawData = [];
+        let currentFilteredData = []; // Keeps track of data for CSV export
         let allColumns = [];
         let visibleColumns = new Set();
         let matrixColumnName = "";
+        
+        // Sorting State
+        let sortColumn = "Sr no"; // Default sort
+        let sortAscending = true;
 
         // ═══════════════════════════════════════════════════════════
-        // WORKFLOW TRIGGER & POLLING LOGIC
+        // WORKFLOW TRIGGER LOGIC
         // ═══════════════════════════════════════════════════════════
         async function triggerWorkflow() {
             const btn = document.getElementById('run-btn');
             const statusText = document.getElementById('workflow-status');
             
-            // 1. Get or ask for the GitHub Token safely
             let token = localStorage.getItem('gh_token');
             if (!token) {
                 token = prompt("To run the scraper securely, please paste your GitHub Personal Access Token (PAT).\n\nIt will be saved securely on this browser so you don't have to enter it again.");
-                if (!token) return; // User cancelled
+                if (!token) return; 
                 localStorage.setItem('gh_token', token.trim());
             }
 
             try {
                 btn.disabled = true;
-                statusText.innerHTML = `<span class="spinner"></span> Starting backend engine...`;
+                statusText.innerHTML = `<span class="spinner"></span> Starting engine...`;
 
-                // 2. Tell GitHub to start the action
                 const dispatchRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/dispatches`, {
                     method: 'POST',
                     headers: {
@@ -127,13 +145,12 @@
 
                 if (!dispatchRes.ok) {
                     if (dispatchRes.status === 401 || dispatchRes.status === 404) {
-                        localStorage.removeItem('gh_token'); // Clear bad token
-                        throw new Error("Invalid Token or Repo permissions. Token cleared. Please refresh and try again.");
+                        localStorage.removeItem('gh_token'); 
+                        throw new Error("Invalid Token. Token cleared. Please refresh and try again.");
                     }
-                    throw new Error(`GitHub API Error: ${dispatchRes.status}`);
+                    throw new Error(`API Error: ${dispatchRes.status}`);
                 }
 
-                // 3. Wait a few seconds for GitHub to actually queue the job, then start polling
                 statusText.innerHTML = `<span class="spinner"></span> Engine spinning up...`;
                 setTimeout(() => pollWorkflowStatus(token), 5000);
 
@@ -146,54 +163,41 @@
         async function pollWorkflowStatus(token) {
             const statusText = document.getElementById('workflow-status');
             try {
-                // Get the most recent run for this workflow
                 const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/runs?per_page=1`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/vnd.github.v3+json'
-                    }
+                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' }
                 });
 
-                if (!res.ok) throw new Error("Could not fetch workflow status.");
+                if (!res.ok) throw new Error("Could not fetch status.");
                 const data = await res.json();
                 
                 if (data.workflow_runs && data.workflow_runs.length > 0) {
                     const latestRun = data.workflow_runs[0];
-                    const status = latestRun.status;
-                    const conclusion = latestRun.conclusion;
-
-                    if (status === "completed") {
-                        if (conclusion === "success") {
-                            statusText.innerHTML = `✅ Workflow Completed! Fetching fresh data...`;
+                    if (latestRun.status === "completed") {
+                        if (latestRun.conclusion === "success") {
+                            statusText.innerHTML = `✅ Complete! Fetching fresh data...`;
                             setTimeout(() => {
-                                fetchData(); // Reload the data table
+                                fetchData(); 
                                 document.getElementById('run-btn').disabled = false;
                                 statusText.innerHTML = `Status: Idle (Fresh Data Loaded)`;
-                            }, 3000); // Give R2 a moment to process the file
+                            }, 3000); 
                         } else {
-                            statusText.innerHTML = `❌ Workflow failed: ${conclusion}. Check GitHub logs.`;
+                            statusText.innerHTML = `❌ Failed: ${latestRun.conclusion}.`;
                             document.getElementById('run-btn').disabled = false;
                         }
-                        return; // Stop polling
+                        return; 
                     } else {
-                        statusText.innerHTML = `<span class="spinner"></span> Engine running (${status})...`;
+                        statusText.innerHTML = `<span class="spinner"></span> Engine running (${latestRun.status})...`;
                     }
                 }
-            } catch (error) {
-                console.error("Polling error:", error);
-            }
-            
-            // Poll again in 10 seconds if not completed
+            } catch (error) { console.error("Polling error:", error); }
             setTimeout(() => pollWorkflowStatus(token), 10000);
         }
 
-
         // ═══════════════════════════════════════════════════════════
-        // DATA FETCHING & RENDERING LOGIC
+        // DATA FETCHING & CSV EXPORT
         // ═══════════════════════════════════════════════════════════
         async function fetchData() {
             try {
-                // Add a cache-busting timestamp so you always see the freshest data
                 const response = await fetch(`${DATA_URL}?t=${new Date().getTime()}`);
                 if (!response.ok) throw new Error("Data not found");
                 
@@ -201,11 +205,8 @@
                 
                 if(rawData.length > 0) {
                     allColumns = Object.keys(rawData[0]);
-                    
-                    // Auto-detect the dynamic matrix column (e.g., "Dec25 (>70%) Dec24")
                     matrixColumnName = allColumns.find(col => col.includes("(>70%)")) || "";
 
-                    // Set default columns to display on first load
                     const defaultCols = ["Sr no", "date", "Name", "Industry", "Promoter Holding", "Pledged %", "WC Days"];
                     if (matrixColumnName) defaultCols.push(matrixColumnName);
                     
@@ -215,10 +216,46 @@
                     applyFiltersAndRender();
                 }
             } catch (error) {
-                document.getElementById('table-body').innerHTML = `<tr><td class="loading" style="color:#e53e3e;" colspan="100%">Raw data not found. Try running the backend scraper!</td></tr>`;
+                document.getElementById('table-body').innerHTML = `<tr><td class="loading" style="color:#e53e3e;" colspan="100%">Raw data not found. Run the backend scraper!</td></tr>`;
             }
         }
 
+        function exportToCSV() {
+            if (!currentFilteredData || currentFilteredData.length === 0) {
+                alert("No data available to export.");
+                return;
+            }
+            
+            const orderedVisibleCols = allColumns.filter(col => visibleColumns.has(col));
+            let csvLines = [];
+            
+            // Add Headers
+            csvLines.push(orderedVisibleCols.map(c => `"${c}"`).join(','));
+            
+            // Add Rows
+            currentFilteredData.forEach(row => {
+                let rowArray = orderedVisibleCols.map(col => {
+                    let val = row[col];
+                    if (val === null || val === undefined) val = "";
+                    let strVal = String(val).replace(/"/g, '""'); // Escape inner quotes
+                    return `"${strVal}"`;
+                });
+                csvLines.push(rowArray.join(','));
+            });
+            
+            const csvData = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const csvUrl = URL.createObjectURL(csvData);
+            const link = document.createElement('a');
+            link.href = csvUrl;
+            link.download = `Terminal_Export_${new Date().toISOString().slice(0,10)}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // RENDERING & INTERACTIVITY
+        // ═══════════════════════════════════════════════════════════
         function renderColumnToggles() {
             const container = document.getElementById('column-toggles');
             container.innerHTML = '';
@@ -232,10 +269,17 @@
         }
 
         function toggleColumn(checkbox) {
-            if (checkbox.checked) {
-                visibleColumns.add(checkbox.value);
+            if (checkbox.checked) visibleColumns.add(checkbox.value);
+            else visibleColumns.delete(checkbox.value);
+            applyFiltersAndRender();
+        }
+
+        function handleSort(column) {
+            if (sortColumn === column) {
+                sortAscending = !sortAscending; // Toggle direction if same column
             } else {
-                visibleColumns.delete(checkbox.value);
+                sortColumn = column;
+                sortAscending = true; // Default to ascending on new column
             }
             applyFiltersAndRender();
         }
@@ -246,7 +290,7 @@
             const filterWc = document.getElementById('filter-wc').checked;
             const filterGrowth = document.getElementById('filter-growth').checked;
 
-            const filteredData = rawData.filter(row => {
+            let filteredData = rawData.filter(row => {
                 if (filterPromoter && (parseFloat(row["Promoter Holding"]) || 0) < 50) return false;
                 if (filterPledged && (parseFloat(row["Pledged %"]) || 0) > 10) return false;
                 if (filterWc && (parseFloat(row["WC Days"]) || 999) > 150) return false;
@@ -254,28 +298,73 @@
                 return true; 
             });
 
+            // Apply Sorting
+            if (sortColumn) {
+                filteredData.sort((a, b) => {
+                    let valA = a[sortColumn];
+                    let valB = b[sortColumn];
+                    
+                    if (valA === null || valA === "") valA = -999999; // Push blanks to bottom
+                    if (valB === null || valB === "") valB = -999999;
+
+                    // Try numeric sort
+                    let numA = parseFloat(valA);
+                    let numB = parseFloat(valB);
+                    if (!isNaN(numA) && !isNaN(numB)) {
+                        return sortAscending ? numA - numB : numB - numA;
+                    }
+
+                    // Fallback to string sort
+                    let strA = String(valA).toLowerCase();
+                    let strB = String(valB).toLowerCase();
+                    if (strA < strB) return sortAscending ? -1 : 1;
+                    if (strA > strB) return sortAscending ? 1 : -1;
+                    return 0;
+                });
+            }
+
+            currentFilteredData = filteredData; // Save for CSV
             renderTable(filteredData);
         }
 
         function renderTable(data) {
             const thead = document.getElementById('table-head');
             const tbody = document.getElementById('table-body');
-            
             document.getElementById('row-count').innerText = `Showing ${data.length} of ${rawData.length} stocks`;
 
-            // Maintain the logical column order from Excel
             const orderedVisibleCols = allColumns.filter(col => visibleColumns.has(col));
 
-            thead.innerHTML = '<tr>' + orderedVisibleCols.map(col => `<th>${col}</th>`).join('') + '</tr>';
+            // Render Clickable Headers
+            thead.innerHTML = '<tr>' + orderedVisibleCols.map(col => {
+                let sortIcon = '';
+                if (sortColumn === col) {
+                    sortIcon = sortAscending ? '<span class="sort-icon">🔼</span>' : '<span class="sort-icon">🔽</span>';
+                }
+                return `<th onclick="handleSort('${col}')" title="Click to sort">${col}${sortIcon}</th>`;
+            }).join('') + '</tr>';
 
             if (data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="${orderedVisibleCols.length}" class="loading">No stocks match the selected criteria.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="${orderedVisibleCols.length}" class="loading">No stocks match the criteria.</td></tr>`;
                 return;
             }
 
+            // Render Rows
             tbody.innerHTML = data.map(row => {
                 return '<tr>' + orderedVisibleCols.map(col => {
                     let val = row[col];
+                    
+                    // Special rendering for the Name column to add Quick Links
+                    if (col === "Name") {
+                        let encodedVal = encodeURIComponent(val);
+                        return `<td>
+                            <div style="font-weight: 700; color: #2d3748;">${val}</div>
+                            <div class="action-links">
+                                <a href="https://www.screener.in/company/${encodedVal}/" target="_blank" title="Open in Screener">🏢 Screener</a>
+                                <a href="https://in.tradingview.com/chart/?symbol=NSE%3A${encodedVal}" target="_blank" title="Open in TradingView">📈 TV</a>
+                            </div>
+                        </td>`;
+                    }
+                    
                     if (val === "Yes") return `<td><span class="badge-yes">Yes</span></td>`;
                     if (val === null || val === 0 || val === "") val = "-";
                     return `<td>${val}</td>`;
@@ -283,12 +372,10 @@
             }).join('');
         }
 
-        // Attach event listeners to filter checkboxes
         document.querySelectorAll('.filter-group input[type="checkbox"]').forEach(cb => {
             cb.addEventListener('change', applyFiltersAndRender);
         });
 
-        // Initialize App
         fetchData();
     </script>
 </body>
