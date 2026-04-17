@@ -12,6 +12,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, InvalidSessionIdException
 from datetime import datetime
 import os
+import json
 from openpyxl import load_workbook, Workbook
 from openpyxl.styles import Alignment, Border, Side
 
@@ -39,6 +40,7 @@ else:
 MASTER_FILE_PATH    = os.path.join(FOLDER_PATH, "Master File.xlsx")
 RAW_FILE_PATH       = os.path.join(FOLDER_PATH, "Raw Data.xlsx")
 QUALIFIED_FILE_PATH = os.path.join(FOLDER_PATH, "Qualified_Stocks.xlsx")
+QUALIFIED_JSON_PATH = os.path.join(FOLDER_PATH, "Qualified_Stocks.json")
 INDUSTRY_FILE_PATH  = os.path.join(FOLDER_PATH, "Screener_Industry_Data.xlsx")
 
 os.makedirs(FOLDER_PATH, exist_ok=True)
@@ -55,6 +57,7 @@ R2_ENDPOINT    = os.environ.get("R2_ENDPOINT_URL",       "")
 R2_MASTER_KEY    = "Master File.xlsx"
 R2_RAW_KEY       = "Raw Data.xlsx"
 R2_QUALIFIED_KEY = "Qualified_Stocks.xlsx"
+R2_QUALIFIED_JSON_KEY = "Qualified_Stocks.json"
 R2_INDUSTRY_KEY  = "Screener_Industry_Data.xlsx"
 
 print(f"🌍 Environment : {'GitHub Actions (cloud)' if IS_GITHUB_ACTIONS else 'Local Windows'}")
@@ -93,7 +96,11 @@ def r2_upload(local_path, r2_key):
             print(f"⚠️  Skipping R2 upload — file not found: {local_path}")
             return False
         client = get_r2_client()
-        client.upload_file(local_path, R2_BUCKET, r2_key)
+        
+        # Add content type for JSON so Cloudflare Pages reads it correctly
+        extra_args = {'ContentType': 'application/json'} if r2_key.endswith('.json') else {}
+        client.upload_file(local_path, R2_BUCKET, r2_key, ExtraArgs=extra_args)
+        
         print(f"⬆️  Uploaded to R2 : {local_path} → {r2_key}")
         return True
     except Exception as e:
@@ -109,6 +116,7 @@ if IS_GITHUB_ACTIONS:
     r2_download(R2_MASTER_KEY,    MASTER_FILE_PATH)
     r2_download(R2_RAW_KEY,       RAW_FILE_PATH)
     r2_download(R2_QUALIFIED_KEY, QUALIFIED_FILE_PATH)
+    r2_download(R2_QUALIFIED_JSON_KEY, QUALIFIED_JSON_PATH)
     r2_download(R2_INDUSTRY_KEY,  INDUSTRY_FILE_PATH)
     print("📥 Download step complete.\n")
 
@@ -601,6 +609,13 @@ def generate_qualified_stocks(sheet_name):
 
         wb.save(QUALIFIED_FILE_PATH)
         print(f"✅  Saved and formatted Qualified_Stocks.xlsx")
+        
+        # 6. Save JSON for Web Dashboard
+        try:
+            qualified_df.to_json(QUALIFIED_JSON_PATH, orient="records")
+            print(f"✅  Saved Qualified_Stocks.json for Dashboard")
+        except Exception as e:
+            print(f"⚠️  Error saving JSON: {e}")
 
     except Exception as e:
         print(f"⚠️  Error generating Qualified Stocks: {e}")
@@ -680,6 +695,7 @@ try:
             print("\n⬆️  Uploading updated files to Cloudflare R2...")
             r2_upload(RAW_FILE_PATH,       R2_RAW_KEY)
             r2_upload(QUALIFIED_FILE_PATH, R2_QUALIFIED_KEY)
+            r2_upload(QUALIFIED_JSON_PATH, R2_QUALIFIED_JSON_KEY)
             r2_upload(MASTER_FILE_PATH,    R2_MASTER_KEY)
 
 except Exception as e:
