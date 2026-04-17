@@ -59,12 +59,12 @@
 
         /* EXCEPTIONS MODAL STYLES */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(2px); }
-        .modal-content { background: white; width: 90%; max-width: 800px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); display: flex; flex-direction: column; max-height: 85vh; overflow: hidden; }
+        .modal-content { background: white; width: 95%; max-width: 800px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); display: flex; flex-direction: column; max-height: 85vh; overflow: hidden; }
         .modal-header { padding: 15px 20px; background: #1a365d; color: white; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
         .modal-close { background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
         .modal-body { display: flex; flex: 1; overflow: hidden; }
-        .modal-left { width: 40%; border-right: 1px solid #e2e8f0; overflow-y: auto; background: #f7fafc; padding: 10px; }
-        .modal-right { width: 60%; overflow-y: auto; padding: 15px; background: white; }
+        .modal-left { width: 45%; border-right: 1px solid #e2e8f0; overflow-y: auto; background: #f7fafc; padding: 10px; }
+        .modal-right { width: 55%; overflow-y: auto; padding: 15px; background: white; }
         .group-item { padding: 10px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; transition: 0.2s; margin-bottom: 5px; }
         .group-item:hover { background: #edf2f7; }
         .group-item.active { background: #e2e8f0; border-left: 4px solid #2b6cb0; font-weight: 600; }
@@ -161,11 +161,8 @@
         let sortAscending = true;
 
         // --- EXCEPTIONS STATE (THE BRAIN) ---
-        // industryMap maps Group -> Array of Sub-Industries
         let industryMap = {}; 
         let activeModalGroup = null;
-        
-        // THIS IS THE MASTER SET. If a sub-industry string is in here, it is banished.
         let excludedIndustries = new Set(); 
 
         // --- HELPER TO RENAME COLUMNS ON SCREEN ---
@@ -189,7 +186,6 @@
                 if (!industryMap[group]) industryMap[group] = new Set();
                 industryMap[group].add(sub);
             });
-            // Convert Sets to sorted Arrays for the UI
             Object.keys(industryMap).forEach(group => {
                 industryMap[group] = Array.from(industryMap[group]).sort();
             });
@@ -202,7 +198,7 @@
 
         function closeExceptionsModal() {
             document.getElementById("exceptions-modal").style.display = "none";
-            applyFiltersAndRender(); // Re-render table when closed
+            applyFiltersAndRender(); 
         }
 
         function renderModalGroups() {
@@ -215,7 +211,6 @@
                 const subs = industryMap[group];
                 if(subs.length === 0) return;
 
-                // Determine Checkbox State (Smart Selection)
                 let excludedCount = subs.filter(sub => excludedIndustries.has(sub)).length;
                 let isAllExcluded = excludedCount === subs.length;
                 let isIndeterminate = excludedCount > 0 && excludedCount < subs.length;
@@ -223,7 +218,6 @@
                 const div = document.createElement("div");
                 div.className = `group-item ${activeModalGroup === group ? 'active' : ''}`;
                 
-                // Clicking the div opens the right panel. Clicking the checkbox toggles everything.
                 div.innerHTML = `
                     <input type="checkbox" id="chk-grp-${group}" 
                         ${isAllExcluded ? 'checked' : ''} 
@@ -233,19 +227,17 @@
                 
                 groupContainer.appendChild(div);
 
-                // Set indeterminate visual state directly on element
                 const cb = document.getElementById(`chk-grp-${group}`);
                 if (isIndeterminate) cb.indeterminate = true;
 
-                // Event listener for the group checkbox
                 cb.addEventListener('change', (e) => {
                     const isChecked = e.target.checked;
                     subs.forEach(sub => {
                         if (isChecked) excludedIndustries.add(sub);
                         else excludedIndustries.delete(sub);
                     });
-                    renderModalGroups(); // Re-render left
-                    if (activeModalGroup === group) renderModalSubs(group); // Re-render right
+                    renderModalGroups(); 
+                    if (activeModalGroup === group) renderModalSubs(group); 
                     updateExceptionCount();
                 });
             });
@@ -254,7 +246,7 @@
 
         function selectModalGroup(group) {
             activeModalGroup = group;
-            renderModalGroups(); // Re-render left to highlight active
+            renderModalGroups(); 
             renderModalSubs(group);
         }
 
@@ -265,7 +257,6 @@
             const subs = industryMap[group];
             subs.forEach(sub => {
                 const isExcluded = excludedIndustries.has(sub);
-                
                 const label = document.createElement("label");
                 label.className = "sub-industry-item";
                 label.innerHTML = `
@@ -279,8 +270,6 @@
         function toggleExceptionSub(sub, isChecked, parentGroup) {
             if (isChecked) excludedIndustries.add(sub);
             else excludedIndustries.delete(sub);
-            
-            // Re-render the left panel to update the parent checkbox (Smart Selection)
             renderModalGroups();
             updateExceptionCount();
         }
@@ -395,6 +384,7 @@
                 rawData = await response.json();
                 
                 if(rawData.length > 0) {
+                    // Filter "Name" completely out of the UI
                     allColumns = Object.keys(rawData[0]).filter(col => col !== "Name");
                     matrixColumnName = allColumns.find(col => col.includes("(>70%)")) || "";
 
@@ -403,7 +393,7 @@
                     
                     visibleColumns = new Set(defaultCols.filter(c => allColumns.includes(c)));
                     
-                    buildIndustryMap(); // Build the Exceptions map dynamically!
+                    buildIndustryMap(); 
                     renderColumnToggles();
                     applyFiltersAndRender();
                 }
@@ -419,12 +409,17 @@
             }
             const orderedVisibleCols = allColumns.filter(col => visibleColumns.has(col));
             let csvLines = [];
+            
+            // Export uses the pretty Display Names
             csvLines.push(orderedVisibleCols.map(c => `"${getDisplayName(c)}"`).join(','));
             
             currentFilteredData.forEach((row, index) => {
                 let rowArray = orderedVisibleCols.map(col => {
                     let val = row[col];
-                    if (col === "Sr no") val = index + 1;
+                    // Export uses dynamic serial number
+                    if (col === "Sr no") {
+                        val = sortAscending ? (index + 1) : (currentFilteredData.length - index);
+                    }
                     if (val === null || val === undefined) val = "";
                     let strVal = String(val).replace(/"/g, '""'); 
                     return `"${strVal}"`;
@@ -478,13 +473,11 @@
             const filterGrowth = document.getElementById('filter-growth').checked;
 
             let filteredData = rawData.filter(row => {
-                // 1. Check Strict Checkbox Filters
                 if (filterPromoter && (parseFloat(row["Promoter Holding"]) || 0) < 50) return false;
                 if (filterPledged && (parseFloat(row["Pledged %"]) || 0) > 10) return false;
                 if (filterWc && (parseFloat(row["WC Days"]) || 999) > 150) return false;
                 if (filterGrowth && matrixColumnName && row[matrixColumnName] !== "Yes") return false;
                 
-                // 2. Check Exceptions Engine (Is this sub-industry banished?)
                 let subIndustry = row["Industry"] || "Not Found";
                 if (excludedIndustries.has(subIndustry)) return false;
 
@@ -531,10 +524,13 @@
 
             tbody.innerHTML = data.map((row, index) => {
                 return '<tr>' + orderedVisibleCols.map(col => {
+                    
+                    // Dynamic Sr No Logic
                     if (col === "Sr no") {
                         let displayIndex = sortAscending ? (index + 1) : (data.length - index);
                         return `<td>${displayIndex}</td>`;
                     }
+                    
                     if (col === "Company (Page)") {
                         let fullName = row["Company (Page)"];
                         let shortName = encodeURIComponent(row["Name"]); 
@@ -546,6 +542,7 @@
                             </div>
                         </td>`;
                     }
+                    
                     let val = row[col];
                     if (val === "Yes") return `<td><span class="badge-yes">Yes</span></td>`;
                     if (val === null || val === 0 || val === "") val = "-";
