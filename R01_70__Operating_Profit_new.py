@@ -39,8 +39,7 @@ else:
 
 MASTER_FILE_PATH    = os.path.join(FOLDER_PATH, "Master File.xlsx")
 RAW_FILE_PATH       = os.path.join(FOLDER_PATH, "Raw Data.xlsx")
-QUALIFIED_FILE_PATH = os.path.join(FOLDER_PATH, "Qualified_Stocks.xlsx")
-QUALIFIED_JSON_PATH = os.path.join(FOLDER_PATH, "Qualified_Stocks.json")
+RAW_JSON_PATH       = os.path.join(FOLDER_PATH, "rawdata.json")
 INDUSTRY_FILE_PATH  = os.path.join(FOLDER_PATH, "Screener_Industry_Data.xlsx")
 
 os.makedirs(FOLDER_PATH, exist_ok=True)
@@ -56,8 +55,7 @@ R2_ENDPOINT    = os.environ.get("R2_ENDPOINT_URL",       "")
 
 R2_MASTER_KEY    = "Master File.xlsx"
 R2_RAW_KEY       = "Raw Data.xlsx"
-R2_QUALIFIED_KEY = "Qualified_Stocks.xlsx"
-R2_QUALIFIED_JSON_KEY = "Qualified_Stocks.json"
+R2_RAW_JSON_KEY  = "rawdata.json"
 R2_INDUSTRY_KEY  = "Screener_Industry_Data.xlsx"
 
 print(f"🌍 Environment : {'GitHub Actions (cloud)' if IS_GITHUB_ACTIONS else 'Local Windows'}")
@@ -115,8 +113,6 @@ if IS_GITHUB_ACTIONS:
     print("\n📥 Downloading existing files from Cloudflare R2...")
     r2_download(R2_MASTER_KEY,    MASTER_FILE_PATH)
     r2_download(R2_RAW_KEY,       RAW_FILE_PATH)
-    r2_download(R2_QUALIFIED_KEY, QUALIFIED_FILE_PATH)
-    r2_download(R2_QUALIFIED_JSON_KEY, QUALIFIED_JSON_PATH)
     r2_download(R2_INDUSTRY_KEY,  INDUSTRY_FILE_PATH)
     print("📥 Download step complete.\n")
 
@@ -515,110 +511,27 @@ def append_rows_to_raw_excel(rows, sheet_name):
 
 
 # ═══════════════════════════════════════════════════════════
-# QUALIFIED STOCKS FILTERING
+# RAW DATA JSON EXPORT FOR WEB DASHBOARD
 # ═══════════════════════════════════════════════════════════
-def generate_qualified_stocks(sheet_name):
-    """Reads Raw Data, applies strict criteria, and creates/updates Qualified_Stocks.xlsx"""
+def generate_raw_json(sheet_name):
+    """Reads Raw Data, cleans it up, and exports the ENTIRE sheet to JSON"""
     if not os.path.exists(RAW_FILE_PATH):
-        print("⚠️  Raw Data file missing. Cannot generate Qualified Stocks.")
+        print("⚠️  Raw Data file missing. Cannot generate JSON.")
         return
 
-    print(f"\n⚙️  Applying filters to generate Qualified_Stocks.xlsx for '{sheet_name}'...")
-    
+    print(f"\n⚙️  Converting Raw Data '{sheet_name}' to JSON for the Web Dashboard...")
     try:
-        # READ ONLY: Load the raw data
         df = pd.read_excel(RAW_FILE_PATH, sheet_name=sheet_name)
         
-        # 1. Ensure the metrics exist before filtering
-        metrics = ["Promoter Holding", "Pledged %", "WC Days"]
-        for col in metrics:
-            if col not in df.columns:
-                print(f"⚠️  Missing column '{col}' in raw data. Cannot filter.")
-                return
-            
-            # Convert to numeric. For WC Days, fill missing with 999 so it safely fails the <= 150 filter.
-            if col == "WC Days":
-                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(999) 
-            else:
-                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+        # Clean column names and fill blanks to prevent JavaScript errors
+        df.columns = df.columns.str.strip()
+        df = df.fillna(0)
         
-        # 2. Apply strict baseline filtering criteria
-        qualified_df = df[
-            (df["Promoter Holding"] >= 50.0) &
-            (df["Pledged %"] <= 10.0) &
-            (df["WC Days"] <= 150.0)
-        ].copy()
-
-        # 3. Dynamic 70% Growth Matrix Filter (Latest Quarter Only)
-        quarter_candidates = []
-        for col in qualified_df.columns:
-            if col not in ["Sr no", "date", "Name", "Company (Page)", "Industry", "Industry Group", "Promoter Holding", "Pledged %", "WC Days"] and "(>70%)" not in col:
-                try:
-                    quarter_candidates.append((pd.to_datetime(col, format="%b %Y"), col))
-                except: pass
-        
-        if quarter_candidates:
-            # Sort to find the latest quarter date
-            quarter_candidates.sort(key=lambda x: x[0], reverse=True)
-            latest_dt = quarter_candidates[0][0]
-            
-            # Formulate the target matrix column format: "Dec25 (>70%) Dec24"
-            latest_short = latest_dt.strftime("%b%y")
-            prev_year_short = latest_dt.replace(year=latest_dt.year - 1).strftime("%b%y")
-            target_matrix_col = f"{latest_short} (>70%) {prev_year_short}"
-            
-            # Check if this matrix column was generated and filter where it is "Yes"
-            if target_matrix_col in qualified_df.columns:
-                qualified_df = qualified_df[qualified_df[target_matrix_col] == "Yes"].copy()
-                print(f"🔍  Applied 70% Growth check for latest quarter: '{target_matrix_col}'")
-            else:
-                print(f"⚠️  Growth matrix column '{target_matrix_col}' not found. Cannot apply 70% jump filter.")
-
-        if qualified_df.empty:
-            print("ℹ️  No stocks met the Qualified Criteria in this batch.")
-            return
-            
-        print(f"🎯  Found {len(qualified_df)} Qualified Stocks!")
-
-        # Fix the Serial Number so it restarts from 1
-        qualified_df["Sr no"] = range(1, len(qualified_df) + 1)
-
-        # 4. Save to Qualified_Stocks.xlsx
-        if os.path.exists(QUALIFIED_FILE_PATH):
-            with pd.ExcelWriter(QUALIFIED_FILE_PATH, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
-                qualified_df.to_excel(writer, sheet_name=sheet_name, index=False)
-        else:
-            with pd.ExcelWriter(QUALIFIED_FILE_PATH, engine='openpyxl') as writer:
-                qualified_df.to_excel(writer, sheet_name=sheet_name, index=False)
-
-        # 5. Apply standard formatting
-        wb = load_workbook(QUALIFIED_FILE_PATH)
-        ws = wb[sheet_name]
-        format_worksheet(ws)
-        
-        # Auto-adjust column widths
-        for column in ws.columns:
-            max_length = 0
-            column_letter = column[0].column_letter
-            for cell in column:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
-                except: pass
-            ws.column_dimensions[column_letter].width = max_length + 2
-
-        wb.save(QUALIFIED_FILE_PATH)
-        print(f"✅  Saved and formatted Qualified_Stocks.xlsx")
-        
-        # 6. Save JSON for Web Dashboard
-        try:
-            qualified_df.to_json(QUALIFIED_JSON_PATH, orient="records")
-            print(f"✅  Saved Qualified_Stocks.json for Dashboard")
-        except Exception as e:
-            print(f"⚠️  Error saving JSON: {e}")
-
+        # Save to rawdata.json
+        df.to_json(RAW_JSON_PATH, orient="records")
+        print(f"✅  Saved rawdata.json for Dashboard")
     except Exception as e:
-        print(f"⚠️  Error generating Qualified Stocks: {e}")
+        print(f"⚠️  Error saving JSON: {e}")
 
 
 # ═══════════════════════════════════════════════════════════
@@ -688,14 +601,13 @@ try:
 
         print(f"\n✅ Raw Data.xlsx → sheet '{target_sheet}' is up to date.")
 
-        # ── NEW: GENERATE QUALIFIED STOCKS ───────────────────────────────
-        generate_qualified_stocks(target_sheet)
+        # ── EXPORT ENTIRE DATASET FOR WEB DASHBOARD ───────────────────────────────
+        generate_raw_json(target_sheet)
 
         if IS_GITHUB_ACTIONS:
             print("\n⬆️  Uploading updated files to Cloudflare R2...")
             r2_upload(RAW_FILE_PATH,       R2_RAW_KEY)
-            r2_upload(QUALIFIED_FILE_PATH, R2_QUALIFIED_KEY)
-            r2_upload(QUALIFIED_JSON_PATH, R2_QUALIFIED_JSON_KEY)
+            r2_upload(RAW_JSON_PATH,       R2_RAW_JSON_KEY)
             r2_upload(MASTER_FILE_PATH,    R2_MASTER_KEY)
 
 except Exception as e:
