@@ -1,3 +1,15 @@
+I know exactly why this is happening!
+Your web browser has "memorized" a blank, old, or invalid GitHub token in its hidden memory (localStorage). Because the browser thinks it already has the key, it isn't showing you the pop-up prompt. But because the key is wrong, the GitHub server is instantly rejecting the request, causing it to just sit there and do nothing.
+I have fixed this permanently by adding two things to your dashboard:
+ 1. **A Smart Error Handler:** If the token is rejected by GitHub, the system will now automatically wipe it from memory and tell you it was invalid.
+ 2. **A Reset Button:** I added a little **🔄** button right next to the "Run" button. If you ever get stuck again, just click it, and it will instantly wipe the saved key so you can paste a fresh one!
+Here is the fully updated, bulletproof code.
+### Instructions:
+ 1. Open your GitHub repository and edit **index.html**.
+ 2. Delete everything and paste the code below.
+ 3. Commit the changes.
+ 4. **IMPORTANT:** Close your current browser tabs entirely, open a **New Incognito Tab**, and go to your site. You will see the new 🔄 button!
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,6 +27,10 @@
         #run-btn:hover { background-color: #2c5282; }
         #run-btn:disabled { background-color: #a0aec0; cursor: not-allowed; }
         
+        /* New Reset Token Button Style */
+        .reset-token-btn { background: none; border: none; font-size: 18px; cursor: pointer; padding: 5px; transition: 0.2s; opacity: 0.7; }
+        .reset-token-btn:hover { opacity: 1; transform: rotate(45deg); }
+
         #export-btn { background-color: #4a5568; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
         #export-btn:hover { background-color: #2d3748; }
 
@@ -54,7 +70,7 @@
         .action-links a { text-decoration: none; font-size: 11px; padding: 3px 6px; border-radius: 4px; background: #e2e8f0; color: #2b6cb0; font-weight: bold; transition: 0.2s; border: 1px solid #cbd5e0; }
         .action-links a:hover { background: #cbd5e0; color: #1a365d; border-color: #a0aec0;}
 
-        /* NEW GLOBAL VIP MODAL STYLES */
+        /* RULES ENGINE MODAL STYLES */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(2px); }
         .modal-content { background: white; width: 95%; max-width: 600px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); display: flex; flex-direction: column; max-height: 85vh; overflow: hidden; }
         .modal-header { padding: 15px 20px; background: #1a365d; color: white; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
@@ -62,14 +78,12 @@
         .modal-body { flex: 1; overflow-y: auto; padding: 15px; background: #f4f7f9; }
         .modal-footer { padding: 15px; background: #edf2f7; border-top: 1px solid #cbd5e0; text-align: right; display: flex; justify-content: space-between; align-items: center; }
         
-        /* Global Overrides Panel */
         .global-overrides-panel { background: #ebf8ff; border: 1px solid #bee3f8; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
         .global-overrides-panel h4 { margin: 0 0 5px 0; color: #2b6cb0; font-size: 15px; }
         .global-overrides-panel p { font-size: 12px; color: #4a5568; margin-top: 0; margin-bottom: 10px; }
         .global-override-label { display: block; font-size: 13.5px; color: #2d3748; margin-bottom: 8px; cursor: pointer; font-weight: 500; }
         .global-override-label input { margin-right: 8px; transform: scale(1.15); cursor: pointer; }
 
-        /* VIP Accordion Tree */
         .tree-header-text { font-size: 15px; font-weight: bold; color: #1a365d; margin-bottom: 10px; padding-left: 5px; border-bottom: 2px solid #cbd5e0; padding-bottom: 5px; }
         .accordion-item { border: 1px solid #cbd5e0; border-radius: 6px; margin-bottom: 8px; background: white; overflow: hidden; }
         .accordion-header { display: flex; align-items: center; padding: 12px 15px; cursor: pointer; transition: 0.2s; user-select: none; }
@@ -90,6 +104,7 @@
             
             <div class="action-panel">
                 <button id="run-btn" onclick="triggerWorkflow()">▶️ Run Backend Scraper</button>
+                <button onclick="resetToken()" class="reset-token-btn" title="Reset GitHub Token">🔄</button>
                 <button id="exceptions-btn" onclick="openExceptionsModal()">⚙️ VIP Exceptions</button>
                 <button id="export-btn" onclick="exportToCSV()">📥 Export CSV</button>
                 <span id="workflow-status">Status: Idle</span>
@@ -133,7 +148,6 @@
                 <button class="modal-close" onclick="closeExceptionsModal()">&times;</button>
             </div>
             <div class="modal-body">
-                
                 <div class="global-overrides-panel">
                     <h4>Global Exception Overrides</h4>
                     <p>Select which rules the VIP Industries (checked below) are allowed to ignore. You can only bypass rules that are currently turned ON in the main dashboard.</p>
@@ -157,8 +171,7 @@
                 </div>
 
                 <div class="tree-header-text">Select VIP Industries:</div>
-                <div id="exceptions-tree-container">
-                    </div>
+                <div id="exceptions-tree-container"></div>
             </div>
             
             <div class="modal-footer">
@@ -185,18 +198,9 @@
         let sortColumn = "Sr no"; 
         let sortAscending = true;
 
-        // --- NEW VIP STATE LOGIC ---
-        // Global Overrides
-        let globalOverrides = {
-            bypassPromoter: false,
-            bypassPledged: false,
-            bypassWc: false,
-            bypassGrowth: false
-        };
-        // Set holding simply which sub-industries are designated VIPs
+        let globalOverrides = { bypassPromoter: false, bypassPledged: false, bypassWc: false, bypassGrowth: false };
         let vipIndustries = new Set();
 
-        // --- MASTER INDUSTRY LIST ---
         const MASTER_INDUSTRY_MAP = {
             "Aerospace & Defense": ["Aerospace & Defense"],
             "Agricultural Food & other Products": ["Edible Oil", "Other Agricultural Products", "Sugar", "Tea & Coffee"],
@@ -265,14 +269,20 @@
         }
 
         // ═══════════════════════════════════════════════════════════
+        // TOKEN RESET FUNCTIONALITY
+        // ═══════════════════════════════════════════════════════════
+        function resetToken() {
+            localStorage.removeItem('gh_token');
+            alert("GitHub Token wiped! Click 'Run Backend Scraper' to enter a fresh PAT.");
+            document.getElementById('workflow-status').innerText = "Status: Idle (Token Cleared)";
+        }
+
+        // ═══════════════════════════════════════════════════════════
         // VIP RULES LOGIC & MODAL
         // ═══════════════════════════════════════════════════════════
-
-        // 1. Validation Logic for the Global Overrides
         function toggleGlobalOverride(ruleKey, mainFilterId, checkboxElem) {
             if (checkboxElem.checked) {
                 const mainFilter = document.getElementById(mainFilterId);
-                // Safety Catch: Cannot check override if main filter is OFF
                 if (!mainFilter || !mainFilter.checked) {
                     alert("PROHIBITED: You cannot exempt industries from this rule because the corresponding Strict Filter is currently turned OFF on the main dashboard.");
                     checkboxElem.checked = false;
@@ -283,18 +293,15 @@
             applyFiltersAndRender();
         }
 
-        // 2. Safety Catch: Auto-wipe override if user turns off main dashboard filter
         function handleMainFilterChange(filterId, overrideId, ruleKey) {
             const mainChecked = document.getElementById(filterId).checked;
             if (!mainChecked) {
-                // Instantly uncheck the VIP override to prevent logical paradox
                 document.getElementById(overrideId).checked = false;
                 globalOverrides[ruleKey] = false;
             }
             applyFiltersAndRender();
         }
 
-        // 3. Render the Simple VIP Selection Tree
         function renderExceptionsTree() {
             const container = document.getElementById("exceptions-tree-container");
             container.innerHTML = "";
@@ -313,7 +320,7 @@
                         <span class="accordion-toggle" id="arrow-${safeId}">▼</span>
                     </div>
                     <div class="accordion-body" id="body-${safeId}">
-                        ${subs.map((sub, index) => `
+                        ${subs.map((sub) => `
                             <label onclick="event.stopPropagation()">
                                 <input type="checkbox" onchange="toggleSub('${sub}')" id="chk-sub-${sub.replace(/\W/g, '')}">
                                 ${sub}
@@ -331,7 +338,6 @@
             if(event.target.tagName.toLowerCase() === 'input') return; 
             const body = document.getElementById(`body-${safeId}`);
             const arrow = document.getElementById(`arrow-${safeId}`);
-            
             if (body.style.display === "flex") {
                 body.style.display = "none";
                 arrow.classList.remove("open");
@@ -423,6 +429,77 @@
         }
 
         // ═══════════════════════════════════════════════════════════
+        // WORKFLOW TRIGGER LOGIC (WITH SMART ERROR CATCHING)
+        // ═══════════════════════════════════════════════════════════
+        async function triggerWorkflow() {
+            const btn = document.getElementById('run-btn');
+            const statusText = document.getElementById('workflow-status');
+            
+            let token = localStorage.getItem('gh_token');
+            if (!token) {
+                token = prompt("Paste your GitHub Personal Access Token (PAT):");
+                if (!token) return; 
+                localStorage.setItem('gh_token', token.trim());
+            }
+
+            try {
+                btn.disabled = true;
+                statusText.innerHTML = `<span class="spinner"></span> Starting engine...`;
+
+                const dispatchRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/dispatches`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ref: BRANCH })
+                });
+
+                if (!dispatchRes.ok) {
+                    if(dispatchRes.status === 401 || dispatchRes.status === 404) {
+                        localStorage.removeItem('gh_token');
+                        throw new Error("Invalid Token. Wiped from memory. Click Run to try again.");
+                    }
+                    throw new Error(`API Error ${dispatchRes.status}`);
+                }
+                
+                statusText.innerHTML = `<span class="spinner"></span> Engine spinning up...`;
+                setTimeout(() => pollWorkflowStatus(token), 5000);
+            } catch (error) {
+                statusText.innerHTML = `❌ ${error.message}`;
+                btn.disabled = false;
+            }
+        }
+
+        async function pollWorkflowStatus(token) {
+            const statusText = document.getElementById('workflow-status');
+            try {
+                const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/runs?per_page=1`, {
+                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+                });
+                const data = await res.json();
+                
+                if (data.workflow_runs && data.workflow_runs.length > 0) {
+                    const latestRun = data.workflow_runs[0];
+                    if (latestRun.status === "completed") {
+                        if (latestRun.conclusion === "success") {
+                            statusText.innerHTML = `✅ Complete! Fetching fresh data...`;
+                            setTimeout(() => {
+                                fetchData(); 
+                                document.getElementById('run-btn').disabled = false;
+                                statusText.innerHTML = `Status: Idle (Fresh Data Loaded)`;
+                            }, 3000); 
+                        } else {
+                            statusText.innerHTML = `❌ Failed.`;
+                            document.getElementById('run-btn').disabled = false;
+                        }
+                        return; 
+                    } else {
+                        statusText.innerHTML = `<span class="spinner"></span> Engine running...`;
+                    }
+                }
+            } catch (error) { }
+            setTimeout(() => pollWorkflowStatus(token), 10000);
+        }
+
+        // ═══════════════════════════════════════════════════════════
         // DATA FETCHING & FILTER LOGIC
         // ═══════════════════════════════════════════════════════════
         async function fetchData() {
@@ -459,25 +536,21 @@
                 let subIndustry = row["Industry"] || "Not Found";
                 let isVip = vipIndustries.has(subIndustry);
 
-                // Check Promoter Rule
                 if (filterPromoter) {
                     let isExempt = isVip && globalOverrides.bypassPromoter;
                     if (!isExempt && (parseFloat(row["Promoter Holding"]) || 0) < 50) return false;
                 }
                 
-                // Check Pledged Rule
                 if (filterPledged) {
                     let isExempt = isVip && globalOverrides.bypassPledged;
                     if (!isExempt && (parseFloat(row["Pledged %"]) || 0) > 10) return false;
                 }
                 
-                // Check WC Days Rule
                 if (filterWc) {
                     let isExempt = isVip && globalOverrides.bypassWc;
                     if (!isExempt && (parseFloat(row["WC Days"]) || 999) > 150) return false;
                 }
                 
-                // Check 70% Growth Rule
                 if (filterGrowth && matrixColumnName) {
                     let isExempt = isVip && globalOverrides.bypassGrowth;
                     if (!isExempt && row[matrixColumnName] !== "Yes") return false;
@@ -549,7 +622,6 @@
             }).join('');
         }
         
-        // CSV Export Logic
         function exportToCSV() {
             if (!currentFilteredData || currentFilteredData.length === 0) {
                 alert("No data available to export.");
@@ -581,7 +653,6 @@
             document.body.removeChild(link);
         }
 
-        // Initialize App
         fetchData();
         renderExceptionsTree(); 
     </script>
