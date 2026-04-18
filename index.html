@@ -15,7 +15,6 @@
         #run-btn:hover { background-color: #2c5282; }
         #run-btn:disabled { background-color: #a0aec0; cursor: not-allowed; }
         
-        /* New Reset Token Button Style */
         .reset-token-btn { background: none; border: none; font-size: 18px; cursor: pointer; padding: 5px; transition: 0.2s; opacity: 0.7; }
         .reset-token-btn:hover { opacity: 1; transform: rotate(45deg); }
 
@@ -54,24 +53,44 @@
         .badge-yes { background-color: #48bb78; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
         .loading { text-align: center; padding: 40px; font-size: 18px; color: #718096; }
         .stats { text-align: right; font-size: 14px; color: #4a5568; margin-bottom: 10px; font-weight: 600; }
+        
         .action-links { margin-top: 6px; display: flex; gap: 5px; }
-        .action-links a { text-decoration: none; font-size: 11px; padding: 3px 6px; border-radius: 4px; background: #e2e8f0; color: #2b6cb0; font-weight: bold; transition: 0.2s; border: 1px solid #cbd5e0; }
+        .action-links a { text-decoration: none; font-size: 11px; padding: 4px 8px; border-radius: 4px; background: #e2e8f0; color: #2b6cb0; font-weight: bold; transition: 0.2s; border: 1px solid #cbd5e0; display: inline-block; }
         .action-links a:hover { background: #cbd5e0; color: #1a365d; border-color: #a0aec0;}
+        .action-links .note-btn { background: #bee3f8; color: #2b6cb0; border-color: #90cdf4; }
+        .action-links .note-btn:hover { background: #90cdf4; color: #1a365d; }
 
-        /* RULES ENGINE MODAL STYLES */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(2px); }
+        /* MULTIPLAYER CHAT PANEL STYLES */
+        .chat-drawer { position: fixed; top: 0; right: -450px; width: 400px; max-width: 100%; height: 100vh; background: white; box-shadow: -5px 0 15px rgba(0,0,0,0.2); transition: right 0.3s ease-in-out; z-index: 2000; display: flex; flex-direction: column; }
+        .chat-drawer.open { right: 0; }
+        .chat-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1999; display: none; backdrop-filter: blur(2px); }
+        .chat-overlay.open { display: block; }
+        .chat-header { padding: 15px 20px; background: #1a365d; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .chat-header h3 { margin: 0; font-size: 16px; }
+        .chat-header button { background: none; border: none; color: white; font-size: 24px; cursor: pointer; line-height: 1; }
+        .chat-messages { flex: 1; padding: 15px; overflow-y: auto; background: #f4f7f9; display: flex; flex-direction: column; gap: 12px; }
+        .chat-message { background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .chat-message .author { font-weight: bold; color: #2b6cb0; font-size: 13px; margin-bottom: 5px; }
+        .chat-message .text { font-size: 14px; color: #2d3748; line-height: 1.4; white-space: pre-wrap; }
+        .chat-message .time { font-size: 11px; color: #a0aec0; margin-top: 6px; text-align: right; }
+        .chat-input-area { padding: 15px; background: white; border-top: 1px solid #e2e8f0; }
+        .chat-input-area input { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; margin-bottom: 10px; font-family: inherit; }
+        .chat-input-area textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; resize: none; box-sizing: border-box; margin-bottom: 10px; font-family: inherit; font-size: 14px; }
+        .chat-input-area button { width: 100%; background: #48bb78; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
+        .chat-input-area button:hover { background: #38a169; }
+
+        /* VIP MODAL STYLES */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
         .modal-content { background: white; width: 95%; max-width: 600px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); display: flex; flex-direction: column; max-height: 85vh; overflow: hidden; }
         .modal-header { padding: 15px 20px; background: #1a365d; color: white; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
         .modal-close { background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0; line-height: 1; }
         .modal-body { flex: 1; overflow-y: auto; padding: 15px; background: #f4f7f9; }
         .modal-footer { padding: 15px; background: #edf2f7; border-top: 1px solid #cbd5e0; text-align: right; display: flex; justify-content: space-between; align-items: center; }
-        
         .global-overrides-panel { background: #ebf8ff; border: 1px solid #bee3f8; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
         .global-overrides-panel h4 { margin: 0 0 5px 0; color: #2b6cb0; font-size: 15px; }
         .global-overrides-panel p { font-size: 12px; color: #4a5568; margin-top: 0; margin-bottom: 10px; }
         .global-override-label { display: block; font-size: 13.5px; color: #2d3748; margin-bottom: 8px; cursor: pointer; font-weight: 500; }
         .global-override-label input { margin-right: 8px; transform: scale(1.15); cursor: pointer; }
-
         .tree-header-text { font-size: 15px; font-weight: bold; color: #1a365d; margin-bottom: 10px; padding-left: 5px; border-bottom: 2px solid #cbd5e0; padding-bottom: 5px; }
         .accordion-item { border: 1px solid #cbd5e0; border-radius: 6px; margin-bottom: 8px; background: white; overflow: hidden; }
         .accordion-header { display: flex; align-items: center; padding: 12px 15px; cursor: pointer; transition: 0.2s; user-select: none; }
@@ -129,6 +148,21 @@
         </div>
     </div>
 
+    <div id="chat-overlay" class="chat-overlay" onclick="closeChat()"></div>
+    <div id="chat-drawer" class="chat-drawer">
+        <div class="chat-header">
+            <h3 id="chat-title">📝 Notes</h3>
+            <button onclick="closeChat()">&times;</button>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            </div>
+        <div class="chat-input-area">
+            <input type="text" id="chat-author" placeholder="Your Name (e.g. Deepak)">
+            <textarea id="chat-input" placeholder="Write your research note here..." rows="3"></textarea>
+            <button onclick="submitComment()">Post Note</button>
+        </div>
+    </div>
+
     <div id="exceptions-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -138,30 +172,16 @@
             <div class="modal-body">
                 <div class="global-overrides-panel">
                     <h4>Global Exception Overrides</h4>
-                    <p>Select which rules the VIP Industries (checked below) are allowed to ignore. You can only bypass rules that are currently turned ON in the main dashboard.</p>
+                    <p>Select which rules the VIP Industries (checked below) are allowed to ignore.</p>
                     
-                    <label class="global-override-label">
-                        <input type="checkbox" id="global-promoter" onchange="toggleGlobalOverride('bypassPromoter', 'filter-promoter', this)"> 
-                        🔓 Bypass Promoter Holding ≥ 50%
-                    </label>
-                    <label class="global-override-label">
-                        <input type="checkbox" id="global-pledged" onchange="toggleGlobalOverride('bypassPledged', 'filter-pledged', this)"> 
-                        🔓 Bypass Pledged Shares ≤ 10%
-                    </label>
-                    <label class="global-override-label">
-                        <input type="checkbox" id="global-wc" onchange="toggleGlobalOverride('bypassWc', 'filter-wc', this)"> 
-                        🔓 Bypass Working Capital Days ≤ 150
-                    </label>
-                    <label class="global-override-label">
-                        <input type="checkbox" id="global-growth" onchange="toggleGlobalOverride('bypassGrowth', 'filter-growth', this)"> 
-                        🔓 Bypass 70% YoY Profit Surge
-                    </label>
+                    <label class="global-override-label"><input type="checkbox" id="global-promoter" onchange="toggleGlobalOverride('bypassPromoter', 'filter-promoter', this)"> 🔓 Bypass Promoter Holding ≥ 50%</label>
+                    <label class="global-override-label"><input type="checkbox" id="global-pledged" onchange="toggleGlobalOverride('bypassPledged', 'filter-pledged', this)"> 🔓 Bypass Pledged Shares ≤ 10%</label>
+                    <label class="global-override-label"><input type="checkbox" id="global-wc" onchange="toggleGlobalOverride('bypassWc', 'filter-wc', this)"> 🔓 Bypass Working Capital Days ≤ 150</label>
+                    <label class="global-override-label"><input type="checkbox" id="global-growth" onchange="toggleGlobalOverride('bypassGrowth', 'filter-growth', this)"> 🔓 Bypass 70% YoY Profit Surge</label>
                 </div>
-
                 <div class="tree-header-text">Select VIP Industries:</div>
                 <div id="exceptions-tree-container"></div>
             </div>
-            
             <div class="modal-footer">
                 <span id="exception-count" style="font-size: 13px; font-weight: bold; color: #4a5568;">0 VIP Sub-Industries Selected</span>
                 <button class="btn-done" style="background:#2b6cb0; color:white; border:none; padding:10px 15px; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="closeExceptionsModal()">Apply Rules & Close</button>
@@ -177,6 +197,9 @@
         const BRANCH = "main"; 
         const DATA_URL = "https://pub-9afc232687c44eebbb8cae359c7ac460.r2.dev/rawdata.json";
         
+        // --- NEW CLOUDFLARE MULTIPLAYER API ---
+        const CHAT_API_URL = "https://terminal-api.deepakkhatwani.workers.dev/api/comments";
+        
         // --- STATE VARIABLES ---
         let rawData = [];
         let currentFilteredData = []; 
@@ -185,6 +208,7 @@
         let matrixColumnName = "";
         let sortColumn = "Sr no"; 
         let sortAscending = true;
+        let currentChatTicker = "";
 
         let globalOverrides = { bypassPromoter: false, bypassPledged: false, bypassWc: false, bypassGrowth: false };
         let vipIndustries = new Set();
@@ -257,7 +281,88 @@
         }
 
         // ═══════════════════════════════════════════════════════════
-        // TOKEN RESET FUNCTIONALITY
+        // MULTIPLAYER CHAT LOGIC
+        // ═══════════════════════════════════════════════════════════
+        function openChat(ticker, companyName) {
+            currentChatTicker = ticker;
+            document.getElementById('chat-title').innerText = `📝 Notes: ${companyName}`;
+            document.getElementById('chat-drawer').classList.add('open');
+            document.getElementById('chat-overlay').classList.add('open');
+            
+            // Auto-fill name if they've typed it before
+            const savedName = localStorage.getItem('researcher_name');
+            if(savedName) document.getElementById('chat-author').value = savedName;
+
+            loadComments(ticker);
+        }
+
+        function closeChat() {
+            document.getElementById('chat-drawer').classList.remove('open');
+            document.getElementById('chat-overlay').classList.remove('open');
+        }
+
+        async function loadComments(ticker) {
+            const msgDiv = document.getElementById('chat-messages');
+            msgDiv.innerHTML = `<div class="loading" style="padding: 20px; font-size: 14px;">Loading notes...</div>`;
+            try {
+                const res = await fetch(`${CHAT_API_URL}?ticker=${encodeURIComponent(ticker)}`);
+                const comments = await res.json();
+                
+                if(!comments || comments.length === 0) {
+                    msgDiv.innerHTML = `<div style="text-align:center; color:#718096; font-size:13px; margin-top:20px;">No notes yet. Be the first to share your research!</div>`;
+                    return;
+                }
+                
+                msgDiv.innerHTML = comments.map(c => `
+                    <div class="chat-message">
+                        <div class="author">${c.author}</div>
+                        <div class="text">${c.text}</div>
+                        <div class="time">${new Date(c.timestamp).toLocaleString()}</div>
+                    </div>
+                `).join('');
+                
+                // Scroll to bottom
+                msgDiv.scrollTop = msgDiv.scrollHeight;
+            } catch (e) {
+                msgDiv.innerHTML = `<div style="color:#e53e3e; font-size:13px; text-align:center; margin-top:20px;">Error connecting to database.</div>`;
+            }
+        }
+
+        async function submitComment() {
+            const author = document.getElementById('chat-author').value.trim();
+            const text = document.getElementById('chat-input').value.trim();
+            
+            if(!author || !text) { 
+                alert("Please enter your name and a note before posting."); 
+                return; 
+            }
+            
+            // Save their name for next time
+            localStorage.setItem('researcher_name', author);
+            
+            const btn = document.querySelector('.chat-input-area button');
+            btn.disabled = true;
+            btn.innerText = "Posting...";
+
+            try {
+                await fetch(CHAT_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ticker: currentChatTicker, author, text })
+                });
+                document.getElementById('chat-input').value = ""; // Clear text box
+                await loadComments(currentChatTicker); // Reload chat
+            } catch (e) {
+                alert("Failed to post note. Please try again.");
+            }
+            
+            btn.disabled = false;
+            btn.innerText = "Post Note";
+        }
+
+
+        // ═══════════════════════════════════════════════════════════
+        // TERMINAL CORE LOGIC
         // ═══════════════════════════════════════════════════════════
         function resetToken() {
             localStorage.removeItem('gh_token');
@@ -265,16 +370,12 @@
             document.getElementById('workflow-status').innerText = "Status: Idle (Token Cleared)";
         }
 
-        // ═══════════════════════════════════════════════════════════
-        // VIP RULES LOGIC & MODAL
-        // ═══════════════════════════════════════════════════════════
         function toggleGlobalOverride(ruleKey, mainFilterId, checkboxElem) {
             if (checkboxElem.checked) {
                 const mainFilter = document.getElementById(mainFilterId);
                 if (!mainFilter || !mainFilter.checked) {
                     alert("PROHIBITED: You cannot exempt industries from this rule because the corresponding Strict Filter is currently turned OFF on the main dashboard.");
-                    checkboxElem.checked = false;
-                    return;
+                    checkboxElem.checked = false; return;
                 }
             }
             globalOverrides[ruleKey] = checkboxElem.checked;
@@ -293,14 +394,11 @@
         function renderExceptionsTree() {
             const container = document.getElementById("exceptions-tree-container");
             container.innerHTML = "";
-            
             Object.keys(MASTER_INDUSTRY_MAP).forEach(group => {
                 const subs = MASTER_INDUSTRY_MAP[group];
                 const safeId = group.replace(/\W/g, '');
-                
                 const item = document.createElement("div");
                 item.className = "accordion-item";
-                
                 let headerHtml = `
                     <div class="accordion-header" onclick="toggleAccordion(event, '${safeId}')">
                         <input type="checkbox" id="chk-grp-${safeId}" onchange="toggleGroup(event, '${group}')">
@@ -308,12 +406,7 @@
                         <span class="accordion-toggle" id="arrow-${safeId}">▼</span>
                     </div>
                     <div class="accordion-body" id="body-${safeId}">
-                        ${subs.map((sub) => `
-                            <label onclick="event.stopPropagation()">
-                                <input type="checkbox" onchange="toggleSub('${sub}')" id="chk-sub-${sub.replace(/\W/g, '')}">
-                                ${sub}
-                            </label>
-                        `).join('')}
+                        ${subs.map((sub) => `<label onclick="event.stopPropagation()"><input type="checkbox" onchange="toggleSub('${sub}')" id="chk-sub-${sub.replace(/\W/g, '')}">${sub}</label>`).join('')}
                     </div>
                 `;
                 item.innerHTML = headerHtml;
@@ -326,28 +419,21 @@
             if(event.target.tagName.toLowerCase() === 'input') return; 
             const body = document.getElementById(`body-${safeId}`);
             const arrow = document.getElementById(`arrow-${safeId}`);
-            if (body.style.display === "flex") {
-                body.style.display = "none";
-                arrow.classList.remove("open");
-            } else {
-                body.style.display = "flex";
-                arrow.classList.add("open");
-            }
+            if (body.style.display === "flex") { body.style.display = "none"; arrow.classList.remove("open"); } 
+            else { body.style.display = "flex"; arrow.classList.add("open"); }
         }
 
         function toggleGroup(event, group) {
             event.stopPropagation();
             const isChecked = event.target.checked;
             MASTER_INDUSTRY_MAP[group].forEach(sub => {
-                if (isChecked) vipIndustries.add(sub);
-                else vipIndustries.delete(sub);
+                if (isChecked) vipIndustries.add(sub); else vipIndustries.delete(sub);
             });
             updateTreeVisuals();
         }
 
         function toggleSub(sub) {
-            if (vipIndustries.has(sub)) vipIndustries.delete(sub);
-            else vipIndustries.add(sub);
+            if (vipIndustries.has(sub)) vipIndustries.delete(sub); else vipIndustries.add(sub);
             updateTreeVisuals();
         }
 
@@ -355,7 +441,6 @@
             Object.keys(MASTER_INDUSTRY_MAP).forEach(group => {
                 const subs = MASTER_INDUSTRY_MAP[group];
                 const safeId = group.replace(/\W/g, '');
-                
                 let checkedCount = 0;
                 subs.forEach(sub => {
                     const isChecked = vipIndustries.has(sub);
@@ -363,27 +448,20 @@
                     const subCb = document.getElementById(`chk-sub-${sub.replace(/\W/g, '')}`);
                     if (subCb) subCb.checked = isChecked;
                 });
-                
                 const groupCb = document.getElementById(`chk-grp-${safeId}`);
                 if (groupCb) {
                     groupCb.checked = (checkedCount === subs.length);
                     groupCb.indeterminate = (checkedCount > 0 && checkedCount < subs.length);
-                    
                     const titleSpan = document.getElementById(`title-${safeId}`);
-                    if (titleSpan) {
-                         titleSpan.innerHTML = `${group} <span style="color:#718096; font-size:12px; font-weight:normal;">(${checkedCount}/${subs.length})</span>`;
-                    }
+                    if (titleSpan) titleSpan.innerHTML = `${group} <span style="color:#718096; font-size:12px; font-weight:normal;">(${checkedCount}/${subs.length})</span>`;
                 }
             });
-            
             document.getElementById("exception-count").innerText = `${vipIndustries.size} VIP Industries Selected`;
         }
 
         function openExceptionsModal() {
             document.getElementById("exceptions-modal").style.display = "flex";
-            if(document.getElementById("exceptions-tree-container").innerHTML === "") {
-                renderExceptionsTree();
-            }
+            if(document.getElementById("exceptions-tree-container").innerHTML === "") renderExceptionsTree();
         }
 
         function closeExceptionsModal() {
@@ -391,9 +469,6 @@
             applyFiltersAndRender(); 
         }
 
-        // ═══════════════════════════════════════════════════════════
-        // UI INTERACTION (DROPDOWN FOR COLUMNS)
-        // ═══════════════════════════════════════════════════════════
         function toggleDropdown() {
             const dropdown = document.getElementById("column-dropdown");
             const btn = document.getElementById("dropdown-btn-text");
@@ -401,45 +476,33 @@
             btn.classList.toggle("active");
         }
 
-        function updateDropdownText() {
-            document.getElementById("dropdown-btn-text").innerHTML = `👁️ ${visibleColumns.size} Columns Selected <span>▼</span>`;
-        }
+        function updateDropdownText() { document.getElementById("dropdown-btn-text").innerHTML = `👁️ ${visibleColumns.size} Columns Selected <span>▼</span>`; }
 
         window.onclick = function(event) {
-            if (!event.target.matches('.dropdown-btn') && !event.target.closest('.dropdown-content') && !event.target.closest('.modal-overlay')) {
+            if (!event.target.matches('.dropdown-btn') && !event.target.closest('.dropdown-content') && !event.target.closest('.modal-overlay') && !event.target.closest('.chat-drawer')) {
                 const dropdown = document.getElementById("column-dropdown");
                 const btn = document.getElementById("dropdown-btn-text");
-                if (dropdown && dropdown.classList.contains('show')) {
-                    dropdown.classList.remove('show');
-                    btn.classList.remove('active');
-                }
+                if (dropdown && dropdown.classList.contains('show')) { dropdown.classList.remove('show'); btn.classList.remove('active'); }
             }
         }
 
-        // ═══════════════════════════════════════════════════════════
-        // WORKFLOW TRIGGER LOGIC (WITH SMART ERROR CATCHING)
-        // ═══════════════════════════════════════════════════════════
         async function triggerWorkflow() {
             const btn = document.getElementById('run-btn');
             const statusText = document.getElementById('workflow-status');
-            
             let token = localStorage.getItem('gh_token');
             if (!token) {
                 token = prompt("Paste your GitHub Personal Access Token (PAT):");
                 if (!token) return; 
                 localStorage.setItem('gh_token', token.trim());
             }
-
             try {
                 btn.disabled = true;
                 statusText.innerHTML = `<span class="spinner"></span> Starting engine...`;
-
                 const dispatchRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/dispatches`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ref: BRANCH })
                 });
-
                 if (!dispatchRes.ok) {
                     if(dispatchRes.status === 401 || dispatchRes.status === 404) {
                         localStorage.removeItem('gh_token');
@@ -447,7 +510,6 @@
                     }
                     throw new Error(`API Error ${dispatchRes.status}`);
                 }
-                
                 statusText.innerHTML = `<span class="spinner"></span> Engine spinning up...`;
                 setTimeout(() => pollWorkflowStatus(token), 5000);
             } catch (error) {
@@ -463,55 +525,58 @@
                     headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' }
                 });
                 const data = await res.json();
-                
                 if (data.workflow_runs && data.workflow_runs.length > 0) {
                     const latestRun = data.workflow_runs[0];
                     if (latestRun.status === "completed") {
                         if (latestRun.conclusion === "success") {
                             statusText.innerHTML = `✅ Complete! Fetching fresh data...`;
-                            setTimeout(() => {
-                                fetchData(); 
-                                document.getElementById('run-btn').disabled = false;
-                                statusText.innerHTML = `Status: Idle (Fresh Data Loaded)`;
-                            }, 3000); 
-                        } else {
-                            statusText.innerHTML = `❌ Failed.`;
-                            document.getElementById('run-btn').disabled = false;
-                        }
+                            setTimeout(() => { fetchData(); document.getElementById('run-btn').disabled = false; statusText.innerHTML = `Status: Idle (Fresh Data Loaded)`; }, 3000); 
+                        } else { statusText.innerHTML = `❌ Failed.`; document.getElementById('run-btn').disabled = false; }
                         return; 
-                    } else {
-                        statusText.innerHTML = `<span class="spinner"></span> Engine running...`;
-                    }
+                    } else { statusText.innerHTML = `<span class="spinner"></span> Engine running...`; }
                 }
             } catch (error) { }
             setTimeout(() => pollWorkflowStatus(token), 10000);
         }
 
-        // ═══════════════════════════════════════════════════════════
-        // DATA FETCHING & FILTER LOGIC
-        // ═══════════════════════════════════════════════════════════
         async function fetchData() {
             try {
                 const response = await fetch(`${DATA_URL}?t=${new Date().getTime()}`);
                 if (!response.ok) throw new Error("Data not found");
-                
                 rawData = await response.json();
-                
-                if(rawData.length > 0) {
+                if(rawData && rawData.length > 0) {
                     allColumns = Object.keys(rawData[0]).filter(col => col !== "Name");
                     matrixColumnName = allColumns.find(col => col.includes("(>70%)")) || "";
-
                     const defaultCols = ["Sr no", "date", "Company (Page)", "Industry", "Promoter Holding", "Pledged %", "WC Days"];
                     if (matrixColumnName) defaultCols.push(matrixColumnName);
-                    
                     visibleColumns = new Set(defaultCols.filter(c => allColumns.includes(c)));
-                    
                     renderColumnToggles();
                     applyFiltersAndRender();
+                } else {
+                    document.getElementById('table-body').innerHTML = `<tr><td class="loading" style="color:#e53e3e; font-weight:bold;" colspan="100%">⚠️ DATA SYNC ERROR: The JSON data file is empty.<br><br>Click the 'Run Backend Scraper' button again to force it to rebuild the JSON.</td></tr>`;
+                    document.getElementById('row-count').innerText = "Showing 0 of 0 stocks";
                 }
             } catch (error) {
                 document.getElementById('table-body').innerHTML = `<tr><td class="loading" style="color:#e53e3e;" colspan="100%">Raw data not found. Run the backend scraper!</td></tr>`;
             }
+        }
+
+        function renderColumnToggles() {
+            const dropdown = document.getElementById("column-dropdown");
+            dropdown.innerHTML = allColumns.map(col => `
+                <label>
+                    <input type="checkbox" value="${col}" ${visibleColumns.has(col) ? 'checked' : ''} onchange="handleColumnToggle(this)">
+                    ${getDisplayName(col)}
+                </label>
+            `).join('');
+            updateDropdownText();
+        }
+
+        function handleColumnToggle(checkbox) {
+            if (checkbox.checked) visibleColumns.add(checkbox.value);
+            else visibleColumns.delete(checkbox.value);
+            updateDropdownText();
+            renderTable(currentFilteredData);
         }
 
         function applyFiltersAndRender() {
@@ -524,26 +589,10 @@
                 let subIndustry = row["Industry"] || "Not Found";
                 let isVip = vipIndustries.has(subIndustry);
 
-                if (filterPromoter) {
-                    let isExempt = isVip && globalOverrides.bypassPromoter;
-                    if (!isExempt && (parseFloat(row["Promoter Holding"]) || 0) < 50) return false;
-                }
-                
-                if (filterPledged) {
-                    let isExempt = isVip && globalOverrides.bypassPledged;
-                    if (!isExempt && (parseFloat(row["Pledged %"]) || 0) > 10) return false;
-                }
-                
-                if (filterWc) {
-                    let isExempt = isVip && globalOverrides.bypassWc;
-                    if (!isExempt && (parseFloat(row["WC Days"]) || 999) > 150) return false;
-                }
-                
-                if (filterGrowth && matrixColumnName) {
-                    let isExempt = isVip && globalOverrides.bypassGrowth;
-                    if (!isExempt && row[matrixColumnName] !== "Yes") return false;
-                }
-
+                if (filterPromoter) { let isExempt = isVip && globalOverrides.bypassPromoter; if (!isExempt && (parseFloat(row["Promoter Holding"]) || 0) < 50) return false; }
+                if (filterPledged) { let isExempt = isVip && globalOverrides.bypassPledged; if (!isExempt && (parseFloat(row["Pledged %"]) || 0) > 10) return false; }
+                if (filterWc) { let isExempt = isVip && globalOverrides.bypassWc; if (!isExempt && (parseFloat(row["WC Days"]) || 999) > 150) return false; }
+                if (filterGrowth && matrixColumnName) { let isExempt = isVip && globalOverrides.bypassGrowth; if (!isExempt && row[matrixColumnName] !== "Yes") return false; }
                 return true; 
             });
 
@@ -559,12 +608,16 @@
                     if (strA > strB) return sortAscending ? 1 : -1;
                     return 0;
                 });
-            } else if (sortColumn === "Sr no" && !sortAscending) {
-                filteredData.reverse();
-            }
+            } else if (sortColumn === "Sr no" && !sortAscending) { filteredData.reverse(); }
 
             currentFilteredData = filteredData; 
             renderTable(filteredData);
+        }
+
+        function handleSort(col) {
+            if (sortColumn === col) sortAscending = !sortAscending;
+            else { sortColumn = col; sortAscending = true; }
+            applyFiltersAndRender();
         }
 
         function renderTable(data) {
@@ -593,12 +646,19 @@
                     }
                     if (col === "Company (Page)") {
                         let fullName = row["Company (Page)"];
-                        let shortName = encodeURIComponent(row["Name"]); 
+                        let rawTicker = row["Name"]; 
+                        let urlTicker = encodeURIComponent(rawTicker); 
+                        
+                        // Safety escape for names with quotes (e.g., "Company's Ltd")
+                        let safeTicker = rawTicker.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                        let safeFullName = fullName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
                         return `<td>
-                            <div style="font-weight: 700; color: #2d3748;">${fullName}</div>
+                            <div style="font-weight: 700; color: #2d3748; margin-bottom: 5px;">${fullName}</div>
                             <div class="action-links">
-                                <a href="https://www.screener.in/company/${shortName}/" target="_blank" title="Open in Screener">🏢 Screener</a>
-                                <a href="https://in.tradingview.com/chart/?symbol=NSE%3A${shortName}" target="_blank" title="Open in TradingView">📈 TV</a>
+                                <a href="https://www.screener.in/company/${urlTicker}/" target="_blank" title="Open in Screener">🏢 Screener</a>
+                                <a href="https://in.tradingview.com/chart/?symbol=NSE%3A${urlTicker}" target="_blank" title="Open in TradingView">📈 TV</a>
+                                <a href="javascript:void(0)" class="note-btn" onclick="openChat('${safeTicker}', '${safeFullName}')">💬 Notes</a>
                             </div>
                         </td>`;
                     }
@@ -611,15 +671,10 @@
         }
         
         function exportToCSV() {
-            if (!currentFilteredData || currentFilteredData.length === 0) {
-                alert("No data available to export.");
-                return;
-            }
+            if (!currentFilteredData || currentFilteredData.length === 0) { alert("No data available to export."); return; }
             const orderedVisibleCols = allColumns.filter(col => visibleColumns.has(col));
             let csvLines = [];
-            
             csvLines.push(orderedVisibleCols.map(c => `"${getDisplayName(c)}"`).join(','));
-            
             currentFilteredData.forEach((row, index) => {
                 let rowArray = orderedVisibleCols.map(col => {
                     let val = row[col];
@@ -630,15 +685,11 @@
                 });
                 csvLines.push(rowArray.join(','));
             });
-            
             const csvData = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
             const csvUrl = URL.createObjectURL(csvData);
             const link = document.createElement('a');
-            link.href = csvUrl;
-            link.download = `Terminal_Export_${new Date().toISOString().slice(0,10)}.csv`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            link.href = csvUrl; link.download = `Terminal_Export_${new Date().toISOString().slice(0,10)}.csv`;
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
 
         fetchData();
