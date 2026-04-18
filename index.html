@@ -54,7 +54,7 @@
         .action-links a { text-decoration: none; font-size: 11px; padding: 3px 6px; border-radius: 4px; background: #e2e8f0; color: #2b6cb0; font-weight: bold; transition: 0.2s; border: 1px solid #cbd5e0; }
         .action-links a:hover { background: #cbd5e0; color: #1a365d; border-color: #a0aec0;}
 
-        /* RULES ENGINE MODAL STYLES */
+        /* NEW GLOBAL VIP MODAL STYLES */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(2px); }
         .modal-content { background: white; width: 95%; max-width: 600px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); display: flex; flex-direction: column; max-height: 85vh; overflow: hidden; }
         .modal-header { padding: 15px 20px; background: #1a365d; color: white; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
@@ -62,30 +62,25 @@
         .modal-body { flex: 1; overflow-y: auto; padding: 15px; background: #f4f7f9; }
         .modal-footer { padding: 15px; background: #edf2f7; border-top: 1px solid #cbd5e0; text-align: right; display: flex; justify-content: space-between; align-items: center; }
         
+        /* Global Overrides Panel */
+        .global-overrides-panel { background: #ebf8ff; border: 1px solid #bee3f8; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .global-overrides-panel h4 { margin: 0 0 5px 0; color: #2b6cb0; font-size: 15px; }
+        .global-overrides-panel p { font-size: 12px; color: #4a5568; margin-top: 0; margin-bottom: 10px; }
+        .global-override-label { display: block; font-size: 13.5px; color: #2d3748; margin-bottom: 8px; cursor: pointer; font-weight: 500; }
+        .global-override-label input { margin-right: 8px; transform: scale(1.15); cursor: pointer; }
+
+        /* VIP Accordion Tree */
+        .tree-header-text { font-size: 15px; font-weight: bold; color: #1a365d; margin-bottom: 10px; padding-left: 5px; border-bottom: 2px solid #cbd5e0; padding-bottom: 5px; }
         .accordion-item { border: 1px solid #cbd5e0; border-radius: 6px; margin-bottom: 8px; background: white; overflow: hidden; }
         .accordion-header { display: flex; align-items: center; padding: 12px 15px; cursor: pointer; transition: 0.2s; user-select: none; }
-        .accordion-header:hover { background: #ebf8ff; }
+        .accordion-header:hover { background: #edf2f7; }
+        .accordion-header input { margin-right: 12px; transform: scale(1.3); cursor: pointer; }
         .accordion-title { flex: 1; font-weight: 600; color: #2d3748; font-size: 14px; }
         .accordion-toggle { color: #718096; font-size: 12px; font-weight: bold; transition: transform 0.2s; }
         .accordion-toggle.open { transform: rotate(180deg); }
-        .accordion-body { border-top: 1px solid #cbd5e0; padding: 10px; display: none; flex-direction: column; gap: 5px; background: #fafafa; }
-        
-        .group-master-controls { background: #e2e8f0; padding: 10px; border-radius: 6px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-        .group-master-controls select { padding: 6px; border-radius: 4px; border: 1px solid #cbd5e0; font-size: 13px; flex: 1; min-width: 150px; }
-        .group-master-controls button { background: #4a5568; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
-        
-        .sub-item { border-bottom: 1px solid #edf2f7; padding: 8px 5px; }
-        .sub-item:last-child { border-bottom: none; }
-        .sub-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 4px 0; }
-        .sub-header:hover { color: #2b6cb0; }
-        .sub-title { font-size: 13.5px; font-weight: 600; }
-        .sub-settings { display: none; flex-direction: column; gap: 8px; padding: 12px; background: #edf2f7; margin-top: 8px; border-radius: 6px; border: 1px solid #e2e8f0; }
-        .sub-settings label { font-size: 12.5px; color: #2d3748; cursor: pointer; display: flex; align-items: center; }
-        .sub-settings input { margin-right: 8px; transform: scale(1.1); }
-        .settings-divider { height: 1px; background: #cbd5e0; margin: 4px 0; }
-        
-        .badge-ban { font-size: 11px; background: #fed7d7; color: #c53030; padding: 2px 6px; border-radius: 10px; border: 1px solid #feb2b2; font-weight: bold; }
-        .badge-bypass { font-size: 11px; background: #ebf8ff; color: #2b6cb0; padding: 2px 6px; border-radius: 10px; border: 1px solid #bee3f8; font-weight: bold; }
+        .accordion-body { border-top: 1px solid #cbd5e0; padding: 12px 15px 12px 40px; display: none; flex-direction: column; gap: 10px; background: #fafafa; }
+        .accordion-body label { display: flex; align-items: center; cursor: pointer; font-size: 13.5px; color: #4a5568; }
+        .accordion-body input { margin-right: 10px; transform: scale(1.2); cursor: pointer; }
     </style>
 </head>
 <body>
@@ -95,7 +90,7 @@
             
             <div class="action-panel">
                 <button id="run-btn" onclick="triggerWorkflow()">▶️ Run Backend Scraper</button>
-                <button id="exceptions-btn" onclick="openExceptionsModal()">⚙️ Advanced Rules Engine</button>
+                <button id="exceptions-btn" onclick="openExceptionsModal()">⚙️ VIP Exceptions</button>
                 <button id="export-btn" onclick="exportToCSV()">📥 Export CSV</button>
                 <span id="workflow-status">Status: Idle</span>
             </div>
@@ -104,10 +99,10 @@
         <div class="controls">
             <div class="filter-group">
                 <h3>🎯 Strict Filters (Baseline Rules)</h3>
-                <label class="checkbox-label"><input type="checkbox" id="filter-promoter"> Promoter Holding ≥ 50%</label>
-                <label class="checkbox-label"><input type="checkbox" id="filter-pledged"> Pledged Shares ≤ 10%</label>
-                <label class="checkbox-label"><input type="checkbox" id="filter-wc"> Working Capital Days ≤ 150</label>
-                <label class="checkbox-label"><input type="checkbox" id="filter-growth"> 70% YoY Profit Surge (Latest Qtr)</label>
+                <label class="checkbox-label"><input type="checkbox" id="filter-promoter" onchange="handleMainFilterChange('filter-promoter', 'global-promoter', 'bypassPromoter')"> Promoter Holding ≥ 50%</label>
+                <label class="checkbox-label"><input type="checkbox" id="filter-pledged" onchange="handleMainFilterChange('filter-pledged', 'global-pledged', 'bypassPledged')"> Pledged Shares ≤ 10%</label>
+                <label class="checkbox-label"><input type="checkbox" id="filter-wc" onchange="handleMainFilterChange('filter-wc', 'global-wc', 'bypassWc')"> Working Capital Days ≤ 150</label>
+                <label class="checkbox-label"><input type="checkbox" id="filter-growth" onchange="handleMainFilterChange('filter-growth', 'global-growth', 'bypassGrowth')"> 70% YoY Profit Surge (Latest Qtr)</label>
             </div>
             
             <div class="filter-group" style="flex: 2;">
@@ -134,14 +129,41 @@
     <div id="exceptions-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <span>⚙️ Exception Overrides & Ban List</span>
+                <span>⚙️ VIP Exceptions Rules</span>
                 <button class="modal-close" onclick="closeExceptionsModal()">&times;</button>
             </div>
-            <div class="modal-body" id="exceptions-tree-container">
+            <div class="modal-body">
+                
+                <div class="global-overrides-panel">
+                    <h4>Global Exception Overrides</h4>
+                    <p>Select which rules the VIP Industries (checked below) are allowed to ignore. You can only bypass rules that are currently turned ON in the main dashboard.</p>
+                    
+                    <label class="global-override-label">
+                        <input type="checkbox" id="global-promoter" onchange="toggleGlobalOverride('bypassPromoter', 'filter-promoter', this)"> 
+                        🔓 Bypass Promoter Holding ≥ 50%
+                    </label>
+                    <label class="global-override-label">
+                        <input type="checkbox" id="global-pledged" onchange="toggleGlobalOverride('bypassPledged', 'filter-pledged', this)"> 
+                        🔓 Bypass Pledged Shares ≤ 10%
+                    </label>
+                    <label class="global-override-label">
+                        <input type="checkbox" id="global-wc" onchange="toggleGlobalOverride('bypassWc', 'filter-wc', this)"> 
+                        🔓 Bypass Working Capital Days ≤ 150
+                    </label>
+                    <label class="global-override-label">
+                        <input type="checkbox" id="global-growth" onchange="toggleGlobalOverride('bypassGrowth', 'filter-growth', this)"> 
+                        🔓 Bypass 70% YoY Profit Surge
+                    </label>
                 </div>
+
+                <div class="tree-header-text">Select VIP Industries:</div>
+                <div id="exceptions-tree-container">
+                    </div>
+            </div>
+            
             <div class="modal-footer">
-                <span id="exception-count" style="font-size: 13px; font-weight: bold; color: #4a5568;">Configure custom VIP rules</span>
-                <button class="btn-done" style="background:#2b6cb0;" onclick="closeExceptionsModal()">Apply Rules & Close</button>
+                <span id="exception-count" style="font-size: 13px; font-weight: bold; color: #4a5568;">0 VIP Sub-Industries Selected</span>
+                <button class="btn-done" style="background:#2b6cb0; color:white; border:none; padding:10px 15px; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="closeExceptionsModal()">Apply Rules & Close</button>
             </div>
         </div>
     </div>
@@ -163,8 +185,16 @@
         let sortColumn = "Sr no"; 
         let sortAscending = true;
 
-        // --- INDUSTRY SPECIFIC RULES ---
-        let industryRules = {};
+        // --- NEW VIP STATE LOGIC ---
+        // Global Overrides
+        let globalOverrides = {
+            bypassPromoter: false,
+            bypassPledged: false,
+            bypassWc: false,
+            bypassGrowth: false
+        };
+        // Set holding simply which sub-industries are designated VIPs
+        let vipIndustries = new Set();
 
         // --- MASTER INDUSTRY LIST ---
         const MASTER_INDUSTRY_MAP = {
@@ -235,8 +265,36 @@
         }
 
         // ═══════════════════════════════════════════════════════════
-        // ADVANCED RULES ENGINE UI
+        // VIP RULES LOGIC & MODAL
         // ═══════════════════════════════════════════════════════════
+
+        // 1. Validation Logic for the Global Overrides
+        function toggleGlobalOverride(ruleKey, mainFilterId, checkboxElem) {
+            if (checkboxElem.checked) {
+                const mainFilter = document.getElementById(mainFilterId);
+                // Safety Catch: Cannot check override if main filter is OFF
+                if (!mainFilter || !mainFilter.checked) {
+                    alert("PROHIBITED: You cannot exempt industries from this rule because the corresponding Strict Filter is currently turned OFF on the main dashboard.");
+                    checkboxElem.checked = false;
+                    return;
+                }
+            }
+            globalOverrides[ruleKey] = checkboxElem.checked;
+            applyFiltersAndRender();
+        }
+
+        // 2. Safety Catch: Auto-wipe override if user turns off main dashboard filter
+        function handleMainFilterChange(filterId, overrideId, ruleKey) {
+            const mainChecked = document.getElementById(filterId).checked;
+            if (!mainChecked) {
+                // Instantly uncheck the VIP override to prevent logical paradox
+                document.getElementById(overrideId).checked = false;
+                globalOverrides[ruleKey] = false;
+            }
+            applyFiltersAndRender();
+        }
+
+        // 3. Render the Simple VIP Selection Tree
         function renderExceptionsTree() {
             const container = document.getElementById("exceptions-tree-container");
             container.innerHTML = "";
@@ -248,59 +306,32 @@
                 const item = document.createElement("div");
                 item.className = "accordion-item";
                 
-                let html = `
-                    <div class="accordion-header" onclick="toggleAccordion('${safeId}')">
+                let headerHtml = `
+                    <div class="accordion-header" onclick="toggleAccordion(event, '${safeId}')">
+                        <input type="checkbox" id="chk-grp-${safeId}" onchange="toggleGroup(event, '${group}')">
                         <span class="accordion-title" id="title-${safeId}">${group}</span>
                         <span class="accordion-toggle" id="arrow-${safeId}">▼</span>
                     </div>
                     <div class="accordion-body" id="body-${safeId}">
-                        <div class="group-master-controls">
-                            <span style="font-size:12px; font-weight:bold; color:#2d3748;">Quick Apply to Group:</span>
-                            <select id="group-action-${safeId}">
-                                <option value="">-- Select Rule --</option>
-                                <option value="banished_true">🚫 Banish Entire Group</option>
-                                <option value="bypassAll_true">🔓 Exempt from ALL Active Filters</option>
-                                <option value="bypassWc_true">🔓 Exempt from WC Days Only</option>
-                                <option value="clear_all">🧹 Clear All Rules</option>
-                            </select>
-                            <button onclick="applyGroupAction('${group}', '${safeId}')">Apply</button>
-                        </div>
+                        ${subs.map((sub, index) => `
+                            <label onclick="event.stopPropagation()">
+                                <input type="checkbox" onchange="toggleSub('${sub}')" id="chk-sub-${sub.replace(/\W/g, '')}">
+                                ${sub}
+                            </label>
+                        `).join('')}
+                    </div>
                 `;
-                
-                subs.forEach(sub => {
-                    let subId = sub.replace(/\W/g, '');
-                    html += `
-                        <div class="sub-item">
-                            <div class="sub-header" onclick="toggleSubSettings('${subId}')">
-                                <span class="sub-title">${sub}</span>
-                                <span id="badges-${subId}"></span>
-                            </div>
-                            <div class="sub-settings" id="settings-${subId}">
-                                <label style="color:#c53030; font-weight:bold;">
-                                    <input type="checkbox" id="chk-ban-${subId}" onchange="setRule('${sub}', 'banished', this.checked, this)"> 
-                                    🚫 Banish Completely (Hide Always)
-                                </label>
-                                <div class="settings-divider"></div>
-                                <div style="font-size:11px; font-weight:bold; color:#718096; margin-bottom:2px;">EXEMPT FROM STRICT FILTERS:</div>
-                                <label><input type="checkbox" id="chk-prom-${subId}" onchange="setRule('${sub}', 'bypassPromoter', this.checked, this)"> 🔓 Bypass Promoter Holding ≥ 50%</label>
-                                <label><input type="checkbox" id="chk-pledge-${subId}" onchange="setRule('${sub}', 'bypassPledged', this.checked, this)"> 🔓 Bypass Pledged Shares ≤ 10%</label>
-                                <label><input type="checkbox" id="chk-wc-${subId}" onchange="setRule('${sub}', 'bypassWc', this.checked, this)"> 🔓 Bypass Working Capital Days</label>
-                                <label><input type="checkbox" id="chk-grw-${subId}" onchange="setRule('${sub}', 'bypassGrowth', this.checked, this)"> 🔓 Bypass 70% YoY Profit Surge</label>
-                            </div>
-                        </div>
-                    `;
-                });
-                
-                html += `</div>`;
-                item.innerHTML = html;
+                item.innerHTML = headerHtml;
                 container.appendChild(item);
             });
             updateTreeVisuals(); 
         }
 
-        function toggleAccordion(safeId) {
+        function toggleAccordion(event, safeId) {
+            if(event.target.tagName.toLowerCase() === 'input') return; 
             const body = document.getElementById(`body-${safeId}`);
             const arrow = document.getElementById(`arrow-${safeId}`);
+            
             if (body.style.display === "flex") {
                 body.style.display = "none";
                 arrow.classList.remove("open");
@@ -310,156 +341,48 @@
             }
         }
 
-        function toggleSubSettings(subId) {
-            const settingsBox = document.getElementById(`settings-${subId}`);
-            settingsBox.style.display = (settingsBox.style.display === "flex") ? "none" : "flex";
-        }
-
-        // --- RULE VALIDATION & STATE MANAGEMENT ---
-        function setRule(sub, key, val, checkboxElement) {
-            
-            // LOGIC GATE: Ensure Strict Filter is ON before allowing an Override
-            if (val === true && key !== 'banished') {
-                if (key === 'bypassPromoter' && !document.getElementById('filter-promoter').checked) {
-                    alert("PROHIBITED: You cannot exempt this industry from the Promoter Holding rule because that Strict Filter is currently turned OFF on the main dashboard.");
-                    if(checkboxElement) checkboxElement.checked = false;
-                    return;
-                }
-                if (key === 'bypassPledged' && !document.getElementById('filter-pledged').checked) {
-                    alert("PROHIBITED: You cannot exempt this industry from the Pledged Shares rule because that Strict Filter is currently turned OFF on the main dashboard.");
-                    if(checkboxElement) checkboxElement.checked = false;
-                    return;
-                }
-                if (key === 'bypassWc' && !document.getElementById('filter-wc').checked) {
-                    alert("PROHIBITED: You cannot exempt this industry from the Working Capital rule because that Strict Filter is currently turned OFF on the main dashboard.");
-                    if(checkboxElement) checkboxElement.checked = false;
-                    return;
-                }
-                if (key === 'bypassGrowth' && !document.getElementById('filter-growth').checked) {
-                    alert("PROHIBITED: You cannot exempt this industry from the 70% Growth rule because that Strict Filter is currently turned OFF on the main dashboard.");
-                    if(checkboxElement) checkboxElement.checked = false;
-                    return;
-                }
-            }
-
-            if (!industryRules[sub]) industryRules[sub] = {};
-            industryRules[sub][key] = val;
-            
-            // Clean up bypasses if banished
-            if (key === 'banished' && val === true) {
-                industryRules[sub].bypassPromoter = false;
-                industryRules[sub].bypassPledged = false;
-                industryRules[sub].bypassWc = false;
-                industryRules[sub].bypassGrowth = false;
-            }
+        function toggleGroup(event, group) {
+            event.stopPropagation();
+            const isChecked = event.target.checked;
+            MASTER_INDUSTRY_MAP[group].forEach(sub => {
+                if (isChecked) vipIndustries.add(sub);
+                else vipIndustries.delete(sub);
+            });
             updateTreeVisuals();
         }
 
-        function applyGroupAction(group, safeId) {
-            const select = document.getElementById(`group-action-${safeId}`);
-            const action = select.value;
-            if (!action) return;
-
-            // Get global strict filter states
-            let strictPromoter = document.getElementById('filter-promoter').checked;
-            let strictPledged = document.getElementById('filter-pledged').checked;
-            let strictWc = document.getElementById('filter-wc').checked;
-            let strictGrowth = document.getElementById('filter-growth').checked;
-            let skippedSome = false;
-            
-            MASTER_INDUSTRY_MAP[group].forEach(sub => {
-                if (!industryRules[sub]) industryRules[sub] = {};
-                
-                if (action === 'clear_all') {
-                    industryRules[sub] = {};
-                } else if (action === 'bypassAll_true') {
-                    industryRules[sub].banished = false;
-                    // Only apply if the strict filter is active
-                    if(strictPromoter) industryRules[sub].bypassPromoter = true; else skippedSome = true;
-                    if(strictPledged) industryRules[sub].bypassPledged = true; else skippedSome = true;
-                    if(strictWc) industryRules[sub].bypassWc = true; else skippedSome = true;
-                    if(strictGrowth) industryRules[sub].bypassGrowth = true; else skippedSome = true;
-                } else {
-                    let parts = action.split('_');
-                    let key = parts[0];
-                    let val = parts[1] === 'true';
-
-                    let allowed = true;
-                    if (val === true && key !== 'banished') {
-                        if (key === 'bypassPromoter' && !strictPromoter) allowed = false;
-                        if (key === 'bypassPledged' && !strictPledged) allowed = false;
-                        if (key === 'bypassWc' && !strictWc) allowed = false;
-                        if (key === 'bypassGrowth' && !strictGrowth) allowed = false;
-                    }
-
-                    if (allowed) {
-                        industryRules[sub][key] = val;
-                        if (key === 'banished' && val === true) {
-                            industryRules[sub].bypassPromoter = false;
-                            industryRules[sub].bypassPledged = false;
-                            industryRules[sub].bypassWc = false;
-                            industryRules[sub].bypassGrowth = false;
-                        }
-                    } else {
-                        skippedSome = true;
-                    }
-                }
-            });
-            
-            if (skippedSome) {
-                alert("Notice: Some overrides were skipped because their corresponding Strict Filters are currently turned OFF on the main dashboard.");
-            }
-
-            select.value = ""; 
+        function toggleSub(sub) {
+            if (vipIndustries.has(sub)) vipIndustries.delete(sub);
+            else vipIndustries.add(sub);
             updateTreeVisuals();
         }
 
         function updateTreeVisuals() {
             Object.keys(MASTER_INDUSTRY_MAP).forEach(group => {
-                let banishedCount = 0;
-                let exemptedCount = 0;
+                const subs = MASTER_INDUSTRY_MAP[group];
+                const safeId = group.replace(/\W/g, '');
                 
-                MASTER_INDUSTRY_MAP[group].forEach(sub => {
-                    let rules = industryRules[sub] || {};
-                    let subId = sub.replace(/\W/g, '');
-                    
-                    if(document.getElementById(`chk-ban-${subId}`)) document.getElementById(`chk-ban-${subId}`).checked = !!rules.banished;
-                    if(document.getElementById(`chk-prom-${subId}`)) document.getElementById(`chk-prom-${subId}`).checked = !!rules.bypassPromoter;
-                    if(document.getElementById(`chk-pledge-${subId}`)) document.getElementById(`chk-pledge-${subId}`).checked = !!rules.bypassPledged;
-                    if(document.getElementById(`chk-wc-${subId}`)) document.getElementById(`chk-wc-${subId}`).checked = !!rules.bypassWc;
-                    if(document.getElementById(`chk-grw-${subId}`)) document.getElementById(`chk-grw-${subId}`).checked = !!rules.bypassGrowth;
-                    
-                    let badgeHtml = '';
-                    if (rules.banished) {
-                        badgeHtml = '<span class="badge-ban">🚫 Banished</span>';
-                        banishedCount++;
-                    } else {
-                        let bypasses = [];
-                        if (rules.bypassPromoter) bypasses.push('Prom');
-                        if (rules.bypassPledged) bypasses.push('Pledge');
-                        if (rules.bypassWc) bypasses.push('WC');
-                        if (rules.bypassGrowth) bypasses.push('Grw');
-                        
-                        if (bypasses.length > 0) {
-                            badgeHtml = `<span class="badge-bypass">🔓 Bypass: ${bypasses.join(', ')}</span>`;
-                            exemptedCount++;
-                        }
-                    }
-                    if(document.getElementById(`badges-${subId}`)) {
-                        document.getElementById(`badges-${subId}`).innerHTML = badgeHtml;
-                    }
+                let checkedCount = 0;
+                subs.forEach(sub => {
+                    const isChecked = vipIndustries.has(sub);
+                    if (isChecked) checkedCount++;
+                    const subCb = document.getElementById(`chk-sub-${sub.replace(/\W/g, '')}`);
+                    if (subCb) subCb.checked = isChecked;
                 });
                 
-                let safeId = group.replace(/\W/g, '');
-                let titleHtml = `${group} <span style="color:#718096; font-size:12px; font-weight:normal; margin-left:8px;">`;
-                if (banishedCount > 0) titleHtml += `<span style="color:#c53030;">(🚫 ${banishedCount})</span> `;
-                if (exemptedCount > 0) titleHtml += `<span style="color:#2b6cb0;">(🔓 ${exemptedCount})</span>`;
-                titleHtml += `</span>`;
-                
-                if(document.getElementById(`title-${safeId}`)) {
-                    document.getElementById(`title-${safeId}`).innerHTML = titleHtml;
+                const groupCb = document.getElementById(`chk-grp-${safeId}`);
+                if (groupCb) {
+                    groupCb.checked = (checkedCount === subs.length);
+                    groupCb.indeterminate = (checkedCount > 0 && checkedCount < subs.length);
+                    
+                    const titleSpan = document.getElementById(`title-${safeId}`);
+                    if (titleSpan) {
+                         titleSpan.innerHTML = `${group} <span style="color:#718096; font-size:12px; font-weight:normal;">(${checkedCount}/${subs.length})</span>`;
+                    }
                 }
             });
+            
+            document.getElementById("exception-count").innerText = `${vipIndustries.size} VIP Industries Selected`;
         }
 
         function openExceptionsModal() {
@@ -500,72 +423,7 @@
         }
 
         // ═══════════════════════════════════════════════════════════
-        // WORKFLOW TRIGGER LOGIC
-        // ═══════════════════════════════════════════════════════════
-        async function triggerWorkflow() {
-            const btn = document.getElementById('run-btn');
-            const statusText = document.getElementById('workflow-status');
-            
-            let token = localStorage.getItem('gh_token');
-            if (!token) {
-                token = prompt("Paste your GitHub Personal Access Token (PAT):");
-                if (!token) return; 
-                localStorage.setItem('gh_token', token.trim());
-            }
-
-            try {
-                btn.disabled = true;
-                statusText.innerHTML = `<span class="spinner"></span> Starting engine...`;
-
-                const dispatchRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/dispatches`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ref: BRANCH })
-                });
-
-                if (!dispatchRes.ok) throw new Error("API Error");
-                
-                statusText.innerHTML = `<span class="spinner"></span> Engine spinning up...`;
-                setTimeout(() => pollWorkflowStatus(token), 5000);
-            } catch (error) {
-                statusText.innerHTML = `❌ Error starting`;
-                btn.disabled = false;
-            }
-        }
-
-        async function pollWorkflowStatus(token) {
-            const statusText = document.getElementById('workflow-status');
-            try {
-                const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/runs?per_page=1`, {
-                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' }
-                });
-                const data = await res.json();
-                
-                if (data.workflow_runs && data.workflow_runs.length > 0) {
-                    const latestRun = data.workflow_runs[0];
-                    if (latestRun.status === "completed") {
-                        if (latestRun.conclusion === "success") {
-                            statusText.innerHTML = `✅ Complete! Fetching fresh data...`;
-                            setTimeout(() => {
-                                fetchData(); 
-                                document.getElementById('run-btn').disabled = false;
-                                statusText.innerHTML = `Status: Idle (Fresh Data Loaded)`;
-                            }, 3000); 
-                        } else {
-                            statusText.innerHTML = `❌ Failed.`;
-                            document.getElementById('run-btn').disabled = false;
-                        }
-                        return; 
-                    } else {
-                        statusText.innerHTML = `<span class="spinner"></span> Engine running...`;
-                    }
-                }
-            } catch (error) { }
-            setTimeout(() => pollWorkflowStatus(token), 10000);
-        }
-
-        // ═══════════════════════════════════════════════════════════
-        // DATA FETCHING & CSV EXPORT
+        // DATA FETCHING & FILTER LOGIC
         // ═══════════════════════════════════════════════════════════
         async function fetchData() {
             try {
@@ -591,65 +449,6 @@
             }
         }
 
-        function exportToCSV() {
-            if (!currentFilteredData || currentFilteredData.length === 0) {
-                alert("No data available to export.");
-                return;
-            }
-            const orderedVisibleCols = allColumns.filter(col => visibleColumns.has(col));
-            let csvLines = [];
-            
-            csvLines.push(orderedVisibleCols.map(c => `"${getDisplayName(c)}"`).join(','));
-            
-            currentFilteredData.forEach((row, index) => {
-                let rowArray = orderedVisibleCols.map(col => {
-                    let val = row[col];
-                    if (col === "Sr no") val = sortAscending ? (index + 1) : (currentFilteredData.length - index);
-                    if (val === null || val === undefined) val = "";
-                    let strVal = String(val).replace(/"/g, '""'); 
-                    return `"${strVal}"`;
-                });
-                csvLines.push(rowArray.join(','));
-            });
-            
-            const csvData = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-            const csvUrl = URL.createObjectURL(csvData);
-            const link = document.createElement('a');
-            link.href = csvUrl;
-            link.download = `Terminal_Export_${new Date().toISOString().slice(0,10)}.csv`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        // ═══════════════════════════════════════════════════════════
-        // RENDERING & FILTERING THE TABLE
-        // ═══════════════════════════════════════════════════════════
-        function renderColumnToggles() {
-            const container = document.getElementById('column-dropdown');
-            container.innerHTML = '';
-            allColumns.forEach(col => {
-                const label = document.createElement('label');
-                const isChecked = visibleColumns.has(col) ? 'checked' : '';
-                label.innerHTML = `<input type="checkbox" value="${col}" ${isChecked} onchange="toggleColumn(this)"> <span>${getDisplayName(col)}</span>`;
-                container.appendChild(label);
-            });
-            updateDropdownText();
-        }
-
-        function toggleColumn(checkbox) {
-            if (checkbox.checked) visibleColumns.add(checkbox.value);
-            else visibleColumns.delete(checkbox.value);
-            updateDropdownText();
-            applyFiltersAndRender();
-        }
-
-        function handleSort(column) {
-            if (sortColumn === column) sortAscending = !sortAscending; 
-            else { sortColumn = column; sortAscending = true; }
-            applyFiltersAndRender();
-        }
-
         function applyFiltersAndRender() {
             const filterPromoter = document.getElementById('filter-promoter').checked;
             const filterPledged = document.getElementById('filter-pledged').checked;
@@ -658,17 +457,32 @@
 
             let filteredData = rawData.filter(row => {
                 let subIndustry = row["Industry"] || "Not Found";
-                let rules = industryRules[subIndustry] || {};
-                
-                // 1. If industry is completely banished, hide immediately
-                if (rules.banished) return false;
+                let isVip = vipIndustries.has(subIndustry);
 
-                // 2. Process Strict Filters (Applying the Exceptions/Bypasses)
-                if (filterPromoter && !rules.bypassPromoter && (parseFloat(row["Promoter Holding"]) || 0) < 50) return false;
-                if (filterPledged && !rules.bypassPledged && (parseFloat(row["Pledged %"]) || 0) > 10) return false;
-                if (filterWc && !rules.bypassWc && (parseFloat(row["WC Days"]) || 999) > 150) return false;
-                if (filterGrowth && !rules.bypassGrowth && matrixColumnName && row[matrixColumnName] !== "Yes") return false;
+                // Check Promoter Rule
+                if (filterPromoter) {
+                    let isExempt = isVip && globalOverrides.bypassPromoter;
+                    if (!isExempt && (parseFloat(row["Promoter Holding"]) || 0) < 50) return false;
+                }
                 
+                // Check Pledged Rule
+                if (filterPledged) {
+                    let isExempt = isVip && globalOverrides.bypassPledged;
+                    if (!isExempt && (parseFloat(row["Pledged %"]) || 0) > 10) return false;
+                }
+                
+                // Check WC Days Rule
+                if (filterWc) {
+                    let isExempt = isVip && globalOverrides.bypassWc;
+                    if (!isExempt && (parseFloat(row["WC Days"]) || 999) > 150) return false;
+                }
+                
+                // Check 70% Growth Rule
+                if (filterGrowth && matrixColumnName) {
+                    let isExempt = isVip && globalOverrides.bypassGrowth;
+                    if (!isExempt && row[matrixColumnName] !== "Yes") return false;
+                }
+
                 return true; 
             });
 
@@ -734,11 +548,38 @@
                 }).join('') + '</tr>';
             }).join('');
         }
-
-        // Add event listeners to Main Dashboard checkboxes to instantly trigger table updates
-        document.querySelectorAll('.filter-group input[type="checkbox"]').forEach(cb => {
-            cb.addEventListener('change', applyFiltersAndRender);
-        });
+        
+        // CSV Export Logic
+        function exportToCSV() {
+            if (!currentFilteredData || currentFilteredData.length === 0) {
+                alert("No data available to export.");
+                return;
+            }
+            const orderedVisibleCols = allColumns.filter(col => visibleColumns.has(col));
+            let csvLines = [];
+            
+            csvLines.push(orderedVisibleCols.map(c => `"${getDisplayName(c)}"`).join(','));
+            
+            currentFilteredData.forEach((row, index) => {
+                let rowArray = orderedVisibleCols.map(col => {
+                    let val = row[col];
+                    if (col === "Sr no") val = sortAscending ? (index + 1) : (currentFilteredData.length - index);
+                    if (val === null || val === undefined) val = "";
+                    let strVal = String(val).replace(/"/g, '""'); 
+                    return `"${strVal}"`;
+                });
+                csvLines.push(rowArray.join(','));
+            });
+            
+            const csvData = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const csvUrl = URL.createObjectURL(csvData);
+            const link = document.createElement('a');
+            link.href = csvUrl;
+            link.download = `Terminal_Export_${new Date().toISOString().slice(0,10)}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
 
         // Initialize App
         fetchData();
