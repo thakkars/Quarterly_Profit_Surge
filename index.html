@@ -545,7 +545,8 @@
                 if (!response.ok) throw new Error("Data not found");
                 rawData = await response.json();
                 if(rawData && rawData.length > 0) {
-                    allColumns = Object.keys(rawData[0]).filter(col => col !== "Name");
+                    // Filter out internal exact mapping columns from showing up as separate headers
+                    allColumns = Object.keys(rawData[0]).filter(col => col !== "Name" && col !== "NSE Code Exact" && col !== "Screener Name Exact");
                     matrixColumnName = allColumns.find(col => col.includes("(>70%)")) || "";
                     const defaultCols = ["Sr no", "date", "Company (Page)", "Industry", "Promoter Holding", "Pledged %", "WC Days"];
                     if (matrixColumnName) defaultCols.push(matrixColumnName);
@@ -647,22 +648,41 @@
                     if (col === "Company (Page)") {
                         let fullName = row["Company (Page)"];
                         let rawTicker = row["Name"]; 
-                        let urlTicker = encodeURIComponent(rawTicker); 
-                        
-                        // Safety escape for names with quotes (e.g., "Company's Ltd")
+
+                        // Pull the exact, mapped symbols created by the backend (Fallback to rawTicker if mapping is missing)
+                        let exactNseCode = row["NSE Code Exact"] ? row["NSE Code Exact"] : rawTicker;
+                        let exactScreenerName = row["Screener Name Exact"] ? row["Screener Name Exact"] : rawTicker;
+
+                        let nseUrlTicker = encodeURIComponent(exactNseCode); 
+                        let screenerUrlTicker = encodeURIComponent(exactScreenerName);
+
+                        // Safety escape for names with quotes
                         let safeTicker = rawTicker.replace(/'/g, "\\'").replace(/"/g, '&quot;');
                         let safeFullName = fullName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
                         return `<td>
                             <div style="font-weight: 700; color: #2d3748; margin-bottom: 5px;">${fullName}</div>
                             <div class="action-links">
-                                <a href="https://www.screener.in/company/${urlTicker}/" target="_blank" title="Open in Screener">🏢 Screener</a>
-                                <a href="https://in.tradingview.com/chart/?symbol=NSE%3A${urlTicker}" target="_blank" title="Open in TradingView">📈 TV</a>
+                                <a href="https://www.screener.in/company/${screenerUrlTicker}/" target="_blank" title="Open in Screener">🏢 Screener</a>
+                                <a href="https://in.tradingview.com/chart/?symbol=NSE%3A${nseUrlTicker}" target="_blank" title="Open in TradingView">📈 TV</a>
                                 <a href="javascript:void(0)" class="note-btn" onclick="openChat('${safeTicker}', '${safeFullName}')">💬 Notes</a>
                             </div>
                         </td>`;
                     }
+                    
                     let val = row[col];
+
+                    // Date formatting to DD-MM-YY safely
+                    if (col === "date" && val) {
+                        if (typeof val === 'string' && val.includes('-')) {
+                            let parts = val.split('-');
+                            if (parts.length === 3 && parts[0].length === 4) {
+                                // Assume YYYY-MM-DD from python script
+                                val = `${parts[2]}-${parts[1]}-${parts[0].substring(2)}`;
+                            }
+                        }
+                    }
+
                     if (val === "Yes") return `<td><span class="badge-yes">Yes</span></td>`;
                     if (val === null || val === 0 || val === "") val = "-";
                     return `<td>${val}</td>`;
@@ -679,6 +699,15 @@
                 let rowArray = orderedVisibleCols.map(col => {
                     let val = row[col];
                     if (col === "Sr no") val = sortAscending ? (index + 1) : (currentFilteredData.length - index);
+                    
+                    // Keep exported date as DD-MM-YY as well
+                    if (col === "date" && val && typeof val === 'string' && val.includes('-')) {
+                        let parts = val.split('-');
+                        if (parts.length === 3 && parts[0].length === 4) {
+                            val = `${parts[2]}-${parts[1]}-${parts[0].substring(2)}`;
+                        }
+                    }
+
                     if (val === null || val === undefined) val = "";
                     let strVal = String(val).replace(/"/g, '""'); 
                     return `"${strVal}"`;
