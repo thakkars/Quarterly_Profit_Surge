@@ -55,7 +55,7 @@ R2_RAW_JSON_KEY  = "rawdata.json"
 R2_INDUSTRY_KEY  = "Screener_Industry_Data.xlsx"
 
 # ═══════════════════════════════════════════════════════════
-# R2 HELPERS (WITH CACHE BUSTING)
+# R2 HELPERS
 # ═══════════════════════════════════════════════════════════
 def get_r2_client():
     import boto3
@@ -84,7 +84,6 @@ def r2_upload(local_path, r2_key):
             return False
         client = get_r2_client()
         
-        # Anti-Cache Command: Forces Cloudflare to serve fresh JSON to your dashboard
         extra_args = {}
         if r2_key.endswith('.json'):
             extra_args = {
@@ -99,9 +98,6 @@ def r2_upload(local_path, r2_key):
         print(f"⚠️  R2 upload failed for {r2_key}: {e}")
         return False
 
-# ═══════════════════════════════════════════════════════════
-# STEP 0 — DOWNLOAD FILES FROM R2
-# ═══════════════════════════════════════════════════════════
 if IS_GITHUB_ACTIONS:
     print("\n📥 Downloading existing files from Cloudflare R2...")
     r2_download(R2_MASTER_KEY,    MASTER_FILE_PATH)
@@ -109,7 +105,7 @@ if IS_GITHUB_ACTIONS:
     r2_download(R2_INDUSTRY_KEY,  INDUSTRY_FILE_PATH)
 
 # ═══════════════════════════════════════════════════════════
-# SCRAPER & DATA PROCESSING LOGIC
+# MAPPING & ENRICHMENT
 # ═══════════════════════════════════════════════════════════
 def load_industry_maps():
     if not os.path.exists(INDUSTRY_FILE_PATH):
@@ -121,12 +117,44 @@ def load_industry_maps():
     except:
         return {}, {}
 
-def enrich_with_industry(row_dict, industry_map, group_map):
+def load_symbol_maps():
+    """Loads the exact NSE Code and Screener Name from the master file."""
+    if not os.path.exists(MASTER_FILE_PATH):
+        return {}
+    try:
+        df = pd.read_excel(MASTER_FILE_PATH, sheet_name="screener_all_stocks")
+        # Clean name for matching (removing spaces and making lower case helps catch slight variations)
+        df["Match_Name"] = df["Name"].astype(str).str.strip().str.lower()
+        
+        mapping = {}
+        for _, row in df.iterrows():
+            mapping[row["Match_Name"]] = {
+                "NSE_Code": str(row["NSE Code"]).strip() if pd.notna(row["NSE Code"]) else "",
+                "Screener_Name": str(row["Name"]).strip()
+            }
+        return mapping
+    except Exception as e:
+        print(f"⚠️ Could not load symbol maps: {e}")
+        return {}
+
+def enrich_with_data(row_dict, industry_map, group_map, symbol_map):
     name_clean = str(row_dict.get("Company (Page)", "")).strip().lower()
+    short_name_clean = str(row_dict.get("Name", "")).strip().lower()
+    
     row_dict["Industry"]       = industry_map.get(name_clean, "Not Found")
     row_dict["Industry Group"] = group_map.get(name_clean, "Not Found")
+    
+    # Try to find the exact codes using either the short name or the full company page name
+    mapped_data = symbol_map.get(short_name_clean) or symbol_map.get(name_clean) or {}
+    
+    row_dict["NSE Code Exact"] = mapped_data.get("NSE_Code", "")
+    row_dict["Screener Name Exact"] = mapped_data.get("Screener_Name", str(row_dict.get("Name", "")))
+    
     return row_dict
 
+# ═══════════════════════════════════════════════════════════
+# SCRAPER LOGIC
+# ═══════════════════════════════════════════════════════════
 def init_driver():
     opts = Options()
     if HEADLESS: opts.add_argument("--headless=new")
@@ -225,7 +253,7 @@ def scrape_company(company_info):
     except: return {"Name": short_name, "Company (Page)": "Error", "date": datetime.now().strftime("%Y-%m-%d")}
 
 def detect_latest_quarter(row_dict):
-    non_quarter_keys = {"Sr no", "Name", "Company (Page)", "Industry Group", "Industry", "Promoter Holding", "Pledged %", "WC Days", "date"}
+    non_quarter_keys = {"Sr no", "Name", "Company (Page)", "Industry Group", "Industry", "Promoter Holding", "Pledged %", "WC Days", "date", "NSE Code Exact", "Screener Name Exact"}
     quarter_candidates = []
     for k in row_dict:
         if k in non_quarter_keys or "(>70%)" in k: continue
@@ -246,7 +274,7 @@ def get_existing_companies_in_sheet(sheet_name):
     except: return set()
 
 def transform_and_order_data(df):
-    base_cols = ["Sr no", "date", "Name", "Company (Page)", "Industry", "Industry Group"]
+    base_cols = ["Sr no", "date", "Name", "Company (Page)", "Industry", "Industry Group", "NSE Code Exact", "Screener Name Exact"]
     metric_cols = ["Pledged %", "Promoter Holding", "WC Days"]
     for col in base_cols + metric_cols:
         if col not in df.columns: df[col] = ""
@@ -304,37 +332,30 @@ def append_rows_to_raw_excel(rows, sheet_name):
     wb.save(RAW_FILE_PATH)
 
 def generate_raw_json(sheet_name):
-    if not os.path.exists(RAW_FILE_PATH):
-        print("⚠️  Raw Data file missing. Cannot generate JSON.")
-        return
-
-    print(f"\n⚙️  Converting Raw Data to JSON for the Web Dashboard...")
+    if not os.path.exists(RAW_FILE_PATH): return
     try:
         xl = pd.ExcelFile(RAW_FILE_PATH)
-        # Safety Fail-Safe: If the sheet name bugs out, grab the newest sheet in the Excel file
-        if sheet_name not in xl.sheet_names:
-            print(f"⚠️  Sheet '{sheet_name}' not found. Defaulting to '{xl.sheet_names[-1]}'")
-            sheet_name = xl.sheet_names[-1]
-
+        if sheet_name not in xl.sheet_names: sheet_name = xl.sheet_names[-1]
         df = pd.read_excel(RAW_FILE_PATH, sheet_name=sheet_name)
         df.columns = df.columns.astype(str).str.strip()
         df = df.fillna(0)
         df.to_json(RAW_JSON_PATH, orient="records")
-        print(f"✅  Saved rawdata.json for Dashboard (Sheet: {sheet_name})")
+        print(f"✅ Saved rawdata.json for Dashboard (Sheet: {sheet_name})")
     except Exception as e:
-        print(f"⚠️  Error saving JSON: {e}")
+        print(f"⚠️ Error saving JSON: {e}")
 
 # ═══════════════════════════════════════════════════════════
 # MAIN
 # ═══════════════════════════════════════════════════════════
 try:
     INDUSTRY_MAP, GROUP_MAP = load_industry_maps()
+    SYMBOL_MAP = load_symbol_maps()  # Load the new exact mappings
     login()
     company_data_list = collect_all_company_data()
 
     if company_data_list:
-        total = len(company_data_list)
-        first_row = enrich_with_industry(scrape_company(company_data_list[0]), INDUSTRY_MAP, GROUP_MAP)
+        first_scraped = scrape_company(company_data_list[0])
+        first_row = enrich_with_data(first_scraped, INDUSTRY_MAP, GROUP_MAP, SYMBOL_MAP)
         target_sheet = detect_latest_quarter(first_row) or datetime.now().strftime("%b %y")
         
         existing_names = get_existing_companies_in_sheet(target_sheet)
@@ -343,14 +364,14 @@ try:
         remaining = [c for c in company_data_list[1:] if str(c['short_name']).strip() not in existing_names]
         
         for i, info in enumerate(remaining, start=2):
-            pending_rows.append(enrich_with_industry(scrape_company(info), INDUSTRY_MAP, GROUP_MAP))
+            scraped = scrape_company(info)
+            enriched = enrich_with_data(scraped, INDUSTRY_MAP, GROUP_MAP, SYMBOL_MAP)
+            pending_rows.append(enriched)
             if len(pending_rows) >= 10:
                 append_rows_to_raw_excel(pending_rows, target_sheet)
                 pending_rows = []
 
         if pending_rows: append_rows_to_raw_excel(pending_rows, target_sheet)
-
-        # Force regenerate the JSON from the Excel file
         generate_raw_json(target_sheet)
 
         if IS_GITHUB_ACTIONS:
