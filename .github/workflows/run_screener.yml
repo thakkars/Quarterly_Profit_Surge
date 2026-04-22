@@ -2,6 +2,8 @@ name: Run Stock Screener
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '30 14 * * *' # Runs at 14:30 UTC, which is 8:00 PM IST daily
 
 jobs:
   scrape:
