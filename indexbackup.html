@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equity Research Terminal</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f7f9; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
+        h1 { color: #1a365d; margin: 0; }
+        
+        .action-panel { display: flex; align-items: center; gap: 10px; background: #edf2f7; padding: 10px 15px; border-radius: 8px; border: 1px solid #cbd5e0; flex-wrap: wrap;}
+        #run-btn { background-color: #2b6cb0; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
+        #run-btn:hover { background-color: #2c5282; }
+        #run-btn:disabled { background-color: #a0aec0; cursor: not-allowed; }
+        
+        .reset-token-btn { background: none; border: none; font-size: 18px; cursor: pointer; padding: 5px; transition: 0.2s; opacity: 0.7; }
+        .reset-token-btn:hover { opacity: 1; transform: rotate(45deg); }
+
+        #export-btn { background-color: #4a5568; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
+        #export-btn:hover { background-color: #2d3748; }
+
+        #exceptions-btn { background-color: #e53e3e; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
+        #exceptions-btn:hover { background-color: #c53030; }
+
+        #workflow-status { font-size: 13px; font-weight: 600; color: #4a5568; margin-left: auto; }
+        .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(0,0,0,0.1); border-radius: 50%; border-top-color: #2b6cb0; animation: spin 1s ease-in-out infinite; vertical-align: middle; margin-right: 5px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .controls { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 20px; padding: 15px; background: #edf2f7; border-radius: 8px; align-items: flex-start; }
+        .filter-group { flex: 1; min-width: 250px; }
+        .filter-group h3 { margin-top: 0; font-size: 16px; color: #2d3748; margin-bottom: 12px; border-bottom: 1px solid #cbd5e0; padding-bottom: 5px; }
+        .checkbox-label { display: block; margin-bottom: 10px; cursor: pointer; font-size: 14px; font-weight: 500; }
+        .checkbox-label input { margin-right: 8px; transform: scale(1.2); cursor: pointer;}
+        
+        .dropdown { width: 100%; }
+        .dropdown-btn { background-color: #fff; border: 1px solid #cbd5e0; padding: 10px 15px; border-radius: 6px; font-size: 14px; font-weight: 600; color: #2b6cb0; cursor: pointer; width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+        .dropdown-btn:hover { background-color: #ebf8ff; border-color: #3182ce; }
+        .dropdown-btn.active { border-radius: 6px 6px 0 0; border-bottom-color: transparent; }
+        .dropdown-content { display: none; background-color: #fff; border: 1px solid #cbd5e0; border-top: none; border-radius: 0 0 6px 6px; padding: 15px; max-height: 250px; overflow-y: auto; }
+        .dropdown-content.show { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+        .dropdown-content label { display: flex; align-items: center; cursor: pointer; font-size: 13px; color: #2d3748; }
+        .dropdown-content input { margin-right: 6px; transform: scale(1.1); cursor: pointer; }
+        
+        .table-container { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; max-height: 70vh;}
+        table { width: 100%; border-collapse: collapse; font-size: 14px; background: white; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
+        th { background-color: #2b6cb0; color: white; position: sticky; top: 0; font-weight: 600; z-index: 10; cursor: pointer; transition: background 0.2s; user-select: none; }
+        th:hover { background-color: #1a365d; }
+        .sort-icon { font-size: 12px; margin-left: 5px; opacity: 0.7; }
+        tr:hover { background-color: #ebf8ff; }
+        .badge-yes { background-color: #48bb78; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        .loading { text-align: center; padding: 40px; font-size: 18px; color: #718096; }
+        .stats { text-align: right; font-size: 14px; color: #4a5568; margin-bottom: 10px; font-weight: 600; }
+        
+        .action-links { margin-top: 6px; display: flex; gap: 5px; }
+        .action-links a { text-decoration: none; font-size: 11px; padding: 4px 8px; border-radius: 4px; background: #e2e8f0; color: #2b6cb0; font-weight: bold; transition: 0.2s; border: 1px solid #cbd5e0; display: inline-block; }
+        .action-links a:hover { background: #cbd5e0; color: #1a365d; border-color: #a0aec0;}
+        .action-links .note-btn { background: #bee3f8; color: #2b6cb0; border-color: #90cdf4; }
+        .action-links .note-btn:hover { background: #90cdf4; color: #1a365d; }
+
+        /* MULTIPLAYER CHAT PANEL STYLES */
+        .chat-drawer { position: fixed; top: 0; right: -450px; width: 400px; max-width: 100%; height: 100vh; background: white; box-shadow: -5px 0 15px rgba(0,0,0,0.2); transition: right 0.3s ease-in-out; z-index: 2000; display: flex; flex-direction: column; }
+        .chat-drawer.open { right: 0; }
+        .chat-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1999; display: none; backdrop-filter: blur(2px); }
+        .chat-overlay.open { display: block; }
+        .chat-header { padding: 15px 20px; background: #1a365d; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .chat-header h3 { margin: 0; font-size: 16px; }
+        .chat-header button { background: none; border: none; color: white; font-size: 24px; cursor: pointer; line-height: 1; }
+        .chat-messages { flex: 1; padding: 15px; overflow-y: auto; background: #f4f7f9; display: flex; flex-direction: column; gap: 12px; }
+        .chat-message { background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .chat-message .author { font-weight: bold; color: #2b6cb0; font-size: 13px; margin-bottom: 5px; }
+        .chat-message .text { font-size: 14px; color: #2d3748; line-height: 1.4; white-space: pre-wrap; }
+        .chat-message .time { font-size: 11px; color: #a0aec0; margin-top: 6px; text-align: right; }
+        .chat-input-area { padding: 15px; background: white; border-top: 1px solid #e2e8f0; }
+        .chat-input-area input { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; margin-bottom: 10px; font-family: inherit; }
+        .chat-input-area textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; resize: none; box-sizing: border-box; margin-bottom: 10px; font-family: inherit; font-size: 14px; }
+        .chat-input-area button { width: 100%; background: #48bb78; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
+        .chat-input-area button:hover { background: #38a169; }
+
+        /* VIP MODAL STYLES */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: white; width: 95%; max-width: 600px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); display: flex; flex-direction: column; max-height: 85vh; overflow: hidden; }
+        .modal-header { padding: 15px 20px; background: #1a365d; color: white; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+        .modal-close { background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0; line-height: 1; }
+        .modal-body { flex: 1; overflow-y: auto; padding: 15px; background: #f4f7f9; }
+        .modal-footer { padding: 15px; background: #edf2f7; border-top: 1px solid #cbd5e0; text-align: right; display: flex; justify-content: space-between; align-items: center; }
+        .global-overrides-panel { background: #ebf8ff; border: 1px solid #bee3f8; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .global-overrides-panel h4 { margin: 0 0 5px 0; color: #2b6cb0; font-size: 15px; }
+        .global-overrides-panel p { font-size: 12px; color: #4a5568; margin-top: 0; margin-bottom: 10px; }
+        .global-override-label { display: block; font-size: 13.5px; color: #2d3748; margin-bottom: 8px; cursor: pointer; font-weight: 500; }
+        .global-override-label input { margin-right: 8px; transform: scale(1.15); cursor: pointer; }
+        .tree-header-text { font-size: 15px; font-weight: bold; color: #1a365d; margin-bottom: 10px; padding-left: 5px; border-bottom: 2px solid #cbd5e0; padding-bottom: 5px; }
+        .accordion-item { border: 1px solid #cbd5e0; border-radius: 6px; margin-bottom: 8px; background: white; overflow: hidden; }
+        .accordion-header { display: flex; align-items: center; padding: 12px 15px; cursor: pointer; transition: 0.2s; user-select: none; }
+        .accordion-header:hover { background: #edf2f7; }
+        .accordion-header input { margin-right: 12px; transform: scale(1.3); cursor: pointer; }
+        .accordion-title { flex: 1; font-weight: 600; color: #2d3748; font-size: 14px; }
+        .accordion-toggle { color: #718096; font-size: 12px; font-weight: bold; transition: transform 0.2s; }
+        .accordion-toggle.open { transform: rotate(180deg); }
+        .accordion-body { border-top: 1px solid #cbd5e0; padding: 12px 15px 12px 40px; display: none; flex-direction: column; gap: 10px; background: #fafafa; }
+        .accordion-body label { display: flex; align-items: center; cursor: pointer; font-size: 13.5px; color: #4a5568; }
+        .accordion-body input { margin-right: 10px; transform: scale(1.2); cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-area">
+            <h1>📈 Equity Research Terminal</h1>
+            
+            <div class="action-panel">
+                <button id="run-btn" onclick="triggerWorkflow()">▶️ Run Backend Scraper</button>
+                <button onclick="resetToken()" class="reset-token-btn" title="Reset GitHub Token">🔄</button>
+                <button id="exceptions-btn" onclick="openExceptionsModal()">⚙️ VIP Exceptions</button>
+                <button id="export-btn" onclick="exportToCSV()">📥 Export CSV</button>
+                <span id="workflow-status">Status: Idle</span>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div class="filter-group">
+                <h3>🎯 Strict Filters (Baseline Rules)</h3>
+                <label class="checkbox-label"><input type="checkbox" id="filter-promoter" onchange="handleMainFilterChange('filter-promoter', 'global-promoter', 'bypassPromoter')"> Promoter Holding ≥ 50%</label>
+                <label class="checkbox-label"><input type="checkbox" id="filter-pledged" onchange="handleMainFilterChange('filter-pledged', 'global-pledged', 'bypassPledged')"> Pledged Shares ≤ 10%</label>
+                <label class="checkbox-label"><input type="checkbox" id="filter-wc" onchange="handleMainFilterChange('filter-wc', 'global-wc', 'bypassWc')"> Working Capital Days ≤ 150</label>
+                <label class="checkbox-label"><input type="checkbox" id="filter-growth" onchange="handleMainFilterChange('filter-growth', 'global-growth', 'bypassGrowth')"> 70% YoY Profit Surge (Latest Qtr)</label>
+            </div>
+            
+            <div class="filter-group" style="flex: 2;">
+                <h3>👁️ Column Settings</h3>
+                <div class="dropdown">
+                    <button onclick="toggleDropdown()" class="dropdown-btn" id="dropdown-btn-text">Select Columns ▼</button>
+                    <div id="column-dropdown" class="dropdown-content"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats" id="row-count">Loading data...</div>
+
+        <div class="table-container">
+            <table id="data-table">
+                <thead id="table-head"></thead>
+                <tbody id="table-body">
+                    <tr><td class="loading" colspan="100%">Fetching live market data...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="chat-overlay" class="chat-overlay" onclick="closeChat()"></div>
+    <div id="chat-drawer" class="chat-drawer">
+        <div class="chat-header">
+            <h3 id="chat-title">📝 Notes</h3>
+            <button onclick="closeChat()">&times;</button>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            </div>
+        <div class="chat-input-area">
+            <input type="text" id="chat-author" placeholder="Your Name (e.g. Deepak)">
+            <textarea id="chat-input" placeholder="Write your research note here..." rows="3"></textarea>
+            <button onclick="submitComment()">Post Note</button>
+        </div>
+    </div>
+
+    <div id="exceptions-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>⚙️ VIP Exceptions Rules</span>
+                <button class="modal-close" onclick="closeExceptionsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="global-overrides-panel">
+                    <h4>Global Exception Overrides</h4>
+                    <p>Select which rules the VIP Industries (checked below) are allowed to ignore.</p>
+                    
+                    <label class="global-override-label"><input type="checkbox" id="global-promoter" onchange="toggleGlobalOverride('bypassPromoter', 'filter-promoter', this)"> 🔓 Bypass Promoter Holding ≥ 50%</label>
+                    <label class="global-override-label"><input type="checkbox" id="global-pledged" onchange="toggleGlobalOverride('bypassPledged', 'filter-pledged', this)"> 🔓 Bypass Pledged Shares ≤ 10%</label>
+                    <label class="global-override-label"><input type="checkbox" id="global-wc" onchange="toggleGlobalOverride('bypassWc', 'filter-wc', this)"> 🔓 Bypass Working Capital Days ≤ 150</label>
+                    <label class="global-override-label"><input type="checkbox" id="global-growth" onchange="toggleGlobalOverride('bypassGrowth', 'filter-growth', this)"> 🔓 Bypass 70% YoY Profit Surge</label>
+                </div>
+                <div class="tree-header-text">Select VIP Industries:</div>
+                <div id="exceptions-tree-container"></div>
+            </div>
+            <div class="modal-footer">
+                <span id="exception-count" style="font-size: 13px; font-weight: bold; color: #4a5568;">0 VIP Sub-Industries Selected</span>
+                <button class="btn-done" style="background:#2b6cb0; color:white; border:none; padding:10px 15px; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="closeExceptionsModal()">Apply Rules & Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const GITHUB_OWNER = "thakkars"; 
+        const GITHUB_REPO = "Quarterly_Profit_Surge"; 
+        const WORKFLOW_FILE = "run_screener.yml"; 
+        const BRANCH = "main"; 
+        const DATA_URL = "https://pub-9afc232687c44eebbb8cae359c7ac460.r2.dev/rawdata.json";
+        
+        // --- NEW CLOUDFLARE MULTIPLAYER API ---
+        const CHAT_API_URL = "https://terminal-api.deepakkhatwani.workers.dev/api/comments";
+        
+        // --- STATE VARIABLES ---
+        let rawData = [];
+        let currentFilteredData = []; 
+        let allColumns = [];
+        let visibleColumns = new Set();
+        let matrixColumnName = "";
+        let sortColumn = "Sr no"; 
+        let sortAscending = true;
+        let currentChatTicker = "";
+
+        let globalOverrides = { bypassPromoter: false, bypassPledged: false, bypassWc: false, bypassGrowth: false };
+        let vipIndustries = new Set();
+
+        const MASTER_INDUSTRY_MAP = {
+            "Aerospace & Defense": ["Aerospace & Defense"],
+            "Agricultural Food & other Products": ["Edible Oil", "Other Agricultural Products", "Sugar", "Tea & Coffee"],
+            "Agricultural, Commercial & Construction Vehicles": ["Commercial Vehicles", "Construction Vehicles", "Dealers-Commercial Vehicles, Tractors, Construction Vehicles", "Tractors"],
+            "Auto Components": ["Auto Components & Equipments", "Trading - Auto components", "Tyres & Rubber Products"],
+            "Automobiles": ["2/3 Wheelers", "Auto Dealer", "Passenger Cars & Utility Vehicles"],
+            "Banks": ["Other Bank", "Private Sector Bank", "Public Sector Bank"],
+            "Beverages": ["Breweries & Distilleries", "Other Beverages"],
+            "Capital Markets": ["Asset Management Company", "Depositories, Clearing Houses and Other Intermediaries", "Exchange and Data Platform", "Financial Products Distributor", "Other Capital Market related Services", "Ratings", "Stockbroking & Allied"],
+            "Cement & Cement Products": ["Cement & Cement Products"],
+            "Chemicals & Petrochemicals": ["Carbon Black", "Commodity Chemicals", "Dyes And Pigments", "Explosives", "Industrial Gases", "Petrochemicals", "Printing Inks", "Specialty Chemicals", "Trading - Chemicals"],
+            "Cigarettes & Tobacco Products": ["Cigarettes & Tobacco Products"],
+            "Commercial Services & Supplies": ["Business Process Outsourcing (BPO)/ Knowledge Process Outsourcing (KPO)", "Consulting Services", "Data Processing Services", "Diversified Commercial Services", "Trading & Distributors"],
+            "Construction": ["Civil Construction"],
+            "Consumable Fuels": ["Coal", "Trading - Coal"],
+            "Consumer Durables": ["Ceramics", "Consumer Electronics", "Cycles", "Diversified consumer products", "Footwear", "Furniture, Home Furnishing", "Gems, Jewellery And Watches", "Glass - Consumer", "Granites & Marbles", "Household Appliances", "Houseware", "Leather And Leather Products", "Leisure Products", "Paints", "Plastic Products - Consumer", "Plywood Boards/ Laminates", "Sanitary Ware"],
+            "Diversified": ["Diversified"],
+            "Diversified FMCG": ["Diversified FMCG"],
+            "Diversified Metals": ["Diversified Metals"],
+            "Electrical Equipment": ["Heavy Electrical Equipment", "Other Electrical Equipment"],
+            "Engineering Services": ["Dredging"],
+            "Entertainment": ["Digital Entertainment", "Film Production, Distribution & Exhibition", "Media & Entertainment", "TV Broadcasting & Software Production"],
+            "Ferrous Metals": ["Ferro & Silica Manganese", "Iron & Steel", "Pig Iron", "Sponge Iron"],
+            "Fertilizers & Agrochemicals": ["Fertilizers", "Pesticides & Agrochemicals"],
+            "Finance": ["Financial Institution", "Holding Company", "Housing Finance Company", "Investment Company", "Microfinance Institutions", "Non Banking Financial Company (NBFC)", "Other Financial Services"],
+            "Financial Technology (Fintech)": ["Financial Technology (Fintech)"],
+            "Food Products": ["Animal Feed", "Dairy Products", "Meat Products including Poultry", "Other Food Products", "Packaged Foods", "Seafood"],
+            "Gas": ["Gas Transmission/Marketing", "LPG/CNG/PNG/LNG Supplier", "Trading - Gas"],
+            "Healthcare Equipment & Supplies": ["Medical Equipment & Supplies"],
+            "Healthcare Services": ["Healthcare Research, Analytics & Technology", "Healthcare Service Provider", "Hospital"],
+            "Household Products": ["Household Products", "Stationary"],
+            "IT - Hardware": ["Computers Hardware & Equipments"],
+            "IT - Services": ["IT Enabled Services"],
+            "IT - Software": ["Computers - Software & Consulting", "Software Products"],
+            "Industrial Manufacturing": ["Industrial Products", "Railway Wagons", "Ship Building & Allied Services"],
+            "Industrial Products": ["Abrasives & Bearings", "Aluminium, Copper & Zinc Products", "Cables - Electricals", "Castings & Forgings", "Compressors, Pumps & Diesel Engines", "Electrodes & Refractories", "Glass - Industrial", "Iron & Steel Products", "Other Industrial Products", "Packaging", "Plastic Products - Industrial", "Rubber"],
+            "Insurance": ["General Insurance", "Insurance Distributors", "Life Insurance"],
+            "Leisure Services": ["Amusement Parks/ Other Recreation", "Hotels & Resorts", "Restaurants", "Tour, Travel Related Services", "Wellness"],
+            "Media": ["Advertising & Media Agencies", "Electronic Media", "Print Media", "Web based media and service"],
+            "Metals & Minerals Trading": ["Trading - Metals", "Trading - Minerals"],
+            "Minerals & Mining": ["Industrial Minerals"],
+            "Non - Ferrous Metals": ["Aluminium", "Copper", "Precious Metals", "Zinc"],
+            "Oil": ["Offshore Support Solution Drilling", "Oil Equipment & Services", "Oil Exploration & Production", "Oil Storage & Transportation"],
+            "Other Construction Materials": ["Other Construction Materials"],
+            "Other Consumer Services": ["E-Learning", "Education", "Food Storage Facilities", "Other Consumer Services"],
+            "Other Utilities": ["Multi Utilities", "Other Utilities", "Waste Management", "Water Supply & Management"],
+            "Paper, Forest & Jute Products": ["Forest Products", "Jute & Jute Products", "Paper & Paper Products"],
+            "Personal Products": ["Personal Care"],
+            "Petroleum Products": ["Lubricants", "Refineries & Marketing"],
+            "Pharmaceuticals & Biotechnology": ["Biotechnology", "Pharmaceuticals"],
+            "Power": ["Integrated Power Utilities", "Power - Transmission", "Power Distribution", "Power Generation", "Power Trading"],
+            "Printing & Publication": ["Printing & Publication"],
+            "Realty": ["Real Estate Investment Trusts (REITs)", "Real Estate related services", "Residential, Commercial Projects"],
+            "Retailing": ["Distributors", "Diversified Retail", "E-Retail/ E-Commerce", "Internet & Catalogue Retail", "Pharmacy Retail", "Speciality Retail"],
+            "Telecom -  Equipment & Accessories": ["Telecom -  Equipment & Accessories"],
+            "Telecom - Services": ["Other Telecom Services", "Telecom - Cellular & Fixed line services", "Telecom - Infrastructure"],
+            "Textiles & Apparels": ["Garments & Apparels", "Other Textile Products", "Trading - Textile Products"],
+            "Transport Infrastructure": ["Airport & Airport services", "Port & Port services", "Road AssetsToll, Annuity, Hybrid-Annuity"],
+            "Transport Services": ["Airline", "Logistics Solution Provider", "Road Transport", "Shipping", "Transport Related Services"]
+        };
+
+        function getDisplayName(col) {
+            if (col === "Company (Page)") return "Company";
+            if (col === "date") return "Date";
+            return col;
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // MULTIPLAYER CHAT LOGIC
+        // ═══════════════════════════════════════════════════════════
+        function openChat(ticker, companyName) {
+            currentChatTicker = ticker;
+            document.getElementById('chat-title').innerText = `📝 Notes: ${companyName}`;
+            document.getElementById('chat-drawer').classList.add('open');
+            document.getElementById('chat-overlay').classList.add('open');
+            
+            // Auto-fill name if they've typed it before
+            const savedName = localStorage.getItem('researcher_name');
+            if(savedName) document.getElementById('chat-author').value = savedName;
+
+            loadComments(ticker);
+        }
+
+        function closeChat() {
+            document.getElementById('chat-drawer').classList.remove('open');
+            document.getElementById('chat-overlay').classList.remove('open');
+        }
+
+        async function loadComments(ticker) {
+            const msgDiv = document.getElementById('chat-messages');
+            msgDiv.innerHTML = `<div class="loading" style="padding: 20px; font-size: 14px;">Loading notes...</div>`;
+            try {
+                const res = await fetch(`${CHAT_API_URL}?ticker=${encodeURIComponent(ticker)}`);
+                const comments = await res.json();
+                
+                if(!comments || comments.length === 0) {
+                    msgDiv.innerHTML = `<div style="text-align:center; color:#718096; font-size:13px; margin-top:20px;">No notes yet. Be the first to share your research!</div>`;
+                    return;
+                }
+                
+                msgDiv.innerHTML = comments.map(c => `
+                    <div class="chat-message">
+                        <div class="author">${c.author}</div>
+                        <div class="text">${c.text}</div>
+                        <div class="time">${new Date(c.timestamp).toLocaleString()}</div>
+                    </div>
+                `).join('');
+                
+                // Scroll to bottom
+                msgDiv.scrollTop = msgDiv.scrollHeight;
+            } catch (e) {
+                msgDiv.innerHTML = `<div style="color:#e53e3e; font-size:13px; text-align:center; margin-top:20px;">Error connecting to database.</div>`;
+            }
+        }
+
+        async function submitComment() {
+            const author = document.getElementById('chat-author').value.trim();
+            const text = document.getElementById('chat-input').value.trim();
+            
+            if(!author || !text) { 
+                alert("Please enter your name and a note before posting."); 
+                return; 
+            }
+            
+            // Save their name for next time
+            localStorage.setItem('researcher_name', author);
+            
+            const btn = document.querySelector('.chat-input-area button');
+            btn.disabled = true;
+            btn.innerText = "Posting...";
+
+            try {
+                await fetch(CHAT_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ticker: currentChatTicker, author, text })
+                });
+                document.getElementById('chat-input').value = ""; // Clear text box
+                await loadComments(currentChatTicker); // Reload chat
+            } catch (e) {
+                alert("Failed to post note. Please try again.");
+            }
+            
+            btn.disabled = false;
+            btn.innerText = "Post Note";
+        }
+
+
+        // ═══════════════════════════════════════════════════════════
+        // TERMINAL CORE LOGIC
+        // ═══════════════════════════════════════════════════════════
+        function resetToken() {
+            localStorage.removeItem('gh_token');
+            alert("GitHub Token wiped! Click 'Run Backend Scraper' to enter a fresh PAT.");
+            document.getElementById('workflow-status').innerText = "Status: Idle (Token Cleared)";
+        }
+
+        function toggleGlobalOverride(ruleKey, mainFilterId, checkboxElem) {
+            if (checkboxElem.checked) {
+                const mainFilter = document.getElementById(mainFilterId);
+                if (!mainFilter || !mainFilter.checked) {
+                    alert("PROHIBITED: You cannot exempt industries from this rule because the corresponding Strict Filter is currently turned OFF on the main dashboard.");
+                    checkboxElem.checked = false; return;
+                }
+            }
+            globalOverrides[ruleKey] = checkboxElem.checked;
+            applyFiltersAndRender();
+        }
+
+        function handleMainFilterChange(filterId, overrideId, ruleKey) {
+            const mainChecked = document.getElementById(filterId).checked;
+            if (!mainChecked) {
+                document.getElementById(overrideId).checked = false;
+                globalOverrides[ruleKey] = false;
+            }
+            applyFiltersAndRender();
+        }
+
+        function renderExceptionsTree() {
+            const container = document.getElementById("exceptions-tree-container");
+            container.innerHTML = "";
+            Object.keys(MASTER_INDUSTRY_MAP).forEach(group => {
+                const subs = MASTER_INDUSTRY_MAP[group];
+                const safeId = group.replace(/\W/g, '');
+                const item = document.createElement("div");
+                item.className = "accordion-item";
+                let headerHtml = `
+                    <div class="accordion-header" onclick="toggleAccordion(event, '${safeId}')">
+                        <input type="checkbox" id="chk-grp-${safeId}" onchange="toggleGroup(event, '${group}')">
+                        <span class="accordion-title" id="title-${safeId}">${group}</span>
+                        <span class="accordion-toggle" id="arrow-${safeId}">▼</span>
+                    </div>
+                    <div class="accordion-body" id="body-${safeId}">
+                        ${subs.map((sub) => `<label onclick="event.stopPropagation()"><input type="checkbox" onchange="toggleSub('${sub}')" id="chk-sub-${sub.replace(/\W/g, '')}">${sub}</label>`).join('')}
+                    </div>
+                `;
+                item.innerHTML = headerHtml;
+                container.appendChild(item);
+            });
+            updateTreeVisuals(); 
+        }
+
+        function toggleAccordion(event, safeId) {
+            if(event.target.tagName.toLowerCase() === 'input') return; 
+            const body = document.getElementById(`body-${safeId}`);
+            const arrow = document.getElementById(`arrow-${safeId}`);
+            if (body.style.display === "flex") { body.style.display = "none"; arrow.classList.remove("open"); } 
+            else { body.style.display = "flex"; arrow.classList.add("open"); }
+        }
+
+        function toggleGroup(event, group) {
+            event.stopPropagation();
+            const isChecked = event.target.checked;
+            MASTER_INDUSTRY_MAP[group].forEach(sub => {
+                if (isChecked) vipIndustries.add(sub); else vipIndustries.delete(sub);
+            });
+            updateTreeVisuals();
+        }
+
+        function toggleSub(sub) {
+            if (vipIndustries.has(sub)) vipIndustries.delete(sub); else vipIndustries.add(sub);
+            updateTreeVisuals();
+        }
+
+        function updateTreeVisuals() {
+            Object.keys(MASTER_INDUSTRY_MAP).forEach(group => {
+                const subs = MASTER_INDUSTRY_MAP[group];
+                const safeId = group.replace(/\W/g, '');
+                let checkedCount = 0;
+                subs.forEach(sub => {
+                    const isChecked = vipIndustries.has(sub);
+                    if (isChecked) checkedCount++;
+                    const subCb = document.getElementById(`chk-sub-${sub.replace(/\W/g, '')}`);
+                    if (subCb) subCb.checked = isChecked;
+                });
+                const groupCb = document.getElementById(`chk-grp-${safeId}`);
+                if (groupCb) {
+                    groupCb.checked = (checkedCount === subs.length);
+                    groupCb.indeterminate = (checkedCount > 0 && checkedCount < subs.length);
+                    const titleSpan = document.getElementById(`title-${safeId}`);
+                    if (titleSpan) titleSpan.innerHTML = `${group} <span style="color:#718096; font-size:12px; font-weight:normal;">(${checkedCount}/${subs.length})</span>`;
+                }
+            });
+            document.getElementById("exception-count").innerText = `${vipIndustries.size} VIP Industries Selected`;
+        }
+
+        function openExceptionsModal() {
+            document.getElementById("exceptions-modal").style.display = "flex";
+            if(document.getElementById("exceptions-tree-container").innerHTML === "") renderExceptionsTree();
+        }
+
+        function closeExceptionsModal() {
+            document.getElementById("exceptions-modal").style.display = "none";
+            applyFiltersAndRender(); 
+        }
+
+        function toggleDropdown() {
+            const dropdown = document.getElementById("column-dropdown");
+            const btn = document.getElementById("dropdown-btn-text");
+            dropdown.classList.toggle("show");
+            btn.classList.toggle("active");
+        }
+
+        function updateDropdownText() { document.getElementById("dropdown-btn-text").innerHTML = `👁️ ${visibleColumns.size} Columns Selected <span>▼</span>`; }
+
+        window.onclick = function(event) {
+            if (!event.target.matches('.dropdown-btn') && !event.target.closest('.dropdown-content') && !event.target.closest('.modal-overlay') && !event.target.closest('.chat-drawer')) {
+                const dropdown = document.getElementById("column-dropdown");
+                const btn = document.getElementById("dropdown-btn-text");
+                if (dropdown && dropdown.classList.contains('show')) { dropdown.classList.remove('show'); btn.classList.remove('active'); }
+            }
+        }
+
+        async function triggerWorkflow() {
+            const btn = document.getElementById('run-btn');
+            const statusText = document.getElementById('workflow-status');
+            let token = localStorage.getItem('gh_token');
+            if (!token) {
+                token = prompt("Paste your GitHub Personal Access Token (PAT):");
+                if (!token) return; 
+                localStorage.setItem('gh_token', token.trim());
+            }
+            try {
+                btn.disabled = true;
+                statusText.innerHTML = `<span class="spinner"></span> Starting engine...`;
+                const dispatchRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/dispatches`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ref: BRANCH })
+                });
+                if (!dispatchRes.ok) {
+                    if(dispatchRes.status === 401 || dispatchRes.status === 404) {
+                        localStorage.removeItem('gh_token');
+                        throw new Error("Invalid Token. Wiped from memory. Click Run to try again.");
+                    }
+                    throw new Error(`API Error ${dispatchRes.status}`);
+                }
+                statusText.innerHTML = `<span class="spinner"></span> Engine spinning up...`;
+                setTimeout(() => pollWorkflowStatus(token), 5000);
+            } catch (error) {
+                statusText.innerHTML = `❌ ${error.message}`;
+                btn.disabled = false;
+            }
+        }
+
+        async function pollWorkflowStatus(token) {
+            const statusText = document.getElementById('workflow-status');
+            try {
+                const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/runs?per_page=1`, {
+                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+                });
+                const data = await res.json();
+                if (data.workflow_runs && data.workflow_runs.length > 0) {
+                    const latestRun = data.workflow_runs[0];
+                    if (latestRun.status === "completed") {
+                        if (latestRun.conclusion === "success") {
+                            statusText.innerHTML = `✅ Complete! Fetching fresh data...`;
+                            setTimeout(() => { fetchData(); document.getElementById('run-btn').disabled = false; statusText.innerHTML = `Status: Idle (Fresh Data Loaded)`; }, 3000); 
+                        } else { statusText.innerHTML = `❌ Failed.`; document.getElementById('run-btn').disabled = false; }
+                        return; 
+                    } else { statusText.innerHTML = `<span class="spinner"></span> Engine running...`; }
+                }
+            } catch (error) { }
+            setTimeout(() => pollWorkflowStatus(token), 10000);
+        }
+
+        async function fetchData() {
+            try {
+                const response = await fetch(`${DATA_URL}?t=${new Date().getTime()}`);
+                if (!response.ok) throw new Error("Data not found");
+                rawData = await response.json();
+                if(rawData && rawData.length > 0) {
+                    // Filter out internal exact mapping columns from showing up as separate headers
+                    allColumns = Object.keys(rawData[0]).filter(col => col !== "Name" && col !== "NSE Code Exact" && col !== "Screener Name Exact");
+                    matrixColumnName = allColumns.find(col => col.includes("(>70%)")) || "";
+                    const defaultCols = ["Sr no", "date", "Company (Page)", "Industry", "Promoter Holding", "Pledged %", "WC Days"];
+                    if (matrixColumnName) defaultCols.push(matrixColumnName);
+                    visibleColumns = new Set(defaultCols.filter(c => allColumns.includes(c)));
+                    renderColumnToggles();
+                    applyFiltersAndRender();
+                } else {
+                    document.getElementById('table-body').innerHTML = `<tr><td class="loading" style="color:#e53e3e; font-weight:bold;" colspan="100%">⚠️ DATA SYNC ERROR: The JSON data file is empty.<br><br>Click the 'Run Backend Scraper' button again to force it to rebuild the JSON.</td></tr>`;
+                    document.getElementById('row-count').innerText = "Showing 0 of 0 stocks";
+                }
+            } catch (error) {
+                document.getElementById('table-body').innerHTML = `<tr><td class="loading" style="color:#e53e3e;" colspan="100%">Raw data not found. Run the backend scraper!</td></tr>`;
+            }
+        }
+
+        function renderColumnToggles() {
+            const dropdown = document.getElementById("column-dropdown");
+            dropdown.innerHTML = allColumns.map(col => `
+                <label>
+                    <input type="checkbox" value="${col}" ${visibleColumns.has(col) ? 'checked' : ''} onchange="handleColumnToggle(this)">
+                    ${getDisplayName(col)}
+                </label>
+            `).join('');
+            updateDropdownText();
+        }
+
+        function handleColumnToggle(checkbox) {
+            if (checkbox.checked) visibleColumns.add(checkbox.value);
+            else visibleColumns.delete(checkbox.value);
+            updateDropdownText();
+            renderTable(currentFilteredData);
+        }
+
+        function applyFiltersAndRender() {
+            const filterPromoter = document.getElementById('filter-promoter').checked;
+            const filterPledged = document.getElementById('filter-pledged').checked;
+            const filterWc = document.getElementById('filter-wc').checked;
+            const filterGrowth = document.getElementById('filter-growth').checked;
+
+            let filteredData = rawData.filter(row => {
+                let subIndustry = row["Industry"] || "Not Found";
+                let isVip = vipIndustries.has(subIndustry);
+
+                if (filterPromoter) { let isExempt = isVip && globalOverrides.bypassPromoter; if (!isExempt && (parseFloat(row["Promoter Holding"]) || 0) < 50) return false; }
+                if (filterPledged) { let isExempt = isVip && globalOverrides.bypassPledged; if (!isExempt && (parseFloat(row["Pledged %"]) || 0) > 10) return false; }
+                if (filterWc) { let isExempt = isVip && globalOverrides.bypassWc; if (!isExempt && (parseFloat(row["WC Days"]) || 999) > 150) return false; }
+                if (filterGrowth && matrixColumnName) { let isExempt = isVip && globalOverrides.bypassGrowth; if (!isExempt && row[matrixColumnName] !== "Yes") return false; }
+                return true; 
+            });
+
+            if (sortColumn && sortColumn !== "Sr no") {
+                filteredData.sort((a, b) => {
+                    let valA = a[sortColumn]; let valB = b[sortColumn];
+                    if (valA === null || valA === "") valA = -999999;
+                    if (valB === null || valB === "") valB = -999999;
+                    let numA = parseFloat(valA); let numB = parseFloat(valB);
+                    if (!isNaN(numA) && !isNaN(numB)) return sortAscending ? numA - numB : numB - numA;
+                    let strA = String(valA).toLowerCase(); let strB = String(valB).toLowerCase();
+                    if (strA < strB) return sortAscending ? -1 : 1;
+                    if (strA > strB) return sortAscending ? 1 : -1;
+                    return 0;
+                });
+            } else if (sortColumn === "Sr no" && !sortAscending) { filteredData.reverse(); }
+
+            currentFilteredData = filteredData; 
+            renderTable(filteredData);
+        }
+
+        function handleSort(col) {
+            if (sortColumn === col) sortAscending = !sortAscending;
+            else { sortColumn = col; sortAscending = true; }
+            applyFiltersAndRender();
+        }
+
+        function renderTable(data) {
+            const thead = document.getElementById('table-head');
+            const tbody = document.getElementById('table-body');
+            document.getElementById('row-count').innerText = `Showing ${data.length} of ${rawData.length} stocks`;
+
+            const orderedVisibleCols = allColumns.filter(col => visibleColumns.has(col));
+
+            thead.innerHTML = '<tr>' + orderedVisibleCols.map(col => {
+                let sortIcon = '';
+                if (sortColumn === col) sortIcon = sortAscending ? '<span class="sort-icon">🔼</span>' : '<span class="sort-icon">🔽</span>';
+                return `<th onclick="handleSort('${col}')" title="Click to sort">${getDisplayName(col)}${sortIcon}</th>`;
+            }).join('') + '</tr>';
+
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="${orderedVisibleCols.length}" class="loading">No stocks match the criteria.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = data.map((row, index) => {
+                return '<tr>' + orderedVisibleCols.map(col => {
+                    if (col === "Sr no") {
+                        let displayIndex = sortAscending ? (index + 1) : (data.length - index);
+                        return `<td>${displayIndex}</td>`;
+                    }
+                    if (col === "Company (Page)") {
+                        let fullName = row["Company (Page)"];
+                        let rawTicker = row["Name"]; 
+
+                        // Pull the exact, mapped symbols created by the backend (Fallback to rawTicker if mapping is missing)
+                        let exactNseCode = row["NSE Code Exact"] ? row["NSE Code Exact"] : rawTicker;
+                        let exactScreenerName = row["Screener Name Exact"] ? row["Screener Name Exact"] : rawTicker;
+
+                        let nseUrlTicker = encodeURIComponent(exactNseCode); 
+                        let screenerUrlTicker = encodeURIComponent(exactScreenerName);
+
+                        // Safety escape for names with quotes
+                        let safeTicker = rawTicker.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                        let safeFullName = fullName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+                        return `<td>
+                            <div style="font-weight: 700; color: #2d3748; margin-bottom: 5px;">${fullName}</div>
+                            <div class="action-links">
+                                <a href="https://www.screener.in/company/${screenerUrlTicker}/" target="_blank" title="Open in Screener">🏢 Screener</a>
+                                <a href="https://in.tradingview.com/chart/?symbol=NSE%3A${nseUrlTicker}" target="_blank" title="Open in TradingView">📈 TV</a>
+                                <a href="javascript:void(0)" class="note-btn" onclick="openChat('${safeTicker}', '${safeFullName}')">💬 Notes</a>
+                            </div>
+                        </td>`;
+                    }
+                    
+                    let val = row[col];
+
+                    // Date formatting to DD-MM-YY safely
+                    if (col === "date" && val) {
+                        if (typeof val === 'string' && val.includes('-')) {
+                            let parts = val.split('-');
+                            if (parts.length === 3 && parts[0].length === 4) {
+                                // Assume YYYY-MM-DD from python script
+                                val = `${parts[2]}-${parts[1]}-${parts[0].substring(2)}`;
+                            }
+                        }
+                    }
+
+                    if (val === "Yes") return `<td><span class="badge-yes">Yes</span></td>`;
+                    if (val === null || val === 0 || val === "") val = "-";
+                    return `<td>${val}</td>`;
+                }).join('') + '</tr>';
+            }).join('');
+        }
+        
+        function exportToCSV() {
+            if (!currentFilteredData || currentFilteredData.length === 0) { alert("No data available to export."); return; }
+            const orderedVisibleCols = allColumns.filter(col => visibleColumns.has(col));
+            let csvLines = [];
+            csvLines.push(orderedVisibleCols.map(c => `"${getDisplayName(c)}"`).join(','));
+            currentFilteredData.forEach((row, index) => {
+                let rowArray = orderedVisibleCols.map(col => {
+                    let val = row[col];
+                    if (col === "Sr no") val = sortAscending ? (index + 1) : (currentFilteredData.length - index);
+                    
+                    // Keep exported date as DD-MM-YY as well
+                    if (col === "date" && val && typeof val === 'string' && val.includes('-')) {
+                        let parts = val.split('-');
+                        if (parts.length === 3 && parts[0].length === 4) {
+                            val = `${parts[2]}-${parts[1]}-${parts[0].substring(2)}`;
+                        }
+                    }
+
+                    if (val === null || val === undefined) val = "";
+                    let strVal = String(val).replace(/"/g, '""'); 
+                    return `"${strVal}"`;
+                });
+                csvLines.push(rowArray.join(','));
+            });
+            const csvData = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const csvUrl = URL.createObjectURL(csvData);
+            const link = document.createElement('a');
+            link.href = csvUrl; link.download = `Terminal_Export_${new Date().toISOString().slice(0,10)}.csv`;
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        }
+
+        fetchData();
+        renderExceptionsTree(); 
+    </script>
+</body>
+</html>
