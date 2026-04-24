@@ -1,3 +1,9 @@
+Ah, I understand now! I tried to be a little too clever by automatically turning on all the quarterly date columns, which ended up cluttering your view again.
+We just want the core, essential metadata columns checked by default, plus your new **70% Surge** summary column.
+I have removed the automatic date-column logic and hardcoded exactly the base columns to be on by default. I put them in a clean list inside the code so if you ever want to add or remove one, you just type its name in the list!
+*(Also, I kept the **Flip Table** button for mobile in there since it's working well for you!)*
+Here is your updated, perfect **index.html**. Copy and paste this entirely:
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -24,6 +30,12 @@
         #exceptions-btn { background-color: #e53e3e; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
         #exceptions-btn:hover { background-color: #c53030; }
 
+        .mobile-only-btn { display: none; }
+        @media (max-width: 768px) {
+            .mobile-only-btn { display: inline-block; background-color: #ed8936; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
+            .mobile-only-btn:hover { background-color: #dd6b20; }
+        }
+
         #workflow-status { font-size: 13px; font-weight: 600; color: #4a5568; margin-left: auto; }
         .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(0,0,0,0.1); border-radius: 50%; border-top-color: #2b6cb0; animation: spin 1s ease-in-out infinite; vertical-align: middle; margin-right: 5px; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -43,7 +55,11 @@
         .dropdown-content label { display: flex; align-items: center; cursor: pointer; font-size: 13px; color: #2d3748; }
         .dropdown-content input { margin-right: 6px; transform: scale(1.1); cursor: pointer; }
         
-        .table-container { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; max-height: 70vh;}
+        .table-container { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; max-height: 70vh; background: white;}
+        /* Make background white when full screening on mobile */
+        .table-container:fullscreen { padding: 15px; max-height: 100vh; overflow: auto; background-color: white; }
+        .table-container:-webkit-full-screen { padding: 15px; max-height: 100vh; overflow: auto; background-color: white; }
+
         table { width: 100%; border-collapse: collapse; font-size: 14px; background: white; }
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
         th { background-color: #2b6cb0; color: white; position: sticky; top: 0; font-weight: 600; z-index: 10; cursor: pointer; transition: background 0.2s; user-select: none; }
@@ -114,6 +130,7 @@
                 <button onclick="resetToken()" class="reset-token-btn" title="Reset GitHub Token">🔄</button>
                 <button id="exceptions-btn" onclick="openExceptionsModal()">⚙️ VIP Exceptions</button>
                 <button id="export-btn" onclick="exportToCSV()">📥 Export CSV</button>
+                <button id="landscape-btn" class="mobile-only-btn" onclick="toggleLandscape()">📱 Flip Table</button>
                 <span id="workflow-status">Status: Idle</span>
             </div>
         </div>
@@ -138,7 +155,7 @@
 
         <div class="stats" id="row-count">Loading data...</div>
 
-        <div class="table-container">
+        <div class="table-container" id="main-table-container">
             <table id="data-table">
                 <thead id="table-head"></thead>
                 <tbody id="table-body">
@@ -278,6 +295,34 @@
             if (col === "Company (Page)") return "Company";
             if (col === "date") return "Date";
             return col;
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // MOBILE LANDSCAPE TOGGLE
+        // ═══════════════════════════════════════════════════════════
+        async function toggleLandscape() {
+            try {
+                const tableContainer = document.getElementById('main-table-container');
+                if (!document.fullscreenElement) {
+                    // Make table full screen
+                    if (tableContainer.requestFullscreen) {
+                        await tableContainer.requestFullscreen();
+                    } else if (document.documentElement.requestFullscreen) {
+                        await document.documentElement.requestFullscreen(); // Fallback for older phones
+                    }
+                    // Attempt native mobile landscape lock
+                    if (screen.orientation && screen.orientation.lock) {
+                        await screen.orientation.lock("landscape");
+                    }
+                } else {
+                    // Exit full screen
+                    if (document.exitFullscreen) {
+                        await document.exitFullscreen();
+                    }
+                }
+            } catch (err) {
+                alert("To view in landscape mode comfortably, please physically rotate your phone (ensure Auto-Rotate is ON).");
+            }
         }
 
         // ═══════════════════════════════════════════════════════════
@@ -545,11 +590,23 @@
                     // Filter out internal exact mapping columns
                     allColumns = Object.keys(rawData[0]).filter(col => col !== "Name" && col !== "NSE Code Exact" && col !== "Screener Name Exact");
                     
-                    // We still find the latest matrix column so your Strict Filter checkbox keeps working!
+                    // Keep matrixColumnName detection active for the Strict Filters engine to run properly
                     matrixColumnName = allColumns.find(col => col.includes("(>70%)")) || "";
                     
-                    // NEW SUMMARY COLUMN replaces matrixColumnName in default view
-                    const defaultCols = ["Sr no", "date", "Company (Page)", "Industry", "Promoter Holding", "Pledged %", "WC Days", "70% Surge"];
+                    // 🔥 THESE ARE THE EXACT 10 COLUMNS THAT WILL BE CHECKED BY DEFAULT (ON)
+                    // If you ever need to add a missing column exactly as it appears in your screenshot,
+                    // just type it inside these quotes!
+                    const defaultCols = [
+                        "Sr no", 
+                        "date", 
+                        "Company (Page)", 
+                        "Industry",
+                        "Industry Group", 
+                        "Promoter Holding", 
+                        "Pledged %", 
+                        "WC Days", 
+                        "70% Surge"
+                    ];
                     
                     visibleColumns = new Set(defaultCols.filter(c => allColumns.includes(c)));
                     renderColumnToggles();
