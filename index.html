@@ -289,7 +289,6 @@
             document.getElementById('chat-drawer').classList.add('open');
             document.getElementById('chat-overlay').classList.add('open');
             
-            // Auto-fill name if they've typed it before
             const savedName = localStorage.getItem('researcher_name');
             if(savedName) document.getElementById('chat-author').value = savedName;
 
@@ -321,7 +320,6 @@
                     </div>
                 `).join('');
                 
-                // Scroll to bottom
                 msgDiv.scrollTop = msgDiv.scrollHeight;
             } catch (e) {
                 msgDiv.innerHTML = `<div style="color:#e53e3e; font-size:13px; text-align:center; margin-top:20px;">Error connecting to database.</div>`;
@@ -337,7 +335,6 @@
                 return; 
             }
             
-            // Save their name for next time
             localStorage.setItem('researcher_name', author);
             
             const btn = document.querySelector('.chat-input-area button');
@@ -350,8 +347,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ticker: currentChatTicker, author, text })
                 });
-                document.getElementById('chat-input').value = ""; // Clear text box
-                await loadComments(currentChatTicker); // Reload chat
+                document.getElementById('chat-input').value = "";
+                await loadComments(currentChatTicker);
             } catch (e) {
                 alert("Failed to post note. Please try again.");
             }
@@ -359,7 +356,6 @@
             btn.disabled = false;
             btn.innerText = "Post Note";
         }
-
 
         // ═══════════════════════════════════════════════════════════
         // TERMINAL CORE LOGIC
@@ -544,12 +540,17 @@
                 const response = await fetch(`${DATA_URL}?t=${new Date().getTime()}`);
                 if (!response.ok) throw new Error("Data not found");
                 rawData = await response.json();
+                
                 if(rawData && rawData.length > 0) {
-                    // Filter out internal exact mapping columns from showing up as separate headers
+                    // Filter out internal exact mapping columns
                     allColumns = Object.keys(rawData[0]).filter(col => col !== "Name" && col !== "NSE Code Exact" && col !== "Screener Name Exact");
+                    
+                    // We still find the latest matrix column so your Strict Filter checkbox keeps working!
                     matrixColumnName = allColumns.find(col => col.includes("(>70%)")) || "";
-                    const defaultCols = ["Sr no", "date", "Company (Page)", "Industry", "Promoter Holding", "Pledged %", "WC Days"];
-                    if (matrixColumnName) defaultCols.push(matrixColumnName);
+                    
+                    // NEW SUMMARY COLUMN replaces matrixColumnName in default view
+                    const defaultCols = ["Sr no", "date", "Company (Page)", "Industry", "Promoter Holding", "Pledged %", "WC Days", "70% Surge"];
+                    
                     visibleColumns = new Set(defaultCols.filter(c => allColumns.includes(c)));
                     renderColumnToggles();
                     applyFiltersAndRender();
@@ -649,14 +650,12 @@
                         let fullName = row["Company (Page)"];
                         let rawTicker = row["Name"]; 
 
-                        // Pull the exact, mapped symbols created by the backend (Fallback to rawTicker if mapping is missing)
                         let exactNseCode = row["NSE Code Exact"] ? row["NSE Code Exact"] : rawTicker;
                         let exactScreenerName = row["Screener Name Exact"] ? row["Screener Name Exact"] : rawTicker;
 
                         let nseUrlTicker = encodeURIComponent(exactNseCode); 
                         let screenerUrlTicker = encodeURIComponent(exactScreenerName);
 
-                        // Safety escape for names with quotes
                         let safeTicker = rawTicker.replace(/'/g, "\\'").replace(/"/g, '&quot;');
                         let safeFullName = fullName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
@@ -672,12 +671,10 @@
                     
                     let val = row[col];
 
-                    // Date formatting to DD-MM-YY safely
                     if (col === "date" && val) {
                         if (typeof val === 'string' && val.includes('-')) {
                             let parts = val.split('-');
                             if (parts.length === 3 && parts[0].length === 4) {
-                                // Assume YYYY-MM-DD from python script
                                 val = `${parts[2]}-${parts[1]}-${parts[0].substring(2)}`;
                             }
                         }
@@ -700,7 +697,6 @@
                     let val = row[col];
                     if (col === "Sr no") val = sortAscending ? (index + 1) : (currentFilteredData.length - index);
                     
-                    // Keep exported date as DD-MM-YY as well
                     if (col === "date" && val && typeof val === 'string' && val.includes('-')) {
                         let parts = val.split('-');
                         if (parts.length === 3 && parts[0].length === 4) {
