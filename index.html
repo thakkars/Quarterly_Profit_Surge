@@ -582,7 +582,7 @@
                 
                 if(rawData && rawData.length > 0) {
                     // Filter out internal exact mapping columns
-                    allColumns = Object.keys(rawData[0]).filter(col => col !== "Name" && col !== "NSE Code Exact" && col !== "Screener Name Exact");
+                    allColumns = Object.keys(rawData[0]).filter(col => col !== "Name" && col !== "NSE Code Exact" && col !== "Screener Name Exact" && col !== "Investing Name Exact");
                     
                     // Keep matrixColumnName detection active for the Strict Filters engine to run properly
                     matrixColumnName = allColumns.find(col => col.includes("(>70%)")) || "";
@@ -703,9 +703,11 @@
 
                         let exactNseCode = row["NSE Code Exact"] ? row["NSE Code Exact"] : rawTicker;
                         let exactScreenerName = row["Screener Name Exact"] ? row["Screener Name Exact"] : rawTicker;
+                        let exactInvestingName = row["Investing Name Exact"] ? row["Investing Name Exact"] : null;
 
                         let nseUrlTicker = encodeURIComponent(exactNseCode); 
                         let screenerUrlTicker = encodeURIComponent(exactScreenerName);
+                        let investingUrlTicker = exactInvestingName ? exactInvestingName.toLowerCase().replace(/ /g, "-") : null;
 
                         let safeTicker = rawTicker.replace(/'/g, "\\'").replace(/"/g, '&quot;');
                         let safeFullName = fullName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
@@ -715,6 +717,7 @@
                             <div class="action-links">
                                 <a href="https://www.screener.in/company/${screenerUrlTicker}/" target="_blank" title="Open in Screener">🏢 Screener</a>
                                 <a href="https://in.tradingview.com/chart/?symbol=NSE%3A${nseUrlTicker}" target="_blank" title="Open in TradingView">📈 TV</a>
+                                ${investingUrlTicker ? `<a href="https://in.investing.com/equities/${investingUrlTicker}" target="_blank" title="Open in Investing.com" style="background:#e6fffa; color:#276749; border-color:#9ae6b4;">📊 Investing</a>` : ''}
                                 <a href="javascript:void(0)" class="note-btn" onclick="openChat('${safeTicker}', '${safeFullName}')">💬 Notes</a>
                             </div>
                         </td>`;
