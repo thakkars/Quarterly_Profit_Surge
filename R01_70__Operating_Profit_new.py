@@ -118,12 +118,10 @@ def load_industry_maps():
         return {}, {}
 
 def load_symbol_maps():
-    """Loads the exact NSE Code and Screener Name from the master file."""
     if not os.path.exists(MASTER_FILE_PATH):
         return {}
     try:
         df = pd.read_excel(MASTER_FILE_PATH, sheet_name="screener_all_stocks")
-        # Clean name for matching (removing spaces and making lower case helps catch slight variations)
         df["Match_Name"] = df["Name"].astype(str).str.strip().str.lower()
         
         mapping = {}
@@ -144,7 +142,6 @@ def enrich_with_data(row_dict, industry_map, group_map, symbol_map):
     row_dict["Industry"]       = industry_map.get(name_clean, "Not Found")
     row_dict["Industry Group"] = group_map.get(name_clean, "Not Found")
     
-    # Try to find the exact codes using either the short name or the full company page name
     mapped_data = symbol_map.get(short_name_clean) or symbol_map.get(name_clean) or {}
     
     row_dict["NSE Code Exact"] = mapped_data.get("NSE_Code", "")
@@ -279,7 +276,7 @@ def transform_and_order_data(df):
     for col in base_cols + metric_cols:
         if col not in df.columns: df[col] = ""
 
-    quarter_cols_raw = [c for c in df.columns if c not in base_cols and c not in metric_cols and "(>70%)" not in c]
+    quarter_cols_raw = [c for c in df.columns if c not in base_cols and c not in metric_cols and "(>70%)" not in c and c != "70% Surge"]
     parsed_dates = []
     for c in quarter_cols_raw:
         try: parsed_dates.append((pd.to_datetime(c, format="%b %Y"), c))
@@ -291,6 +288,8 @@ def transform_and_order_data(df):
     for c in sorted_quarter_cols: temp_df[c] = pd.to_numeric(df[c].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
 
     matrix_cols = []
+    surge_tags_list = [[] for _ in range(len(df))]
+
     for dt, col_current in parsed_dates:
         try:
             dt_prev_year = dt.replace(year=dt.year - 1)
@@ -298,10 +297,19 @@ def transform_and_order_data(df):
             if col_prev in temp_df.columns:
                 jump_col = f"{dt.strftime('%b%y')} (>70%) {dt_prev_year.strftime('%b%y')}"
                 matrix_cols.append(jump_col)
-                df[jump_col] = np.where((temp_df[col_current] >= 1.7 * temp_df[col_prev]) & (temp_df[col_prev] > 0), "Yes", "")
+                
+                condition = (temp_df[col_current] >= 1.7 * temp_df[col_prev]) & (temp_df[col_prev] > 0)
+                df[jump_col] = np.where(condition, "Yes", "")
+                
+                tag = dt.strftime('%b')[0] + dt.strftime('%y') 
+                for idx, is_surge in enumerate(condition):
+                    if is_surge:
+                        surge_tags_list[idx].append(tag)
         except: pass
 
-    final_cols = base_cols + sorted_quarter_cols + metric_cols + matrix_cols
+    df["70% Surge"] = [", ".join(tags) for tags in surge_tags_list]
+
+    final_cols = base_cols + sorted_quarter_cols + metric_cols + matrix_cols + ["70% Surge"]
     df = df[final_cols].copy()
     df["Sr no"] = range(1, len(df) + 1)
     return df
@@ -349,7 +357,7 @@ def generate_raw_json(sheet_name):
 # ═══════════════════════════════════════════════════════════
 try:
     INDUSTRY_MAP, GROUP_MAP = load_industry_maps()
-    SYMBOL_MAP = load_symbol_maps()  # Load the new exact mappings
+    SYMBOL_MAP = load_symbol_maps()
     login()
     company_data_list = collect_all_company_data()
 
