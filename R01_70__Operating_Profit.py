@@ -163,8 +163,6 @@ def load_symbol_maps():
         return {}
 
 def enrich_with_data(row_dict, industry_map, group_map, symbol_map):
-    # "Company (Page)" = full scraped name e.g. "VST Industries Ltd"
-    # "Name"           = short screen name e.g. "VST Industries" → fallback
     full_name_clean  = str(row_dict.get("Company (Page)", "")).strip().lower()
     short_name_clean = str(row_dict.get("Name", "")).strip().lower()
 
@@ -223,8 +221,17 @@ def safe_get(url):
     except: return False
 
 def get_company_full_name():
-    try: return wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "h1.margin-0"))).text.strip()
-    except: return "Unknown"
+    # Try multiple selectors — different pages use different h1 classes
+    selectors = ["h1.margin-0", "h1.shrink-text", "h1", ".company-name h1"]
+    for sel in selectors:
+        try:
+            el   = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, sel)))
+            name = el.text.strip()
+            if name and name.lower() != "unknown":
+                return name
+        except:
+            continue
+    return "Unknown"
 
 def get_top_dashboard_metrics():
     metrics = {"Promoter Holding": 0.0, "Pledged %": 0.0, "WC Days": 0.0}
@@ -275,16 +282,28 @@ def scrape_company(company_info):
     if not safe_get(url):
         return {"Name": short_name, "Company (Page)": "Load Failed", "date": datetime.now().strftime("%Y-%m-%d")}
     try:
+        time.sleep(1.5)  # let page fully load before clicking Consolidated
         try: driver.find_element(By.LINK_TEXT, "Consolidated").click(); time.sleep(1.5)
-        except: pass
+        except:
+            try: driver.find_element(By.PARTIAL_LINK_TEXT, "Consolidated").click(); time.sleep(1.5)
+            except: pass  # Standalone company — no Consolidated tab, that's fine
+
+        full_name = get_company_full_name()
+
+        # If still Unknown, extract slug from URL as fallback
+        # e.g. screener.in/company/GMBREW/ → "GMBREW"
+        if full_name == "Unknown":
+            slug = url.rstrip("/").split("/")[-1]
+            full_name = slug if slug else short_name
+
         return {
-            "Name": short_name, "Company (Page)": get_company_full_name(),
+            "Name": short_name, "Company (Page)": full_name,
             "Industry Group": "", "Industry": "",
             **extract_operating_profit(), **get_top_dashboard_metrics(),
             "date": datetime.now().strftime("%Y-%m-%d")
         }
     except:
-        return {"Name": short_name, "Company (Page)": "Error", "date": datetime.now().strftime("%Y-%m-%d")}
+        return {"Name": short_name, "Company (Page)": short_name, "date": datetime.now().strftime("%Y-%m-%d")}
 
 def detect_latest_quarter(row_dict):
     non_quarter_keys = {
