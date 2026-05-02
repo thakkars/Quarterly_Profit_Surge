@@ -57,19 +57,25 @@
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
         th { background-color: #2b6cb0; color: white; position: sticky; top: 0; font-weight: 600; z-index: 10; cursor: pointer; transition: background 0.2s; user-select: none; }
         th:hover { background-color: #1a365d; }
+
+        /* ── FIX 2: Narrow Sr no column ── */
+        th:first-child, td:first-child { max-width: 45px; width: 45px; text-align: center; padding-left: 6px; padding-right: 6px; }
+
+        /* ── FIX 4: Narrow Promoter Holding column ── */
+        .col-promoter { max-width: 80px; width: 80px; text-align: right; }
+
         .sort-icon { font-size: 12px; margin-left: 5px; opacity: 0.7; }
         tr:hover { background-color: #ebf8ff; }
         .badge-yes { background-color: #48bb78; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
         .loading { text-align: center; padding: 40px; font-size: 18px; color: #718096; }
         .stats { text-align: right; font-size: 14px; color: #4a5568; margin-bottom: 10px; font-weight: 600; }
         
+        /* ── FIX 3: Button styles ── */
         .action-links { margin-top: 6px; display: flex; gap: 5px; flex-wrap: wrap; }
-        .action-links a { text-decoration: none; font-size: 11px; padding: 4px 8px; border-radius: 4px; background: #e2e8f0; color: #2b6cb0; font-weight: bold; transition: 0.2s; border: 1px solid #cbd5e0; display: inline-block; }
+        .action-links a { text-decoration: none; font-size: 11px; padding: 3px 7px; border-radius: 4px; background: #e2e8f0; color: #2b6cb0; font-weight: bold; transition: 0.2s; border: 1px solid #cbd5e0; display: inline-block; }
         .action-links a:hover { background: #cbd5e0; color: #1a365d; border-color: #a0aec0;}
         .action-links .note-btn { background: #bee3f8; color: #2b6cb0; border-color: #90cdf4; }
         .action-links .note-btn:hover { background: #90cdf4; color: #1a365d; }
-        .action-links .investing-btn { background: #e6fffa; color: #276749; border-color: #9ae6b4; }
-        .action-links .investing-btn:hover { background: #9ae6b4; color: #1c4532; }
 
         /* MULTIPLAYER CHAT PANEL STYLES */
         .chat-drawer { position: fixed; top: 0; right: -450px; width: 400px; max-width: 100%; height: 100vh; background: white; box-shadow: -5px 0 15px rgba(0,0,0,0.2); transition: right 0.3s ease-in-out; z-index: 2000; display: flex; flex-direction: column; }
@@ -119,7 +125,6 @@
     <div class="container">
         <div class="header-area">
             <h1>📈 Equity Research Terminal</h1>
-            
             <div class="action-panel">
                 <button id="run-btn" onclick="triggerWorkflow()">▶️ Run Backend Scraper</button>
                 <button onclick="resetToken()" class="reset-token-btn" title="Reset GitHub Token">🔄</button>
@@ -138,7 +143,6 @@
                 <label class="checkbox-label"><input type="checkbox" id="filter-wc" onchange="handleMainFilterChange('filter-wc', 'global-wc', 'bypassWc')"> Working Capital Days ≤ 150</label>
                 <label class="checkbox-label"><input type="checkbox" id="filter-growth" onchange="handleMainFilterChange('filter-growth', 'global-growth', 'bypassGrowth')"> 70% YoY Profit Surge (Latest Qtr)</label>
             </div>
-            
             <div class="filter-group" style="flex: 2;">
                 <h3>👁️ Column Settings</h3>
                 <div class="dropdown">
@@ -200,19 +204,19 @@
     </div>
 
     <script>
-        const GITHUB_OWNER = "thakkars"; 
-        const GITHUB_REPO = "Quarterly_Profit_Surge"; 
-        const WORKFLOW_FILE = "run_screener.yml"; 
-        const BRANCH = "main"; 
+        const GITHUB_OWNER = "thakkars";
+        const GITHUB_REPO = "Quarterly_Profit_Surge";
+        const WORKFLOW_FILE = "run_screener.yml";
+        const BRANCH = "main";
         const DATA_URL = "https://pub-9afc232687c44eebbb8cae359c7ac460.r2.dev/rawdata.json";
         const CHAT_API_URL = "https://terminal-api.deepakkhatwani.workers.dev/api/comments";
-        
+
         let rawData = [];
-        let currentFilteredData = []; 
+        let currentFilteredData = [];
         let allColumns = [];
         let visibleColumns = new Set();
         let matrixColumnName = "";
-        let sortColumn = "Sr no"; 
+        let sortColumn = "Sr no";
         let sortAscending = true;
         let currentChatTicker = "";
         let globalOverrides = { bypassPromoter: false, bypassPledged: false, bypassWc: false, bypassGrowth: false };
@@ -274,13 +278,10 @@
                     if (document.exitFullscreen) { await document.exitFullscreen(); }
                 }
             } catch (err) {
-                alert("To view in landscape mode comfortably, please physically rotate your phone (ensure Auto-Rotate is ON).");
+                alert("To view in landscape mode comfortably, please physically rotate your phone.");
             }
         }
 
-        // ═══════════════════════════════════════════════════════════
-        // MULTIPLAYER CHAT LOGIC
-        // ═══════════════════════════════════════════════════════════
         function openChat(ticker, companyName) {
             currentChatTicker = ticker;
             document.getElementById('chat-title').innerText = `📝 Notes: ${companyName}`;
@@ -338,9 +339,6 @@
             btn.disabled = false; btn.innerText = "Post Note";
         }
 
-        // ═══════════════════════════════════════════════════════════
-        // TERMINAL CORE LOGIC
-        // ═══════════════════════════════════════════════════════════
         function resetToken() {
             localStorage.removeItem('gh_token');
             alert("GitHub Token wiped! Click 'Run Backend Scraper' to enter a fresh PAT.");
@@ -351,7 +349,7 @@
             if (checkboxElem.checked) {
                 const mainFilter = document.getElementById(mainFilterId);
                 if (!mainFilter || !mainFilter.checked) {
-                    alert("PROHIBITED: You cannot exempt industries from this rule because the corresponding Strict Filter is currently turned OFF on the main dashboard.");
+                    alert("PROHIBITED: You cannot exempt industries from this rule because the corresponding Strict Filter is currently turned OFF.");
                     checkboxElem.checked = false; return;
                 }
             }
@@ -520,9 +518,8 @@
                 const response = await fetch(`${DATA_URL}?t=${new Date().getTime()}`);
                 if (!response.ok) throw new Error("Data not found");
                 rawData = await response.json();
-                
+
                 if(rawData && rawData.length > 0) {
-                    // ── KEY FIX: hide internal mapping columns from table display ──
                     allColumns = Object.keys(rawData[0]).filter(col =>
                         col !== "Name" &&
                         col !== "NSE Code Exact" &&
@@ -538,7 +535,7 @@
                     renderColumnToggles();
                     applyFiltersAndRender();
                 } else {
-                    document.getElementById('table-body').innerHTML = `<tr><td class="loading" style="color:#e53e3e; font-weight:bold;" colspan="100%">⚠️ DATA SYNC ERROR: The JSON data file is empty.<br><br>Click the 'Run Backend Scraper' button again to force it to rebuild the JSON.</td></tr>`;
+                    document.getElementById('table-body').innerHTML = `<tr><td class="loading" style="color:#e53e3e; font-weight:bold;" colspan="100%">⚠️ DATA SYNC ERROR: JSON file is empty. Click 'Run Backend Scraper' to rebuild.</td></tr>`;
                     document.getElementById('row-count').innerText = "Showing 0 of 0 stocks";
                 }
             } catch (error) {
@@ -562,6 +559,14 @@
             else visibleColumns.delete(checkbox.value);
             updateDropdownText();
             renderTable(currentFilteredData);
+        }
+
+        // ── FIX 5 & 6: Human-friendly display names ──
+        function getDisplayName(col) {
+            if (col === "date")           return "Date";
+            if (col === "Company (Page)") return "Company";
+            if (col === "Promoter Holding") return "Promoter %";
+            return col;
         }
 
         function applyFiltersAndRender() {
@@ -604,8 +609,6 @@
             applyFiltersAndRender();
         }
 
-        function getDisplayName(col) { return col; }
-
         function renderTable(data) {
             const thead = document.getElementById('table-head');
             const tbody = document.getElementById('table-body');
@@ -633,35 +636,34 @@
                     }
 
                     if (col === "Company (Page)") {
-                        let fullName = row["Company (Page)"] || "";
-                        let rawTicker = row["Name"] || "";
-
-                        // ── KEY FIX: use exact mapping columns for URLs, NO encodeURIComponent on Screener slug ──
-                        let nseCode      = (row["NSE Code Exact"]      || "").toString().trim();
+                        let fullName     = (row["Company (Page)"] || "").toString();
+                        let rawTicker    = (row["Name"] || "").toString();
+                        let nseCode      = (row["NSE Code Exact"] || "").toString().trim();
                         let screenerSlug = (row["Screener Name Exact"] || "").toString().trim();
 
-                        // Fallback: if blank, use short Name
-                        if (!nseCode)      nseCode      = rawTicker;
                         if (!screenerSlug) screenerSlug = rawTicker;
-
-                        // NSE code needs encodeURIComponent for TradingView (handles special chars)
-                        // Screener slug must NOT be encoded — it's a plain path segment like GMBREW or 530643
-                        let nseUrlTicker = encodeURIComponent(nseCode);
 
                         let safeTicker   = rawTicker.replace(/'/g, "\\'").replace(/"/g, '&quot;');
                         let safeFullName = fullName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
+                        // ── FIX 1: Only show TV button if NSE code exists ──
+                        // ── FIX 3: Short button labels ──
+                        let tvButton = nseCode
+                            ? `<a href="https://in.tradingview.com/chart/?symbol=NSE%3A${encodeURIComponent(nseCode)}" target="_blank" title="Open in TradingView">TV</a>`
+                            : `<a style="opacity:0.4; cursor:not-allowed; pointer-events:none;" title="No NSE code — BSE-only stock">TV</a>`;
+
                         return `<td>
                             <div style="font-weight: 700; color: #2d3748; margin-bottom: 5px;">${fullName}</div>
                             <div class="action-links">
-                                <a href="https://www.screener.in/company/${screenerSlug}/" target="_blank" title="Open in Screener">🏢 Screener</a>
-                                <a href="https://in.tradingview.com/chart/?symbol=NSE%3A${nseUrlTicker}" target="_blank" title="Open in TradingView">📈 TV</a>
-                                <a href="javascript:void(0)" class="note-btn" onclick="openChat('${safeTicker}', '${safeFullName}')">💬 Notes</a>
+                                <a href="https://www.screener.in/company/${screenerSlug}/" target="_blank" title="Open in Screener">SCR</a>
+                                ${tvButton}
+                                <a href="javascript:void(0)" class="note-btn" onclick="openChat('${safeTicker}', '${safeFullName}')">Notes</a>
                             </div>
                         </td>`;
                     }
 
                     let val = row[col];
+
                     if (col === "date" && val) {
                         if (typeof val === 'string' && val.includes('-')) {
                             let parts = val.split('-');
@@ -673,6 +675,10 @@
 
                     if (val === "Yes") return `<td><span class="badge-yes">Yes</span></td>`;
                     if (val === null || val === 0 || val === "") val = "-";
+
+                    // ── FIX 4: Narrow Promoter Holding cell ──
+                    if (col === "Promoter Holding") return `<td class="col-promoter">${val}</td>`;
+
                     return `<td>${val}</td>`;
 
                 }).join('') + '</tr>';
