@@ -1,5 +1,4 @@
 import time
-import random
 import traceback
 import pandas as pd
 import numpy as np
@@ -9,11 +8,11 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, InvalidSessionIdException
+from selenium.common.exceptions import InvalidSessionIdException
 from datetime import datetime
 import os
 import json
-from openpyxl import load_workbook, Workbook
+from openpyxl import load_workbook
 from openpyxl.styles import Alignment, Border, Side
 
 if os.environ.get("GITHUB_ACTIONS", "false").lower() != "true":
@@ -111,45 +110,76 @@ def load_industry_maps():
     try:
         df = pd.read_excel(INDUSTRY_FILE_PATH, sheet_name="Screener Industry")
         df["Name_Clean"] = df["Full Name"].astype(str).str.strip().str.lower()
-        return df.set_index("Name_Clean")["Industry"].to_dict(), df.set_index("Name_Clean")["Industry Group"].to_dict()
+        return (
+            df.set_index("Name_Clean")["Industry"].to_dict(),
+            df.set_index("Name_Clean")["Industry Group"].to_dict()
+        )
     except:
         return {}, {}
 
 def load_symbol_maps():
-    # ✅ FIXED: Reads from Screener_Industry_Data.xlsx using Full Name + NSE Code
-    # Old code read from Master File.xlsx "screener_all_stocks" sheet which was unreliable
+    """
+    VLOOKUP equivalent using Screener_Industry_Data.xlsx:
+      - Primary key  : Full Name (col A) matched against scraped "Company (Page)"
+      - NSE Code     : col D (VLOOKUP index 4)  → NSE Code Exact
+      - BSE Code     : col C (VLOOKUP index 3)  → fallback if NSE Code blank
+      - Screener slug: NSE Code → BSE Code → blank (3-level priority)
+    """
     if not os.path.exists(INDUSTRY_FILE_PATH):
+        print("⚠️  Screener_Industry_Data.xlsx not found — symbol maps empty")
         return {}
     try:
         df = pd.read_excel(INDUSTRY_FILE_PATH, sheet_name="Screener Industry")
         mapping = {}
         for _, row in df.iterrows():
-            nse_code = str(row["NSE Code"]).strip() if pd.notna(row["NSE Code"]) else ""
-            if nse_code and nse_code.lower() != "nan":
-                full_name_clean = str(row["Full Name"]).strip().lower()
-                mapping[full_name_clean] = {
-                    "NSE_Code": nse_code,
-                    "Screener_Name": nse_code  # NSE Code IS the Screener URL slug
-                }
+            full_name = str(row["Full Name"]).strip()
+            if not full_name or full_name.lower() == "nan":
+                continue
+
+            nse = str(row["NSE Code"]).strip() if pd.notna(row["NSE Code"]) else ""
+            bse = str(row["BSE Code"]).strip() if pd.notna(row["BSE Code"]) else ""
+
+            if nse.lower() in ("nan", "none", ""):
+                nse = ""
+            if bse.lower() in ("nan", "none", ""):
+                bse = ""
+            # BSE codes come as floats like "530643.0" → strip to int string
+            if bse and bse.endswith(".0"):
+                bse = bse[:-2]
+
+            # Screener slug: NSE code preferred, else BSE code, else blank
+            screener_slug = nse if nse else bse
+
+            mapping[full_name.lower()] = {
+                "NSE_Code":      nse,
+                "BSE_Code":      bse,
+                "Screener_Name": screener_slug
+            }
+
         print(f"✅ Loaded {len(mapping)} symbol mappings from Screener_Industry_Data.xlsx")
         return mapping
     except Exception as e:
-        print(f"⚠️ Could not load symbol maps: {e}")
+        print(f"⚠️  Could not load symbol maps: {e}")
         return {}
 
 def enrich_with_data(row_dict, industry_map, group_map, symbol_map):
-    name_clean       = str(row_dict.get("Company (Page)", "")).strip().lower()
+    # "Company (Page)" = full scraped name e.g. "VST Industries Ltd"
+    # "Name"           = short screen name e.g. "VST Industries" → fallback
+    full_name_clean  = str(row_dict.get("Company (Page)", "")).strip().lower()
     short_name_clean = str(row_dict.get("Name", "")).strip().lower()
 
-    row_dict["Industry"]       = industry_map.get(name_clean, "Not Found")
-    row_dict["Industry Group"] = group_map.get(name_clean, "Not Found")
+    row_dict["Industry"]       = industry_map.get(full_name_clean, "Not Found")
+    row_dict["Industry Group"] = group_map.get(full_name_clean, "Not Found")
 
-    # ✅ FIXED: Try full name first (matches Screener_Industry_Data "Full Name"),
-    # then short name as fallback
-    mapped_data = symbol_map.get(name_clean) or symbol_map.get(short_name_clean) or {}
+    # VLOOKUP: try full name first, then short name
+    mapped = symbol_map.get(full_name_clean) or symbol_map.get(short_name_clean) or {}
 
-    row_dict["NSE Code Exact"]      = mapped_data.get("NSE_Code", "")
-    row_dict["Screener Name Exact"] = mapped_data.get("Screener_Name", str(row_dict.get("Name", "")))
+    row_dict["NSE Code Exact"]      = mapped.get("NSE_Code", "")
+    row_dict["Screener Name Exact"] = mapped.get("Screener_Name", "")
+
+    # Last resort: if still blank, use short Name as Screener slug
+    if not row_dict["Screener Name Exact"]:
+        row_dict["Screener Name Exact"] = str(row_dict.get("Name", "")).strip()
 
     return row_dict
 
@@ -242,7 +272,8 @@ def collect_all_company_data():
 
 def scrape_company(company_info):
     url, short_name = company_info['url'], company_info['short_name']
-    if not safe_get(url): return {"Name": short_name, "Company (Page)": "Load Failed", "date": datetime.now().strftime("%Y-%m-%d")}
+    if not safe_get(url):
+        return {"Name": short_name, "Company (Page)": "Load Failed", "date": datetime.now().strftime("%Y-%m-%d")}
     try:
         try: driver.find_element(By.LINK_TEXT, "Consolidated").click(); time.sleep(1.5)
         except: pass
@@ -252,11 +283,15 @@ def scrape_company(company_info):
             **extract_operating_profit(), **get_top_dashboard_metrics(),
             "date": datetime.now().strftime("%Y-%m-%d")
         }
-    except: return {"Name": short_name, "Company (Page)": "Error", "date": datetime.now().strftime("%Y-%m-%d")}
+    except:
+        return {"Name": short_name, "Company (Page)": "Error", "date": datetime.now().strftime("%Y-%m-%d")}
 
 def detect_latest_quarter(row_dict):
-    non_quarter_keys = {"Sr no", "Name", "Company (Page)", "Industry Group", "Industry",
-                        "Promoter Holding", "Pledged %", "WC Days", "date", "NSE Code Exact", "Screener Name Exact"}
+    non_quarter_keys = {
+        "Sr no", "Name", "Company (Page)", "Industry Group", "Industry",
+        "Promoter Holding", "Pledged %", "WC Days", "date",
+        "NSE Code Exact", "Screener Name Exact"
+    }
     quarter_candidates = []
     for k in row_dict:
         if k in non_quarter_keys or "(>70%)" in k: continue
@@ -277,12 +312,16 @@ def get_existing_companies_in_sheet(sheet_name):
     except: return set()
 
 def transform_and_order_data(df):
-    base_cols   = ["Sr no", "date", "Name", "Company (Page)", "Industry", "Industry Group", "NSE Code Exact", "Screener Name Exact"]
+    base_cols   = ["Sr no", "date", "Name", "Company (Page)", "Industry", "Industry Group",
+                   "NSE Code Exact", "Screener Name Exact"]
     metric_cols = ["Pledged %", "Promoter Holding", "WC Days"]
     for col in base_cols + metric_cols:
         if col not in df.columns: df[col] = ""
 
-    quarter_cols_raw = [c for c in df.columns if c not in base_cols and c not in metric_cols and "(>70%)" not in c and c != "70% Surge"]
+    quarter_cols_raw = [
+        c for c in df.columns
+        if c not in base_cols and c not in metric_cols and "(>70%)" not in c and c != "70% Surge"
+    ]
     parsed_dates = []
     for c in quarter_cols_raw:
         try: parsed_dates.append((pd.to_datetime(c, format="%b %Y"), c))
@@ -313,9 +352,8 @@ def transform_and_order_data(df):
         except: pass
 
     df["70% Surge"] = [", ".join(tags) for tags in surge_tags_list]
-
     final_cols = base_cols + sorted_quarter_cols + metric_cols + matrix_cols + ["70% Surge"]
-    df         = df[final_cols].copy()
+    df = df[final_cols].copy()
     df["Sr no"] = range(1, len(df) + 1)
     return df
 
@@ -361,7 +399,7 @@ def generate_raw_json(sheet_name):
         df.to_json(RAW_JSON_PATH, orient="records")
         print(f"✅ Saved rawdata.json for Dashboard (Sheet: {sheet_name})")
     except Exception as e:
-        print(f"⚠️ Error saving JSON: {e}")
+        print(f"⚠️  Error saving JSON: {e}")
 
 # ═══════════════════════════════════════════════════════════
 # MAIN
@@ -394,8 +432,8 @@ try:
         generate_raw_json(target_sheet)
 
         if IS_GITHUB_ACTIONS:
-            r2_upload(RAW_FILE_PATH,  R2_RAW_KEY)
-            r2_upload(RAW_JSON_PATH,  R2_RAW_JSON_KEY)
+            r2_upload(RAW_FILE_PATH,    R2_RAW_KEY)
+            r2_upload(RAW_JSON_PATH,    R2_RAW_JSON_KEY)
             r2_upload(MASTER_FILE_PATH, R2_MASTER_KEY)
 
 except Exception as e:
