@@ -702,7 +702,7 @@
                         let rawTicker = row["Name"]; 
 
                         let exactNseCode = row["NSE Code Exact"] ? row["NSE Code Exact"] : rawTicker;
-                        let exactScreenerName = row["Screener Name Exact"] ? row["Screener Name Exact"] : rawTicker;
+                        let exactScreenerName = row["Screener Name Exact"] ? row["Screener Name Exact"] : (row["NSE Code Exact"] ? row["NSE Code Exact"] : rawTicker);
                         let exactInvestingName = row["Investing Name Exact"] ? row["Investing Name Exact"] : null;
 
                         let nseUrlTicker = encodeURIComponent(exactNseCode); 
