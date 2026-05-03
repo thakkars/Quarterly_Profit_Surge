@@ -49,12 +49,14 @@
         .dropdown-content label { display: flex; align-items: center; cursor: pointer; font-size: 13px; color: #2d3748; }
         .dropdown-content input { margin-right: 6px; transform: scale(1.1); cursor: pointer; }
         
-        .table-container { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; max-height: 70vh; background: white;}
-        .table-container:fullscreen { padding: 15px; max-height: 100vh; overflow: auto; background-color: white; }
-        .table-container:-webkit-full-screen { padding: 15px; max-height: 100vh; overflow: auto; background-color: white; }
+        /* KEY CHANGE: removed max-height and overflow-y so table expands to full content */
+        .table-container { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; background: white; }
+        .table-container:fullscreen { padding: 15px; overflow: auto; background-color: white; }
+        .table-container:-webkit-full-screen { padding: 15px; overflow: auto; background-color: white; }
 
         table { width: 100%; border-collapse: collapse; font-size: 14px; background: white; }
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
+        /* Sticky header still works — sticks to browser viewport as you scroll the page */
         th { background-color: #2b6cb0; color: white; position: sticky; top: 0; font-weight: 600; z-index: 10; cursor: pointer; transition: background 0.2s; user-select: none; }
         th:hover { background-color: #1a365d; }
 
@@ -262,8 +264,6 @@
             "Water": ["Water Infrastructure", "Water Treatment"]
         };
 
-        // Auto-detect current quarter code from system date
-        // Apr-Jun → M (March quarter), Jul-Sep → S (Sep quarter), Oct-Dec → D (Dec quarter), Jan-Mar → D of prev year
         function getCurrentQuarterCode() {
             const now = new Date();
             const month = now.getMonth() + 1;
@@ -588,7 +588,7 @@
             const filterGrowth     = document.getElementById('filter-growth').checked;
             const filterCurrentQtr = document.getElementById('filter-current-qtr').checked;
 
-            const currentQtr = getCurrentQuarterCode(); // e.g. "M26"
+            const currentQtr = getCurrentQuarterCode();
 
             let filteredData = rawData.filter(row => {
                 let subIndustry = row["Industry"] || "Not Found";
@@ -612,8 +612,7 @@
                 }
 
                 // Filter 5: Current Quarter Surge Only
-                // "70% Surge" column must be EXACTLY the current quarter code — no commas, no other quarters
-                // e.g. "M26" ✅  |  "M26, S25" ❌  |  "S25" ❌  |  "-" ❌
+                // "70% Surge" must be EXACTLY current quarter code — no commas, no other quarters
                 if (filterCurrentQtr) {
                     const surgeVal = (row["70% Surge"] || "").toString().trim();
                     if (surgeVal !== currentQtr) return false;
