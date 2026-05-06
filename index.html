@@ -344,12 +344,13 @@
     }
 
     /* ===================================================
-       BUILD CHARTS GRID — one TradingView Advanced Chart per stock
-       Uses external-embedding script injection (only method that
-       supports NSE:SYMBOL on 3rd-party sites)
+       BUILD CHARTS GRID
+       Uses direct iframe to in.tradingview.com/chart/
+       — the only method that works for NSE India stocks
+       on third-party websites.
     =================================================== */
     function renderChartsGrid() {
-        const grid = document.getElementById('charts-grid');
+        const grid    = document.getElementById('charts-grid');
         const countEl = document.getElementById('charts-count');
 
         if (!currentFilteredData || currentFilteredData.length === 0) {
@@ -360,10 +361,8 @@
 
         const nseStocks = currentFilteredData.filter(r => (r["NSE Code Exact"] || "").toString().trim() !== "");
         const bseOnly   = currentFilteredData.filter(r => (r["NSE Code Exact"] || "").toString().trim() === "");
-
         countEl.textContent = `${currentFilteredData.length} stocks (${nseStocks.length} with charts)`;
 
-        // Clear grid completely (removes old scripts too)
         grid.innerHTML = '';
 
         nseStocks.forEach((row, idx) => {
@@ -373,14 +372,17 @@
             const screener = (row["Screener Name Exact"] || row["Name"] || "").toString().trim();
             const industry = (row["Industry"] || "").toString();
             const surge    = (row["70% Surge"] || "").toString();
-            const containerId = `tv_chart_${nse}_${idx}`;
 
-            const scrLink  = screener ? `<a href="https://www.screener.in/company/${screener}/" target="_blank">SCR</a>` : '';
+            const scrLink  = screener
+                ? `<a href="https://www.screener.in/company/${screener}/" target="_blank">SCR</a>` : '';
             const tvNewTab = `<a href="https://in.tradingview.com/chart/?symbol=${encodeURIComponent(symbol)}" target="_blank">TV ↗</a>`;
 
-            // Build the card with a named container div for the widget
+            // Direct TradingView chart URL — works for NSE India stocks
+            const tvSrc = `https://in.tradingview.com/chart/?symbol=${encodeURIComponent(symbol)}&interval=D&style=1&timezone=Asia%2FKolkata&theme=light&hide_side_toolbar=0&hide_top_toolbar=0&studies=[]`;
+
             const card = document.createElement('div');
             card.className = 'chart-card';
+            card.id = `card_${nse}`;
             card.innerHTML = `
                 <div class="chart-card-header">
                     <div>
@@ -389,38 +391,21 @@
                     </div>
                     <div class="chart-card-links">${scrLink}${tvNewTab}</div>
                 </div>
-                <div class="tradingview-widget-container" style="height:420px;">
-                    <div id="${containerId}" style="height:420px;"></div>
-                </div>`;
+                <iframe
+                    src="${tvSrc}"
+                    id="tv_${nse}"
+                    width="100%"
+                    height="420"
+                    frameborder="0"
+                    allowfullscreen>
+                </iframe>`;
             grid.appendChild(card);
-
-            // Inject widget script dynamically for this specific symbol
-            const scriptTag = document.createElement('script');
-            scriptTag.type = 'text/javascript';
-            scriptTag.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
-            scriptTag.async = true;
-            scriptTag.textContent = JSON.stringify({
-                "autosize": true,
-                "symbol": symbol,
-                "interval": "D",
-                "timezone": "Asia/Kolkata",
-                "theme": "light",
-                "style": "1",
-                "locale": "in",
-                "enable_publishing": false,
-                "hide_top_toolbar": false,
-                "hide_legend": false,
-                "allow_symbol_change": false,
-                "container_id": containerId
-            });
-            card.querySelector('.tradingview-widget-container').appendChild(scriptTag);
         });
 
-        // BSE-only stocks shown as a warning banner
         if (bseOnly.length > 0) {
             const warn = document.createElement('div');
-            warn.style = 'grid-column:1/-1; background:#fff5f5; border:1px solid #fed7d7; border-radius:8px; padding:12px 16px; color:#c53030; font-size:13px; font-weight:600;';
-            warn.innerHTML = `⚠️ ${bseOnly.length} BSE-only stock(s) have no chart: ${bseOnly.map(r => (r["Company (Page)"] || r["Name"] || "")).join(', ')}`;
+            warn.style.cssText = 'grid-column:1/-1;background:#fff5f5;border:1px solid #fed7d7;border-radius:8px;padding:12px 16px;color:#c53030;font-size:13px;font-weight:600;';
+            warn.innerHTML = `⚠️ ${bseOnly.length} BSE-only stock(s) — no chart available: ${bseOnly.map(r => (r["Company (Page)"] || r["Name"] || "")).join(', ')}`;
             grid.appendChild(warn);
         }
     }
