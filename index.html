@@ -344,7 +344,9 @@
     }
 
     /* ===================================================
-       BUILD CHARTS GRID — one TradingView Mini Chart per stock
+       BUILD CHARTS GRID — one TradingView Advanced Chart per stock
+       Uses external-embedding script injection (only method that
+       supports NSE:SYMBOL on 3rd-party sites)
     =================================================== */
     function renderChartsGrid() {
         const grid = document.getElementById('charts-grid');
@@ -356,29 +358,30 @@
             return;
         }
 
-        // Only stocks with an NSE code can show a TradingView chart
-        const nseStocks  = currentFilteredData.filter(r => (r["NSE Code Exact"] || "").toString().trim() !== "");
-        const bseOnly    = currentFilteredData.filter(r => (r["NSE Code Exact"] || "").toString().trim() === "");
+        const nseStocks = currentFilteredData.filter(r => (r["NSE Code Exact"] || "").toString().trim() !== "");
+        const bseOnly   = currentFilteredData.filter(r => (r["NSE Code Exact"] || "").toString().trim() === "");
 
         countEl.textContent = `${currentFilteredData.length} stocks (${nseStocks.length} with charts)`;
 
-        let html = '';
+        // Clear grid completely (removes old scripts too)
+        grid.innerHTML = '';
 
-        nseStocks.forEach(row => {
-            const nse     = (row["NSE Code Exact"] || "").toString().trim();
-            const symbol  = `NSE:${nse}`;
-            const name    = (row["Company (Page)"] || row["Name"] || nse).toString();
-            const screener= (row["Screener Name Exact"] || row["Name"] || "").toString().trim();
-            const industry= (row["Industry"] || "").toString();
-            const surge   = (row["70% Surge"] || "").toString();
+        nseStocks.forEach((row, idx) => {
+            const nse      = (row["NSE Code Exact"] || "").toString().trim();
+            const symbol   = `NSE:${nse}`;
+            const name     = (row["Company (Page)"] || row["Name"] || nse).toString();
+            const screener = (row["Screener Name Exact"] || row["Name"] || "").toString().trim();
+            const industry = (row["Industry"] || "").toString();
+            const surge    = (row["70% Surge"] || "").toString();
+            const containerId = `tv_chart_${nse}_${idx}`;
 
-            const tvUrl = `https://s.tradingview.com/embed-widget/advanced-chart/?locale=in#${encodeURIComponent(JSON.stringify({"symbol":symbol,"interval":"D","timezone":"Asia/Kolkata","theme":"light","style":"1","locale":"in","enable_publishing":false,"hide_top_toolbar":false,"hide_legend":false,"allow_symbol_change":false,"save_image":true,"calendar":false,"support_host":"https://www.tradingview.com"}))}`;
+            const scrLink  = screener ? `<a href="https://www.screener.in/company/${screener}/" target="_blank">SCR</a>` : '';
+            const tvNewTab = `<a href="https://in.tradingview.com/chart/?symbol=${encodeURIComponent(symbol)}" target="_blank">TV ↗</a>`;
 
-            const scrLink    = screener ? `<a href="https://www.screener.in/company/${screener}/" target="_blank">SCR</a>` : '';
-            const tvNewTab   = `<a href="https://in.tradingview.com/chart/?symbol=${encodeURIComponent(symbol)}" target="_blank">TV ↗</a>`;
-
-            html += `
-            <div class="chart-card">
+            // Build the card with a named container div for the widget
+            const card = document.createElement('div');
+            card.className = 'chart-card';
+            card.innerHTML = `
                 <div class="chart-card-header">
                     <div>
                         <div class="chart-card-name">${name}</div>
@@ -386,26 +389,40 @@
                     </div>
                     <div class="chart-card-links">${scrLink}${tvNewTab}</div>
                 </div>
-                <iframe
-                    id="tv_${nse}"
-                    src="${tvUrl}"
-                    frameborder="0"
-                    allowtransparency="true"
-                    loading="lazy"
-                    style="width:100%;height:420px;border:none;">
-                </iframe>
-            </div>`;
+                <div class="tradingview-widget-container" style="height:420px;">
+                    <div id="${containerId}" style="height:420px;"></div>
+                </div>`;
+            grid.appendChild(card);
+
+            // Inject widget script dynamically for this specific symbol
+            const scriptTag = document.createElement('script');
+            scriptTag.type = 'text/javascript';
+            scriptTag.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+            scriptTag.async = true;
+            scriptTag.textContent = JSON.stringify({
+                "autosize": true,
+                "symbol": symbol,
+                "interval": "D",
+                "timezone": "Asia/Kolkata",
+                "theme": "light",
+                "style": "1",
+                "locale": "in",
+                "enable_publishing": false,
+                "hide_top_toolbar": false,
+                "hide_legend": false,
+                "allow_symbol_change": false,
+                "container_id": containerId
+            });
+            card.querySelector('.tradingview-widget-container').appendChild(scriptTag);
         });
 
-        // BSE-only stocks shown as cards without chart
+        // BSE-only stocks shown as a warning banner
         if (bseOnly.length > 0) {
-            html += `<div style="grid-column:1/-1; background:#fff5f5; border:1px solid #fed7d7; border-radius:8px; padding:12px 16px; color:#c53030; font-size:13px; font-weight:600;">
-                ⚠️ ${bseOnly.length} BSE-only stock(s) have no TradingView chart: 
-                ${bseOnly.map(r => (r["Company (Page)"] || r["Name"] || "")).join(', ')}
-            </div>`;
+            const warn = document.createElement('div');
+            warn.style = 'grid-column:1/-1; background:#fff5f5; border:1px solid #fed7d7; border-radius:8px; padding:12px 16px; color:#c53030; font-size:13px; font-weight:600;';
+            warn.innerHTML = `⚠️ ${bseOnly.length} BSE-only stock(s) have no chart: ${bseOnly.map(r => (r["Company (Page)"] || r["Name"] || "")).join(', ')}`;
+            grid.appendChild(warn);
         }
-
-        grid.innerHTML = html;
     }
 
     /* ===================================================
