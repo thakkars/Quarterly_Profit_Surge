@@ -164,6 +164,10 @@
             <label class="checkbox-label"><input type="checkbox" id="filter-growth" onchange="handleMainFilterChange('filter-growth', 'global-growth', 'bypassGrowth')"> 70% YoY Profit Surge (Latest Qtr)</label>
             <label class="checkbox-label"><input type="checkbox" id="filter-current-qtr" onchange="handleMainFilterChange('filter-current-qtr', 'global-current-qtr', 'bypassCurrentQtr')"> Current Quarter Surge Only <span id="current-qtr-badge" style="margin-left:6px; background:#2b6cb0; color:white; padding:2px 7px; border-radius:10px; font-size:11px; font-weight:bold;"></span></label>
             <label class="checkbox-label"><input type="checkbox" id="filter-peak-qtr" onchange="handleMainFilterChange('filter-peak-qtr', 'global-peak-qtr', 'bypassPeakQtr')"> 🏆 Highest Ever Quarterly Result</label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="filter-msi" onchange="handleMainFilterChange('filter-msi', 'global-msi', 'bypassMsi')">
+                MSI Price Strength &gt; <input type="number" id="val-msi" value="80" min="0" max="100" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">
+            </label>
         </div>
         <div class="filter-group" style="flex: 2;">
             <h3>👁️ Column Settings</h3>
@@ -228,6 +232,7 @@
                 <label class="global-override-label" id="lbl-row-growth"><input type="checkbox" id="global-growth" onchange="toggleGlobalOverride('bypassGrowth', 'filter-growth', this)"> <span id="lbl-bypass-growth">🔓 Bypass 70% YoY Profit Surge (Latest Qtr)</span></label>
                 <label class="global-override-label" id="lbl-row-current-qtr"><input type="checkbox" id="global-current-qtr" onchange="toggleGlobalOverride('bypassCurrentQtr', 'filter-current-qtr', this)"> <span id="lbl-bypass-current-qtr">🔓 Bypass Current Quarter Surge Only</span></label>
                 <label class="global-override-label" id="lbl-row-peak-qtr"><input type="checkbox" id="global-peak-qtr" onchange="toggleGlobalOverride('bypassPeakQtr', 'filter-peak-qtr', this)"> <span id="lbl-bypass-peak-qtr">🔓 Bypass Highest Ever Quarterly Result</span></label>
+                <label class="global-override-label" id="lbl-row-msi"><input type="checkbox" id="global-msi" onchange="toggleGlobalOverride('bypassMsi', 'filter-msi', this)"> <span id="lbl-bypass-msi">🔓 Bypass MSI Price Strength > 80</span></label>
             </div>
             <div class="tree-header-text">Select VIP Industries:</div>
             <div id="exceptions-tree-container"></div>
@@ -256,7 +261,7 @@
     let sortColumn = "Sr no";
     let sortAscending = true;
     let currentChatTicker = "";
-    let globalOverrides = { bypassPromoter: false, bypassPledged: false, bypassWc: false, bypassGrowth: false, bypassCurrentQtr: false, bypassPeakQtr: false };
+    let globalOverrides = { bypassPromoter: false, bypassPledged: false, bypassWc: false, bypassGrowth: false, bypassCurrentQtr: false, bypassPeakQtr: false, bypassMsi: false };
     let vipIndustries = new Set();
     let currentView = 'list';
 
@@ -266,7 +271,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             const el = document.getElementById('main-table-container');
             el.addEventListener('mousedown', function(e) {
-                // Only drag with primary button; ignore clicks on interactive elements
                 if (e.button !== 0) return;
                 if (e.target.closest('a, button, input, label')) return;
                 isDown = true; dragMoved = false;
@@ -284,7 +288,6 @@
                 if (Math.abs(walk) > 3) dragMoved = true;
                 el.scrollLeft = scrollLeft - walk;
             });
-            // Prevent click from firing on links/buttons if user actually dragged
             el.addEventListener('click', function(e) {
                 if (dragMoved) { e.stopPropagation(); e.preventDefault(); dragMoved = false; }
             }, true);
@@ -364,6 +367,7 @@
         const pVal  = document.getElementById('val-promoter')?.value || 50;
         const plVal = document.getElementById('val-pledged')?.value  || 10;
         const wcVal = document.getElementById('val-wc')?.value       || 150;
+        const msiVal = document.getElementById('val-msi')?.value     || 80;
         const qCode = getCurrentQuarterCode();
         const rules = [
             { spanId: 'lbl-bypass-promoter',    rowId: 'lbl-row-promoter',    text: `🔓 Bypass Promoter Holding ≥ ${pVal}%`,          filterId: 'filter-promoter'    },
@@ -371,7 +375,8 @@
             { spanId: 'lbl-bypass-wc',          rowId: 'lbl-row-wc',          text: `🔓 Bypass Working Capital Days ≤ ${wcVal}`,     filterId: 'filter-wc'          },
             { spanId: 'lbl-bypass-growth',      rowId: 'lbl-row-growth',      text: `🔓 Bypass 70% YoY Profit Surge (Latest Qtr)`,  filterId: 'filter-growth'      },
             { spanId: 'lbl-bypass-current-qtr', rowId: 'lbl-row-current-qtr', text: `🔓 Bypass Current Quarter Surge Only (${qCode})`, filterId: 'filter-current-qtr' },
-            { spanId: 'lbl-bypass-peak-qtr',    rowId: 'lbl-row-peak-qtr',    text: `🔓 Bypass Highest Ever Quarterly Result`,       filterId: 'filter-peak-qtr'    }
+            { spanId: 'lbl-bypass-peak-qtr',    rowId: 'lbl-row-peak-qtr',    text: `🔓 Bypass Highest Ever Quarterly Result`,       filterId: 'filter-peak-qtr'    },
+            { spanId: 'lbl-bypass-msi',         rowId: 'lbl-row-msi',         text: `🔓 Bypass MSI Price Strength > ${msiVal}`,      filterId: 'filter-msi'         }
         ];
         rules.forEach(r => {
             const span = document.getElementById(r.spanId); const row = document.getElementById(r.rowId);
@@ -574,10 +579,12 @@
         const filterGrowth     = document.getElementById('filter-growth').checked;
         const filterCurrentQtr = document.getElementById('filter-current-qtr').checked;
         const filterPeakQtr    = document.getElementById('filter-peak-qtr').checked;
+        const filterMsi        = document.getElementById('filter-msi').checked;
         const currentQtr       = getCurrentQuarterCode();
         const threshPromoter   = parseFloat(document.getElementById('val-promoter').value) || 50;
         const threshPledged    = parseFloat(document.getElementById('val-pledged').value)  || 10;
         const threshWc         = parseFloat(document.getElementById('val-wc').value)       || 150;
+        const threshMsi        = parseFloat(document.getElementById('val-msi').value)      || 80;
 
         let filteredData = rawData.filter(row => {
             const subIndustry = row["Industry"] || "Not Found";
@@ -588,6 +595,7 @@
             if (filterGrowth && matrixColumnName) { if (!(isVip && globalOverrides.bypassGrowth) && row[matrixColumnName] !== "Yes") return false; }
             if (filterCurrentQtr) { if (!(isVip && globalOverrides.bypassCurrentQtr) && (row["70% Surge"] || "").toString().trim() !== currentQtr) return false; }
             if (filterPeakQtr)    { if (!(isVip && globalOverrides.bypassPeakQtr)    && !isLatestQtrHighest(row)) return false; }
+            if (filterMsi)        { if (!(isVip && globalOverrides.bypassMsi)         && (parseFloat(row["MSI Price Strength"]) || 0) <= threshMsi) return false; }
             return true;
         });
 
@@ -638,7 +646,7 @@
                     const tvLink   = nseCode ? `<a href="https://in.tradingview.com/chart/?symbol=NSE%3A${encodeURIComponent(nseCode)}" target="_blank" title="Open TradingView in new tab">TV ↗</a>` : `<a style="opacity:0.4; cursor:not-allowed; pointer-events:none;" title="BSE-only stock">TV</a>`;
                     const chartBtn = nseCode ? `<a href="javascript:void(0)" class="chart-btn" onclick="jumpToChart('${nseCode}','${safeFullName}')" title="See chart below">📊 Chart</a>` : '';
                     const invLink  = investingSlug ? `<a href="https://in.investing.com/equities/${investingSlug}" target="_blank" title="Open in Investing.com" style="background:#e6fffa; color:#276749; border-color:#9ae6b4;">INV</a>` : '';
-                    return `<td><div style="font-weight:700; color:#2d3748; margin-bottom:5px;">${fullName}</div><div class="action-links">${scrLink}${tvLink}${chartBtn}${invLink}<a href="javascript:void(0)" class="note-btn" onclick="openChat('${safeTicker}', '${safeFullName}')">\ud83d\udcac Notes</a></div></td>`;
+                    return `<td><div style="font-weight:700; color:#2d3748; margin-bottom:5px;">${fullName}</div><div class="action-links">${scrLink}${tvLink}${chartBtn}${invLink}<a href="javascript:void(0)" class="note-btn" onclick="openChat('${safeTicker}', '${safeFullName}')">💬 Notes</a></div></td>`;
                 }
                 if (QTR_COL_REGEX.test(col.trim()) && rowPeak !== null) {
                     const cellVal = parseFloat(row[col]); if (!isNaN(cellVal) && cellVal === rowPeak) return `<td><span class="badge-peak" title="Peak Quarter">${cellVal}</span></td>`;
