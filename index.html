@@ -123,6 +123,7 @@
         .global-overrides-panel p { font-size: 12px; color: #4a5568; margin-top: 0; margin-bottom: 10px; }
         .global-override-label { display: block; font-size: 13.5px; color: #2d3748; margin-bottom: 8px; cursor: pointer; font-weight: 500; }
         .global-override-label input { margin-right: 8px; transform: scale(1.15); cursor: pointer; }
+        .global-override-label.disabled-rule { opacity: 0.4; pointer-events: none; }
         .tree-header-text { font-size: 15px; font-weight: bold; color: #1a365d; margin-bottom: 10px; padding-left: 5px; border-bottom: 2px solid #cbd5e0; padding-bottom: 5px; }
         .accordion-item { border: 1px solid #cbd5e0; border-radius: 6px; margin-bottom: 8px; background: white; overflow: hidden; }
         .accordion-header { display: flex; align-items: center; padding: 12px 15px; cursor: pointer; transition: 0.2s; user-select: none; }
@@ -173,7 +174,7 @@
                 <input type="checkbox" id="filter-wc" onchange="handleMainFilterChange('filter-wc', 'global-wc', 'bypassWc')">
                 Working Capital Days ≤ <input type="number" id="val-wc" value="150" min="0" max="9999" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">
             </label>
-            <label class="checkbox-label"><input type="checkbox" id="filter-growth"   onchange="handleMainFilterChange('filter-growth', 'global-growth', 'bypassGrowth')"> 70% YoY Profit Surge (Latest Qtr)</label>
+            <label class="checkbox-label"><input type="checkbox" id="filter-growth" onchange="handleMainFilterChange('filter-growth', 'global-growth', 'bypassGrowth')"> 70% YoY Profit Surge (Latest Qtr)</label>
             <label class="checkbox-label"><input type="checkbox" id="filter-current-qtr" onchange="applyFiltersAndRender()"> Current Quarter Surge Only <span id="current-qtr-badge" style="margin-left:6px; background:#2b6cb0; color:white; padding:2px 7px; border-radius:10px; font-size:11px; font-weight:bold;"></span></label>
         </div>
         <div class="filter-group" style="flex: 2;">
@@ -235,11 +236,11 @@
         <div class="modal-body">
             <div class="global-overrides-panel">
                 <h4>Global Exception Overrides</h4>
-                <p>Select which rules the VIP Industries (checked below) are allowed to ignore.</p>
-                <label class="global-override-label"><input type="checkbox" id="global-promoter" onchange="toggleGlobalOverride('bypassPromoter', 'filter-promoter', this)"> 🔓 Bypass Promoter Holding ≥ 50%</label>
-                <label class="global-override-label"><input type="checkbox" id="global-pledged"  onchange="toggleGlobalOverride('bypassPledged', 'filter-pledged', this)"> 🔓 Bypass Pledged Shares ≤ 10%</label>
-                <label class="global-override-label"><input type="checkbox" id="global-wc"       onchange="toggleGlobalOverride('bypassWc', 'filter-wc', this)"> 🔓 Bypass Working Capital Days ≤ 150</label>
-                <label class="global-override-label"><input type="checkbox" id="global-growth"   onchange="toggleGlobalOverride('bypassGrowth', 'filter-growth', this)"> 🔓 Bypass 70% YoY Profit Surge</label>
+                <p>Select which rules the VIP Industries (checked below) are allowed to ignore. Only active Strict Filters can be bypassed.</p>
+                <label class="global-override-label" id="lbl-row-promoter"><input type="checkbox" id="global-promoter" onchange="toggleGlobalOverride('bypassPromoter', 'filter-promoter', this)"> <span id="lbl-bypass-promoter">🔓 Bypass Promoter Holding ≥ 50%</span></label>
+                <label class="global-override-label" id="lbl-row-pledged"><input type="checkbox" id="global-pledged"  onchange="toggleGlobalOverride('bypassPledged', 'filter-pledged', this)"> <span id="lbl-bypass-pledged">🔓 Bypass Pledged Shares ≤ 10%</span></label>
+                <label class="global-override-label" id="lbl-row-wc"><input type="checkbox" id="global-wc"       onchange="toggleGlobalOverride('bypassWc', 'filter-wc', this)"> <span id="lbl-bypass-wc">🔓 Bypass Working Capital Days ≤ 150</span></label>
+                <label class="global-override-label" id="lbl-row-growth"><input type="checkbox" id="global-growth"   onchange="toggleGlobalOverride('bypassGrowth', 'filter-growth', this)"> <span id="lbl-bypass-growth">🔓 Bypass 70% YoY Profit Surge (Latest Qtr)</span></label>
             </div>
             <div class="tree-header-text">Select VIP Industries:</div>
             <div id="exceptions-tree-container"></div>
@@ -333,6 +334,42 @@
     }
 
     /* ===================================================
+       SYNC VIP BYPASS LABELS WITH STRICT FILTERS
+       Ensures VIP Exception labels always mirror the
+       current Strict Filter state and threshold values.
+    =================================================== */
+    function syncBypassLabels() {
+        const pVal  = document.getElementById('val-promoter')?.value || 50;
+        const plVal = document.getElementById('val-pledged')?.value  || 10;
+        const wcVal = document.getElementById('val-wc')?.value       || 150;
+
+        const fPromoter = document.getElementById('filter-promoter')?.checked;
+        const fPledged  = document.getElementById('filter-pledged')?.checked;
+        const fWc       = document.getElementById('filter-wc')?.checked;
+        const fGrowth   = document.getElementById('filter-growth')?.checked;
+
+        const rules = [
+            { spanId: 'lbl-bypass-promoter', rowId: 'lbl-row-promoter', text: `🔓 Bypass Promoter Holding ≥ ${pVal}%`,            active: fPromoter },
+            { spanId: 'lbl-bypass-pledged',  rowId: 'lbl-row-pledged',  text: `🔓 Bypass Pledged Shares ≤ ${plVal}%`,            active: fPledged  },
+            { spanId: 'lbl-bypass-wc',       rowId: 'lbl-row-wc',       text: `🔓 Bypass Working Capital Days ≤ ${wcVal}`,       active: fWc       },
+            { spanId: 'lbl-bypass-growth',   rowId: 'lbl-row-growth',   text: `🔓 Bypass 70% YoY Profit Surge (Latest Qtr)`,    active: fGrowth   }
+        ];
+
+        rules.forEach(r => {
+            const span = document.getElementById(r.spanId);
+            const row  = document.getElementById(r.rowId);
+            if (span) span.textContent = r.text;
+            if (row) {
+                if (r.active) {
+                    row.classList.remove('disabled-rule');
+                } else {
+                    row.classList.add('disabled-rule');
+                }
+            }
+        });
+    }
+
+    /* ===================================================
        VIEW TOGGLE — List vs Charts
     =================================================== */
     function switchView(mode) {
@@ -358,10 +395,6 @@
 
     /* ===================================================
        BUILD CHARTS GRID
-       Uses TradingView symbol-overview widget with
-       chartOnly:true — works for NSE India stocks on
-       third-party websites. Clicking the chart opens
-       the full TradingView chart in a new tab.
     =================================================== */
     function renderChartsGrid() {
         const grid    = document.getElementById('charts-grid');
@@ -389,7 +422,6 @@
             const scrLink  = screener ? '<a href="https://www.screener.in/company/' + screener + '/" target="_blank">SCR</a>' : "";
             const tvLink   = '<a href="https://in.tradingview.com/chart/?symbol=' + encodeURIComponent(symbol) + '" target="_blank">📈 Open Full Chart</a>';
 
-            // TradingView symbol-overview iframe — this URL format is NOT blocked by X-Frame-Options
             const cfg = encodeURIComponent(JSON.stringify({
                 "symbols": [[name, symbol + "|1D"]],
                 "chartOnly": false,
@@ -443,7 +475,6 @@
             grid.appendChild(warn);
         }
     }
-
 
     /* ===================================================
        TOGGLE LANDSCAPE (mobile)
@@ -600,6 +631,7 @@
         const mainChecked = document.getElementById(filterId).checked;
         if (!mainChecked) { document.getElementById(overrideId).checked = false; globalOverrides[ruleKey] = false; }
         applyFiltersAndRender();
+        syncBypassLabels();
     }
 
     function renderExceptionsTree() {
@@ -669,6 +701,7 @@
     function openExceptionsModal() {
         document.getElementById("exceptions-modal").style.display = "flex";
         if (document.getElementById("exceptions-tree-container").innerHTML === "") renderExceptionsTree();
+        syncBypassLabels();
     }
 
     function closeExceptionsModal() {
@@ -792,8 +825,8 @@
 
         currentFilteredData = filteredData;
         renderTable(filteredData);
+        syncBypassLabels();
 
-        // Re-render charts if charts view is visible
         if (currentView === 'charts') renderChartsGrid();
     }
 
@@ -885,7 +918,6 @@
         }).join('');
     }
 
-    // "📊 Chart" button in List view — switch to Charts view and scroll to that stock
     function jumpToChart(nseCode, name) {
         switchView('charts');
         setTimeout(() => {
@@ -927,6 +959,7 @@
     updateCurrentQtrBadge();
     fetchData();
     renderExceptionsTree();
+    syncBypassLabels();
 </script>
 </body>
 </html>
