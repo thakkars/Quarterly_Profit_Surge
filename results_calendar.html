@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NSE Results Calendar</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background: #f4f7f9; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1400px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px; }
+        h1 { color: #1a365d; margin: 0; font-size: 22px; }
+        .action-panel { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        button { border: none; padding: 9px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; transition: 0.2s; }
+        #refresh-btn  { background: #2b6cb0; color: white; }
+        #refresh-btn:hover { background: #2c5282; }
+        #export-btn   { background: #4a5568; color: white; }
+        #export-btn:hover { background: #2d3748; }
+        .meta-info { font-size: 12px; color: #718096; }
+
+        /* Filters */
+        .filters { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; padding: 14px; background: #edf2f7; border-radius: 8px; align-items: flex-end; }
+        .filter-item { display: flex; flex-direction: column; gap: 4px; }
+        .filter-item label { font-size: 11px; font-weight: 700; color: #4a5568; text-transform: uppercase; letter-spacing: 0.5px; }
+        .filter-item input, .filter-item select { padding: 7px 10px; border: 1px solid #cbd5e0; border-radius: 5px; font-size: 13px; background: white; min-width: 140px; }
+        .filter-item input:focus, .filter-item select:focus { outline: none; border-color: #3182ce; }
+        #clear-filters-btn { background: #e53e3e; color: white; padding: 7px 14px; align-self: flex-end; }
+        #clear-filters-btn:hover { background: #c53030; }
+
+        /* Stats bar */
+        .stats { display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+        .stat-pill { background: #edf2f7; border: 1px solid #cbd5e0; border-radius: 999px; padding: 5px 14px; font-size: 13px; font-weight: 600; color: #2d3748; }
+        .stat-pill span { color: #2b6cb0; }
+        .stat-right { margin-left: auto; font-size: 13px; color: #718096; }
+
+        /* Table */
+        .table-wrapper { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; cursor: grab; }
+        .table-wrapper.dragging { cursor: grabbing !important; user-select: none; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #1a365d; color: white; padding: 11px 13px; text-align: left; white-space: nowrap; position: sticky; top: 0; z-index: 5; cursor: pointer; user-select: none; font-size: 12px; }
+        th:hover { background: #2b6cb0; }
+        .sort-icon { margin-left: 4px; opacity: 0.7; font-size: 11px; }
+        td { padding: 10px 13px; border-bottom: 1px solid #e2e8f0; white-space: nowrap; vertical-align: middle; }
+        tr:hover td { background: #ebf8ff; }
+        tr:nth-child(even) td { background: #f7fafc; }
+        tr:nth-child(even):hover td { background: #ebf8ff; }
+
+        /* Badges & cells */
+        .symbol-badge { background: #2b6cb0; color: white; padding: 3px 9px; border-radius: 10px; font-size: 11px; font-weight: bold; display: inline-block; }
+        .time-badge { background: #e6fffa; color: #276749; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+        .date-cell { font-weight: 600; color: #2d3748; }
+        .subject-cell { max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #4a5568; }
+        .xbrl-link { color: #2b6cb0; text-decoration: none; font-size: 11px; background: #ebf8ff; padding: 3px 7px; border-radius: 4px; border: 1px solid #bee3f8; font-weight: bold; }
+        .xbrl-link:hover { background: #bee3f8; }
+        .no-link { color: #a0aec0; font-size: 11px; }
+
+        /* Today highlight */
+        tr.today-row td { background: #fffbeb !important; border-left: 3px solid #d69e2e; }
+        tr.today-row:hover td { background: #fef3c7 !important; }
+
+        .loading { text-align: center; padding: 50px; font-size: 16px; color: #718096; }
+        .error-msg { text-align: center; padding: 40px; color: #e53e3e; font-weight: 600; }
+
+        /* Reaction column (manual note per stock per date) */
+        .reaction-cell { display: flex; gap: 5px; align-items: center; }
+        .reaction-btn { font-size: 16px; cursor: pointer; background: none; border: none; padding: 2px 4px; border-radius: 4px; transition: 0.15s; }
+        .reaction-btn:hover { background: #edf2f7; }
+        .reaction-btn.active { background: #ebf8ff; box-shadow: 0 0 0 2px #3182ce; }
+        .reaction-label { font-size: 11px; font-weight: 700; min-width: 28px; text-align: center; }
+        .reaction-label.up   { color: #276749; }
+        .reaction-label.down { color: #c53030; }
+        .reaction-label.flat { color: #718096; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header-area">
+        <div>
+            <h1>📅 NSE Results Calendar</h1>
+            <div class="meta-info" id="meta-info">Loading...</div>
+        </div>
+        <div class="action-panel">
+            <button id="refresh-btn" onclick="loadData()">🔄 Refresh Data</button>
+            <button id="export-btn" onclick="exportCSV()">📥 Export CSV</button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters">
+        <div class="filter-item">
+            <label>Search Symbol / Company</label>
+            <input type="text" id="f-search" placeholder="e.g. RELIANCE" oninput="applyFilters()">
+        </div>
+        <div class="filter-item">
+            <label>Broadcast Date</label>
+            <input type="date" id="f-date" onchange="applyFilters()">
+        </div>
+        <div class="filter-item">
+            <label>Date Range — From</label>
+            <input type="date" id="f-date-from" onchange="applyFilters()">
+        </div>
+        <div class="filter-item">
+            <label>Date Range — To</label>
+            <input type="date" id="f-date-to" onchange="applyFilters()">
+        </div>
+        <div class="filter-item">
+            <label>Subject</label>
+            <input type="text" id="f-subject" placeholder="e.g. Quarterly Result" oninput="applyFilters()">
+        </div>
+        <button id="clear-filters-btn" onclick="clearFilters()">✖ Clear</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats">
+        <div class="stat-pill">Total: <span id="stat-total">–</span></div>
+        <div class="stat-pill">Showing: <span id="stat-showing">–</span></div>
+        <div class="stat-pill">Today: <span id="stat-today">–</span></div>
+        <div class="stat-right" id="last-updated"></div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrapper" id="table-wrapper">
+        <table id="main-table">
+            <thead id="thead"></thead>
+            <tbody id="tbody">
+                <tr><td class="loading" colspan="10">⏳ Fetching NSE results data...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const DATA_URL = "https://pub-9afc232687c44eebbb8cae359c7ac460.r2.dev/nse_results_calendar.json";
+    const TODAY_STR = new Date().toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" }).replace(/ /g, "-");
+    // e.g. "08-May-2026"
+
+    let rawData      = [];
+    let filtered     = [];
+    let sortCol      = "Broadcast Date";
+    let sortAsc      = false;
+    let reactions    = JSON.parse(localStorage.getItem("nse_reactions") || "{}");
+
+    const COLS = [
+        { key: "Sr No",         label: "#",              width: "50px"  },
+        { key: "Symbol",        label: "Symbol",         width: "110px" },
+        { key: "Company Name",  label: "Company",        width: "220px" },
+        { key: "Broadcast Date",label: "Date",           width: "110px" },
+        { key: "Broadcast Time",label: "Time",           width: "95px"  },
+        { key: "Subject",       label: "Subject",        width: "260px" },
+        { key: "ISIN",          label: "ISIN",           width: "130px" },
+        { key: "XBRL Link",     label: "Filing",         width: "80px"  },
+        { key: "_reaction",     label: "📊 Reaction",    width: "130px" },
+    ];
+
+    /* ── Drag-to-scroll ── */
+    (function() {
+        let isDown = false, startX, scrollLeft, moved = false;
+        document.addEventListener('DOMContentLoaded', () => {
+            const el = document.getElementById('table-wrapper');
+            el.addEventListener('mousedown', e => {
+                if (e.button !== 0 || e.target.closest('a,button,input')) return;
+                isDown = true; moved = false;
+                startX = e.pageX - el.offsetLeft;
+                scrollLeft = el.scrollLeft;
+                el.classList.add('dragging');
+            });
+            el.addEventListener('mouseleave', () => { isDown = false; el.classList.remove('dragging'); });
+            el.addEventListener('mouseup',    () => { isDown = false; el.classList.remove('dragging'); });
+            el.addEventListener('mousemove',  e => {
+                if (!isDown) return;
+                e.preventDefault();
+                const walk = (e.pageX - el.offsetLeft - startX) * 1.5;
+                if (Math.abs(walk) > 3) moved = true;
+                el.scrollLeft = scrollLeft - walk;
+            });
+            el.addEventListener('click', e => { if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; } }, true);
+        });
+    })();
+
+    async function loadData() {
+        document.getElementById('tbody').innerHTML = '<tr><td class="loading" colspan="10">⏳ Fetching NSE results data...</td></tr>';
+        try {
+            const res = await fetch(DATA_URL + '?t=' + Date.now());
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            rawData = await res.json();
+            const lastRow = rawData.find(r => r["Scraped At"]);
+            document.getElementById('meta-info').textContent =
+                rawData.length + ' announcements · Last updated: ' + (lastRow ? lastRow["Scraped At"] : 'unknown');
+            document.getElementById('last-updated').textContent = 'Data as of: ' + (lastRow ? lastRow["Scraped At"] : '–');
+            document.getElementById('stat-total').textContent = rawData.length;
+            const todayCount = rawData.filter(r => normDate(r["Broadcast Date"]) === normDate(TODAY_STR)).length;
+            document.getElementById('stat-today').textContent = todayCount;
+            applyFilters();
+        } catch (e) {
+            document.getElementById('tbody').innerHTML =
+                '<tr><td class="error-msg" colspan="10">❌ Failed to load data. Run the NSE Calendar workflow first.<br><small>' + e.message + '</small></td></tr>';
+            document.getElementById('meta-info').textContent = 'No data loaded.';
+        }
+    }
+
+    function normDate(d) {
+        // normalise "08-May-2026" → Date object for comparison
+        if (!d) return null;
+        try { return new Date(d).toDateString(); } catch { return null; }
+    }
+
+    function applyFilters() {
+        const search   = document.getElementById('f-search').value.trim().toLowerCase();
+        const dateExact= document.getElementById('f-date').value;        // YYYY-MM-DD
+        const dateFrom = document.getElementById('f-date-from').value;
+        const dateTo   = document.getElementById('f-date-to').value;
+        const subject  = document.getElementById('f-subject').value.trim().toLowerCase();
+
+        filtered = rawData.filter(row => {
+            const sym  = (row['Symbol']       || '').toLowerCase();
+            const comp = (row['Company Name'] || '').toLowerCase();
+            const subj = (row['Subject']      || '').toLowerCase();
+
+            if (search && !sym.includes(search) && !comp.includes(search)) return false;
+            if (subject && !subj.includes(subject)) return false;
+
+            const rowDate = parseNseDate(row['Broadcast Date']);
+            if (dateExact) {
+                const target = new Date(dateExact);
+                if (!rowDate || rowDate.toDateString() !== target.toDateString()) return false;
+            }
+            if (dateFrom) {
+                const from = new Date(dateFrom);
+                if (!rowDate || rowDate < from) return false;
+            }
+            if (dateTo) {
+                const to = new Date(dateTo + 'T23:59:59');
+                if (!rowDate || rowDate > to) return false;
+            }
+            return true;
+        });
+
+        sortData();
+        document.getElementById('stat-showing').textContent = filtered.length;
+        renderTable();
+    }
+
+    function parseNseDate(d) {
+        if (!d) return null;
+        try {
+            // Handle "08-May-2026" format
+            const months = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+            const parts  = d.split('-');
+            if (parts.length === 3) {
+                const day = parseInt(parts[0]);
+                const mon = months[parts[1]];
+                const yr  = parseInt(parts[2]);
+                if (!isNaN(day) && mon !== undefined && !isNaN(yr)) return new Date(yr, mon, day);
+            }
+            return new Date(d);
+        } catch { return null; }
+    }
+
+    function sortData() {
+        filtered.sort((a, b) => {
+            let vA = a[sortCol] ?? '', vB = b[sortCol] ?? '';
+            if (sortCol === 'Broadcast Date') {
+                const dA = parseNseDate(vA), dB = parseNseDate(vB);
+                if (dA && dB) return sortAsc ? dA - dB : dB - dA;
+            }
+            if (sortCol === 'Broadcast Time' || sortCol === 'Sr No') {
+                const nA = parseFloat(vA), nB = parseFloat(vB);
+                if (!isNaN(nA) && !isNaN(nB)) return sortAsc ? nA - nB : nB - nA;
+            }
+            vA = String(vA).toLowerCase(); vB = String(vB).toLowerCase();
+            if (vA < vB) return sortAsc ? -1 : 1;
+            if (vA > vB) return sortAsc ? 1  : -1;
+            return 0;
+        });
+    }
+
+    function handleSort(col) {
+        if (sortCol === col) sortAsc = !sortAsc;
+        else { sortCol = col; sortAsc = false; }
+        sortData();
+        renderTable();
+    }
+
+    function renderTable() {
+        const thead = document.getElementById('thead');
+        const tbody = document.getElementById('tbody');
+
+        // Header
+        thead.innerHTML = '<tr>' + COLS.map(c => {
+            if (c.key === '_reaction') return `<th style="width:${c.width}">${c.label}</th>`;
+            const icon = sortCol === c.key ? (sortAsc ? '🔼' : '🔽') : '';
+            return `<th style="width:${c.width}" onclick="handleSort('${c.key}')">${c.label}<span class="sort-icon">${icon}</span></th>`;
+        }).join('') + '</tr>';
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = '<tr><td class="loading" colspan="' + COLS.length + '">No announcements match the filters.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = filtered.map((row, idx) => {
+            const isToday = parseNseDate(row['Broadcast Date'])?.toDateString() === new Date().toDateString();
+            const rowKey  = (row['Symbol'] || '') + '_' + (row['Broadcast Date'] || '');
+            const rxn     = reactions[rowKey] || null;
+
+            const cells = COLS.map(c => {
+                if (c.key === 'Sr No')          return `<td>${idx + 1}</td>`;
+                if (c.key === 'Symbol')         return `<td><span class="symbol-badge">${row['Symbol'] || '–'}</span></td>`;
+                if (c.key === 'Company Name')   return `<td style="font-weight:600; max-width:220px; overflow:hidden; text-overflow:ellipsis;" title="${(row['Company Name']||'').replace(/"/g,'&quot;')}">${row['Company Name'] || '–'}</td>`;
+                if (c.key === 'Broadcast Date') return `<td class="date-cell">${row['Broadcast Date'] || '–'}</td>`;
+                if (c.key === 'Broadcast Time') return `<td><span class="time-badge">${row['Broadcast Time'] || '–'}</span></td>`;
+                if (c.key === 'Subject')        return `<td class="subject-cell" title="${(row['Subject']||'').replace(/"/g,'&quot;')}">${row['Subject'] || '–'}</td>`;
+                if (c.key === 'ISIN')           return `<td style="font-size:11px; color:#718096;">${row['ISIN'] || '–'}</td>`;
+                if (c.key === 'XBRL Link') {
+                    return row['XBRL Link']
+                        ? `<td><a class="xbrl-link" href="${row['XBRL Link']}" target="_blank">📄 Open</a></td>`
+                        : `<td><span class="no-link">–</span></td>`;
+                }
+                if (c.key === '_reaction') {
+                    return `<td>
+                        <div class="reaction-cell">
+                            <button class="reaction-btn ${rxn === 'up'   ? 'active' : ''}" onclick="setReaction('${rowKey}','up')"   title="Stock went UP post result">📈</button>
+                            <button class="reaction-btn ${rxn === 'down' ? 'active' : ''}" onclick="setReaction('${rowKey}','down')" title="Stock went DOWN post result">📉</button>
+                            <button class="reaction-btn ${rxn === 'flat' ? 'active' : ''}" onclick="setReaction('${rowKey}','flat')" title="Stock was flat">➡️</button>
+                        </div>
+                    </td>`;
+                }
+                return `<td>${row[c.key] || '–'}</td>`;
+            }).join('');
+
+            return `<tr class="${isToday ? 'today-row' : ''}">${cells}</tr>`;
+        }).join('');
+    }
+
+    function setReaction(rowKey, value) {
+        if (reactions[rowKey] === value) {
+            delete reactions[rowKey];  // toggle off
+        } else {
+            reactions[rowKey] = value;
+        }
+        localStorage.setItem('nse_reactions', JSON.stringify(reactions));
+        renderTable();
+    }
+
+    function clearFilters() {
+        ['f-search','f-date','f-date-from','f-date-to','f-subject'].forEach(id => {
+            document.getElementById(id).value = '';
+        });
+        applyFilters();
+    }
+
+    function exportCSV() {
+        if (!filtered.length) { alert('No data to export.'); return; }
+        const exportCols = COLS.filter(c => c.key !== '_reaction');
+        const lines = [exportCols.map(c => `"${c.label}"`).join(',')];
+        filtered.forEach(row => {
+            lines.push(exportCols.map(c => `"${String(row[c.key] || '').replace(/"/g, '""')}"`).join(','));
+        });
+        const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `NSE_Results_Calendar_${new Date().toISOString().slice(0,10)}.csv`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    }
+
+    loadData();
+</script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+name: NSE Results Calendar
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Runs at 01:00 UTC = 06:30 IST  (morning, before market open)
+    - cron: '0 1 * * *'
+    # Also runs at 14:00 UTC = 19:30 IST (evening, after market close)
+    - cron: '0 14 * * *'
+
+jobs:
+  fetch-results-calendar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install Python dependencies
+      run: pip install requests pandas openpyxl boto3
+
+    - name: Run NSE Results Calendar Scraper
+      env:
+        R2_ACCESS_KEY_ID:     ${{ secrets.R2_ACCESS_KEY_ID }}
+        R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        R2_ENDPOINT_URL:      ${{ secrets.R2_ENDPOINT_URL }}
+        R2_BUCKET_NAME:       quarterly-profit-surge
+        GITHUB_ACTIONS:       "true"
+      run: python R02_NSE_Results_Calendar.py
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: nse-results-calendar-${{ github.run_number }}
+        path: /tmp/screener_data/
+        retention-days: 30
