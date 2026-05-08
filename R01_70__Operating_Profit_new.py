@@ -1,5 +1,4 @@
 import time
-import random
 import traceback
 import pandas as pd
 import numpy as np
@@ -9,11 +8,11 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, InvalidSessionIdException
+from selenium.common.exceptions import InvalidSessionIdException
 from datetime import datetime
 import os
 import json
-from openpyxl import load_workbook, Workbook
+from openpyxl import load_workbook
 from openpyxl.styles import Alignment, Border, Side
 
 if os.environ.get("GITHUB_ACTIONS", "false").lower() != "true":
@@ -33,10 +32,10 @@ if IS_GITHUB_ACTIONS:
 else:
     FOLDER_PATH = r"D:\Investment Research\Python Projects\Operating Profit more than 70% jump"
 
-MASTER_FILE_PATH    = os.path.join(FOLDER_PATH, "Master File.xlsx")
-RAW_FILE_PATH       = os.path.join(FOLDER_PATH, "Raw Data.xlsx")
-RAW_JSON_PATH       = os.path.join(FOLDER_PATH, "rawdata.json")
-INDUSTRY_FILE_PATH  = os.path.join(FOLDER_PATH, "Screener_Industry_Data.xlsx")
+MASTER_FILE_PATH   = os.path.join(FOLDER_PATH, "Master File.xlsx")
+RAW_FILE_PATH      = os.path.join(FOLDER_PATH, "Raw Data.xlsx")
+RAW_JSON_PATH      = os.path.join(FOLDER_PATH, "rawdata.json")
+INDUSTRY_FILE_PATH = os.path.join(FOLDER_PATH, "Screener_Industry_Data.xlsx")
 
 os.makedirs(FOLDER_PATH, exist_ok=True)
 
@@ -44,15 +43,15 @@ HEADLESS   = IS_GITHUB_ACTIONS
 PAGE_DELAY = 1.0
 
 # ─── R2 CONFIG ─────────────────────────────────────────────
-R2_BUCKET      = os.environ.get("R2_BUCKET_NAME",        "quarterly-profit-surge")
-R2_ACCESS_KEY  = os.environ.get("R2_ACCESS_KEY_ID",      "")
-R2_SECRET_KEY  = os.environ.get("R2_SECRET_ACCESS_KEY",  "")
-R2_ENDPOINT    = os.environ.get("R2_ENDPOINT_URL",       "")
+R2_BUCKET     = os.environ.get("R2_BUCKET_NAME",       "quarterly-profit-surge")
+R2_ACCESS_KEY = os.environ.get("R2_ACCESS_KEY_ID",     "")
+R2_SECRET_KEY = os.environ.get("R2_SECRET_ACCESS_KEY", "")
+R2_ENDPOINT   = os.environ.get("R2_ENDPOINT_URL",      "")
 
-R2_MASTER_KEY    = "Master File.xlsx"
-R2_RAW_KEY       = "Raw Data.xlsx"
-R2_RAW_JSON_KEY  = "rawdata.json"
-R2_INDUSTRY_KEY  = "Screener_Industry_Data.xlsx"
+R2_MASTER_KEY   = "Master File.xlsx"
+R2_RAW_KEY      = "Raw Data.xlsx"
+R2_RAW_JSON_KEY = "rawdata.json"
+R2_INDUSTRY_KEY = "Screener_Industry_Data.xlsx"
 
 # ═══════════════════════════════════════════════════════════
 # R2 HELPERS
@@ -83,14 +82,12 @@ def r2_upload(local_path, r2_key):
             print(f"⚠️  Skipping R2 upload — file not found: {local_path}")
             return False
         client = get_r2_client()
-        
         extra_args = {}
         if r2_key.endswith('.json'):
             extra_args = {
                 'ContentType': 'application/json',
                 'CacheControl': 'no-cache, no-store, must-revalidate'
             }
-            
         client.upload_file(local_path, R2_BUCKET, r2_key, ExtraArgs=extra_args)
         print(f"⬆️  Uploaded to R2 : {local_path} → {r2_key}")
         return True
@@ -100,9 +97,9 @@ def r2_upload(local_path, r2_key):
 
 if IS_GITHUB_ACTIONS:
     print("\n📥 Downloading existing files from Cloudflare R2...")
-    r2_download(R2_MASTER_KEY,    MASTER_FILE_PATH)
-    r2_download(R2_RAW_KEY,       RAW_FILE_PATH)
-    r2_download(R2_INDUSTRY_KEY,  INDUSTRY_FILE_PATH)
+    r2_download(R2_MASTER_KEY,   MASTER_FILE_PATH)
+    r2_download(R2_RAW_KEY,      RAW_FILE_PATH)
+    r2_download(R2_INDUSTRY_KEY, INDUSTRY_FILE_PATH)
 
 # ═══════════════════════════════════════════════════════════
 # MAPPING & ENRICHMENT
@@ -113,40 +110,75 @@ def load_industry_maps():
     try:
         df = pd.read_excel(INDUSTRY_FILE_PATH, sheet_name="Screener Industry")
         df["Name_Clean"] = df["Full Name"].astype(str).str.strip().str.lower()
-        return df.set_index("Name_Clean")["Industry"].to_dict(), df.set_index("Name_Clean")["Industry Group"].to_dict()
+        return (
+            df.set_index("Name_Clean")["Industry"].to_dict(),
+            df.set_index("Name_Clean")["Industry Group"].to_dict()
+        )
     except:
         return {}, {}
 
 def load_symbol_maps():
-    if not os.path.exists(MASTER_FILE_PATH):
+    """
+    VLOOKUP equivalent using Screener_Industry_Data.xlsx:
+      - Primary key  : Full Name (col A) matched against scraped "Company (Page)"
+      - NSE Code     : col D (VLOOKUP index 4)  → NSE Code Exact
+      - BSE Code     : col C (VLOOKUP index 3)  → fallback if NSE Code blank
+      - Screener slug: NSE Code → BSE Code → blank (3-level priority)
+    """
+    if not os.path.exists(INDUSTRY_FILE_PATH):
+        print("⚠️  Screener_Industry_Data.xlsx not found — symbol maps empty")
         return {}
     try:
-        df = pd.read_excel(MASTER_FILE_PATH, sheet_name="screener_all_stocks")
-        df["Match_Name"] = df["Name"].astype(str).str.strip().str.lower()
-        
+        df = pd.read_excel(INDUSTRY_FILE_PATH, sheet_name="Screener Industry")
         mapping = {}
         for _, row in df.iterrows():
-            mapping[row["Match_Name"]] = {
-                "NSE_Code": str(row["NSE Code"]).strip() if pd.notna(row["NSE Code"]) else "",
-                "Screener_Name": str(row["Name"]).strip()
+            full_name = str(row["Full Name"]).strip()
+            if not full_name or full_name.lower() == "nan":
+                continue
+
+            nse = str(row["NSE Code"]).strip() if pd.notna(row["NSE Code"]) else ""
+            bse = str(row["BSE Code"]).strip() if pd.notna(row["BSE Code"]) else ""
+
+            if nse.lower() in ("nan", "none", ""):
+                nse = ""
+            if bse.lower() in ("nan", "none", ""):
+                bse = ""
+            # BSE codes come as floats like "530643.0" → strip to int string
+            if bse and bse.endswith(".0"):
+                bse = bse[:-2]
+
+            # Screener slug: NSE code preferred, else BSE code, else blank
+            screener_slug = nse if nse else bse
+
+            mapping[full_name.lower()] = {
+                "NSE_Code":      nse,
+                "BSE_Code":      bse,
+                "Screener_Name": screener_slug
             }
+
+        print(f"✅ Loaded {len(mapping)} symbol mappings from Screener_Industry_Data.xlsx")
         return mapping
     except Exception as e:
-        print(f"⚠️ Could not load symbol maps: {e}")
+        print(f"⚠️  Could not load symbol maps: {e}")
         return {}
 
 def enrich_with_data(row_dict, industry_map, group_map, symbol_map):
-    name_clean = str(row_dict.get("Company (Page)", "")).strip().lower()
+    full_name_clean  = str(row_dict.get("Company (Page)", "")).strip().lower()
     short_name_clean = str(row_dict.get("Name", "")).strip().lower()
-    
-    row_dict["Industry"]       = industry_map.get(name_clean, "Not Found")
-    row_dict["Industry Group"] = group_map.get(name_clean, "Not Found")
-    
-    mapped_data = symbol_map.get(short_name_clean) or symbol_map.get(name_clean) or {}
-    
-    row_dict["NSE Code Exact"] = mapped_data.get("NSE_Code", "")
-    row_dict["Screener Name Exact"] = mapped_data.get("Screener_Name", str(row_dict.get("Name", "")))
-    
+
+    row_dict["Industry"]       = industry_map.get(full_name_clean, "Not Found")
+    row_dict["Industry Group"] = group_map.get(full_name_clean, "Not Found")
+
+    # VLOOKUP: try full name first, then short name
+    mapped = symbol_map.get(full_name_clean) or symbol_map.get(short_name_clean) or {}
+
+    row_dict["NSE Code Exact"]      = mapped.get("NSE_Code", "")
+    row_dict["Screener Name Exact"] = mapped.get("Screener_Name", "")
+
+    # Last resort: if still blank, use short Name as Screener slug
+    if not row_dict["Screener Name Exact"]:
+        row_dict["Screener Name Exact"] = str(row_dict.get("Name", "")).strip()
+
     return row_dict
 
 # ═══════════════════════════════════════════════════════════
@@ -189,8 +221,17 @@ def safe_get(url):
     except: return False
 
 def get_company_full_name():
-    try: return wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "h1.margin-0"))).text.strip()
-    except: return "Unknown"
+    # Try multiple selectors — different pages use different h1 classes
+    selectors = ["h1.margin-0", "h1.shrink-text", "h1", ".company-name h1"]
+    for sel in selectors:
+        try:
+            el   = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, sel)))
+            name = el.text.strip()
+            if name and name.lower() != "unknown":
+                return name
+        except:
+            continue
+    return "Unknown"
 
 def get_top_dashboard_metrics():
     metrics = {"Promoter Holding": 0.0, "Pledged %": 0.0, "WC Days": 0.0}
@@ -198,12 +239,12 @@ def get_top_dashboard_metrics():
         ratio_items = driver.find_elements(By.CSS_SELECTOR, "ul#top-ratios li")
         for li in ratio_items:
             try:
-                label = li.find_element(By.CSS_SELECTOR, "span.name").text.lower().strip()
+                label  = li.find_element(By.CSS_SELECTOR, "span.name").text.lower().strip()
                 val_el = li.find_element(By.CSS_SELECTOR, "span.number").text.strip().replace(",", "")
-                value = float(val_el) if val_el else 0.0
+                value  = float(val_el) if val_el else 0.0
                 if "promoter holding" in label: metrics["Promoter Holding"] = value
-                elif "pledged" in label: metrics["Pledged %"] = value
-                elif "wc days" in label: metrics["WC Days"] = value
+                elif "pledged" in label:        metrics["Pledged %"]        = value
+                elif "wc days" in label:        metrics["WC Days"]          = value
             except: continue
     except: pass
     return metrics
@@ -211,8 +252,8 @@ def get_top_dashboard_metrics():
 def extract_operating_profit():
     try: table = wait.until(EC.presence_of_element_located((By.XPATH, "//section[@id='quarters']//table")))
     except: return {}
-    headers = [th.text.strip() for th in table.find_elements(By.TAG_NAME, "th")]
-    rows = table.find_elements(By.TAG_NAME, "tr")
+    headers    = [th.text.strip() for th in table.find_elements(By.TAG_NAME, "th")]
+    rows       = table.find_elements(By.TAG_NAME, "tr")
     target_row = next((r for r in rows if "operating profit" in r.text.lower()), None)
     if not target_row: target_row = next((r for r in rows if "financing profit" in r.text.lower()), None)
     if not target_row: return {}
@@ -226,7 +267,8 @@ def collect_all_company_data():
         for a in driver.find_elements(By.CSS_SELECTOR, "a[href*='/company/']"):
             href, short_name = a.get_attribute("href"), a.text.strip()
             if href and "/company/" in href and href not in seen_urls:
-                seen_urls.add(href); company_list.append({"short_name": short_name, "url": href})
+                seen_urls.add(href)
+                company_list.append({"short_name": short_name, "url": href})
         try:
             next_btn = driver.find_element(By.XPATH, "//a[contains(text(), 'Next')]")
             if "disabled" in (next_btn.get_attribute("class") or "").lower(): break
@@ -237,20 +279,38 @@ def collect_all_company_data():
 
 def scrape_company(company_info):
     url, short_name = company_info['url'], company_info['short_name']
-    if not safe_get(url): return {"Name": short_name, "Company (Page)": "Load Failed", "date": datetime.now().strftime("%Y-%m-%d")}
+    if not safe_get(url):
+        return {"Name": short_name, "Company (Page)": "Load Failed", "date": datetime.now().strftime("%Y-%m-%d")}
     try:
+        time.sleep(1.5)  # let page fully load before clicking Consolidated
         try: driver.find_element(By.LINK_TEXT, "Consolidated").click(); time.sleep(1.5)
-        except: pass
+        except:
+            try: driver.find_element(By.PARTIAL_LINK_TEXT, "Consolidated").click(); time.sleep(1.5)
+            except: pass  # Standalone company — no Consolidated tab, that's fine
+
+        full_name = get_company_full_name()
+
+        # If still Unknown, extract slug from URL as fallback
+        # e.g. screener.in/company/GMBREW/ → "GMBREW"
+        if full_name == "Unknown":
+            slug = url.rstrip("/").split("/")[-1]
+            full_name = slug if slug else short_name
+
         return {
-            "Name": short_name, "Company (Page)": get_company_full_name(),
+            "Name": short_name, "Company (Page)": full_name,
             "Industry Group": "", "Industry": "",
             **extract_operating_profit(), **get_top_dashboard_metrics(),
             "date": datetime.now().strftime("%Y-%m-%d")
         }
-    except: return {"Name": short_name, "Company (Page)": "Error", "date": datetime.now().strftime("%Y-%m-%d")}
+    except:
+        return {"Name": short_name, "Company (Page)": short_name, "date": datetime.now().strftime("%Y-%m-%d")}
 
 def detect_latest_quarter(row_dict):
-    non_quarter_keys = {"Sr no", "Name", "Company (Page)", "Industry Group", "Industry", "Promoter Holding", "Pledged %", "WC Days", "date", "NSE Code Exact", "Screener Name Exact"}
+    non_quarter_keys = {
+        "Sr no", "Name", "Company (Page)", "Industry Group", "Industry",
+        "Promoter Holding", "Pledged %", "WC Days", "date",
+        "NSE Code Exact", "Screener Name Exact"
+    }
     quarter_candidates = []
     for k in row_dict:
         if k in non_quarter_keys or "(>70%)" in k: continue
@@ -271,44 +331,46 @@ def get_existing_companies_in_sheet(sheet_name):
     except: return set()
 
 def transform_and_order_data(df):
-    base_cols = ["Sr no", "date", "Name", "Company (Page)", "Industry", "Industry Group", "NSE Code Exact", "Screener Name Exact"]
+    base_cols   = ["Sr no", "date", "Name", "Company (Page)", "Industry", "Industry Group",
+                   "NSE Code Exact", "Screener Name Exact"]
     metric_cols = ["Pledged %", "Promoter Holding", "WC Days"]
     for col in base_cols + metric_cols:
         if col not in df.columns: df[col] = ""
 
-    quarter_cols_raw = [c for c in df.columns if c not in base_cols and c not in metric_cols and "(>70%)" not in c and c != "70% Surge"]
+    quarter_cols_raw = [
+        c for c in df.columns
+        if c not in base_cols and c not in metric_cols and "(>70%)" not in c and c != "70% Surge"
+    ]
     parsed_dates = []
     for c in quarter_cols_raw:
         try: parsed_dates.append((pd.to_datetime(c, format="%b %Y"), c))
-        except: pass 
+        except: pass
     parsed_dates.sort(key=lambda x: x[0], reverse=True)
     sorted_quarter_cols = [x[1] for x in parsed_dates]
 
     temp_df = pd.DataFrame()
-    for c in sorted_quarter_cols: temp_df[c] = pd.to_numeric(df[c].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
+    for c in sorted_quarter_cols:
+        temp_df[c] = pd.to_numeric(df[c].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
 
-    matrix_cols = []
+    matrix_cols     = []
     surge_tags_list = [[] for _ in range(len(df))]
 
     for dt, col_current in parsed_dates:
         try:
             dt_prev_year = dt.replace(year=dt.year - 1)
-            col_prev = dt_prev_year.strftime("%b %Y")
+            col_prev     = dt_prev_year.strftime("%b %Y")
             if col_prev in temp_df.columns:
                 jump_col = f"{dt.strftime('%b%y')} (>70%) {dt_prev_year.strftime('%b%y')}"
                 matrix_cols.append(jump_col)
-                
-                condition = (temp_df[col_current] >= 1.7 * temp_df[col_prev]) & (temp_df[col_prev] > 0)
+                condition    = (temp_df[col_current] >= 1.7 * temp_df[col_prev]) & (temp_df[col_prev] > 0)
                 df[jump_col] = np.where(condition, "Yes", "")
-                
-                tag = dt.strftime('%b')[0] + dt.strftime('%y') 
+                tag = dt.strftime('%b')[0] + dt.strftime('%y')
                 for idx, is_surge in enumerate(condition):
                     if is_surge:
                         surge_tags_list[idx].append(tag)
         except: pass
 
     df["70% Surge"] = [", ".join(tags) for tags in surge_tags_list]
-
     final_cols = base_cols + sorted_quarter_cols + metric_cols + matrix_cols + ["70% Surge"]
     df = df[final_cols].copy()
     df["Sr no"] = range(1, len(df) + 1)
@@ -322,21 +384,27 @@ def append_rows_to_raw_excel(rows, sheet_name):
             wb = load_workbook(RAW_FILE_PATH)
             if sheet_name in wb.sheetnames:
                 df_existing = pd.read_excel(RAW_FILE_PATH, sheet_name=sheet_name)
-                df_final = transform_and_order_data(pd.concat([df_existing, df_new], ignore_index=True))
-            else: df_final = df_new
+                df_final    = transform_and_order_data(pd.concat([df_existing, df_new], ignore_index=True))
+            else:
+                df_final = df_new
             wb.close()
             with pd.ExcelWriter(RAW_FILE_PATH, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
                 df_final.to_excel(writer, sheet_name=sheet_name, index=False)
         except: return
     else:
-        with pd.ExcelWriter(RAW_FILE_PATH, engine='openpyxl') as writer: df_new.to_excel(writer, sheet_name=sheet_name, index=False)
+        with pd.ExcelWriter(RAW_FILE_PATH, engine='openpyxl') as writer:
+            df_new.to_excel(writer, sheet_name=sheet_name, index=False)
 
     wb = load_workbook(RAW_FILE_PATH)
     ws = wb[sheet_name]
     for row in ws.iter_rows():
         for cell in row:
-            cell.border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
-            if cell.row == 1 or cell.col_idx == 1: cell.alignment = Alignment(horizontal='center', vertical='center')
+            cell.border = Border(
+                left=Side(style='thin'), right=Side(style='thin'),
+                top=Side(style='thin'),  bottom=Side(style='thin')
+            )
+            if cell.row == 1 or cell.col_idx == 1:
+                cell.alignment = Alignment(horizontal='center', vertical='center')
     wb.save(RAW_FILE_PATH)
 
 def generate_raw_json(sheet_name):
@@ -350,29 +418,29 @@ def generate_raw_json(sheet_name):
         df.to_json(RAW_JSON_PATH, orient="records")
         print(f"✅ Saved rawdata.json for Dashboard (Sheet: {sheet_name})")
     except Exception as e:
-        print(f"⚠️ Error saving JSON: {e}")
+        print(f"⚠️  Error saving JSON: {e}")
 
 # ═══════════════════════════════════════════════════════════
 # MAIN
 # ═══════════════════════════════════════════════════════════
 try:
     INDUSTRY_MAP, GROUP_MAP = load_industry_maps()
-    SYMBOL_MAP = load_symbol_maps()
+    SYMBOL_MAP              = load_symbol_maps()
     login()
     company_data_list = collect_all_company_data()
 
     if company_data_list:
         first_scraped = scrape_company(company_data_list[0])
-        first_row = enrich_with_data(first_scraped, INDUSTRY_MAP, GROUP_MAP, SYMBOL_MAP)
-        target_sheet = detect_latest_quarter(first_row) or datetime.now().strftime("%b %y")
-        
+        first_row     = enrich_with_data(first_scraped, INDUSTRY_MAP, GROUP_MAP, SYMBOL_MAP)
+        target_sheet  = detect_latest_quarter(first_row) or datetime.now().strftime("%b %y")
+
         existing_names = get_existing_companies_in_sheet(target_sheet)
-        pending_rows = [] if str(first_row.get("Name", "")).strip() in existing_names else [first_row]
+        pending_rows   = [] if str(first_row.get("Name", "")).strip() in existing_names else [first_row]
 
         remaining = [c for c in company_data_list[1:] if str(c['short_name']).strip() not in existing_names]
-        
+
         for i, info in enumerate(remaining, start=2):
-            scraped = scrape_company(info)
+            scraped  = scrape_company(info)
             enriched = enrich_with_data(scraped, INDUSTRY_MAP, GROUP_MAP, SYMBOL_MAP)
             pending_rows.append(enriched)
             if len(pending_rows) >= 10:
@@ -383,8 +451,8 @@ try:
         generate_raw_json(target_sheet)
 
         if IS_GITHUB_ACTIONS:
-            r2_upload(RAW_FILE_PATH, R2_RAW_KEY)
-            r2_upload(RAW_JSON_PATH, R2_RAW_JSON_KEY)
+            r2_upload(RAW_FILE_PATH,    R2_RAW_KEY)
+            r2_upload(RAW_JSON_PATH,    R2_RAW_JSON_KEY)
             r2_upload(MASTER_FILE_PATH, R2_MASTER_KEY)
 
 except Exception as e:
