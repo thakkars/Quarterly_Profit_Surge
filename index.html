@@ -29,7 +29,6 @@
         .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(0,0,0,0.1); border-radius: 50%; border-top-color: #2b6cb0; animation: spin 1s ease-in-out infinite; vertical-align: middle; margin-right: 5px; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* ===== VIEW TOGGLE ===== */
         .view-toggle-wrapper { display: flex; justify-content: flex-end; margin-bottom: 12px; }
         .view-toggle { display: inline-flex; border: 1px solid #cbd5e0; border-radius: 999px; overflow: hidden; background: #edf2f7; }
         .view-btn { border: none; padding: 7px 20px; font-size: 13px; cursor: pointer; background: transparent; color: #4a5568; font-weight: 600; transition: 0.2s; }
@@ -49,11 +48,9 @@
         .dropdown-content label { display: flex; align-items: center; cursor: pointer; font-size: 13px; color: #2d3748; }
         .dropdown-content input { margin-right: 6px; transform: scale(1.1); cursor: pointer; }
 
-        /* ===== THRESHOLD INPUT ===== */
         .threshold-input { width: 55px; padding: 2px 5px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 13px; font-weight: 600; color: #2b6cb0; text-align: center; margin: 0 2px; background: #ebf8ff; }
         .threshold-input:focus { outline: none; border-color: #3182ce; background: #fff; }
 
-        /* ===== LIST VIEW ===== */
         .table-container { overflow-x: auto; overflow-y: visible; border: 1px solid #e2e8f0; border-radius: 8px; background: white; }
         .table-container:fullscreen { padding: 15px; max-height: 100vh; overflow: auto; background-color: white; }
         .table-container:-webkit-full-screen { padding: 15px; max-height: 100vh; overflow: auto; background-color: white; }
@@ -64,6 +61,7 @@
         .sort-icon { font-size: 12px; margin-left: 5px; opacity: 0.7; }
         tr:hover { background-color: #ebf8ff; }
         .badge-yes { background-color: #48bb78; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        .badge-peak { background-color: #d69e2e; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
         .loading { text-align: center; padding: 40px; font-size: 18px; color: #718096; }
         .stats { text-align: right; font-size: 14px; color: #4a5568; margin-bottom: 10px; font-weight: 600; }
         .action-links { margin-top: 6px; display: flex; gap: 5px; flex-wrap: wrap; }
@@ -74,7 +72,6 @@
         .action-links .chart-btn { background: #c6f6d5; color: #276749; border-color: #9ae6b4; }
         .action-links .chart-btn:hover { background: #9ae6b4; color: #1a4731; }
 
-        /* ===== CHARTS VIEW ===== */
         #charts-view { display: none; }
         .charts-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
         .charts-header h2 { font-size: 15px; color: #2d3748; margin: 0; }
@@ -92,7 +89,6 @@
         .charts-loading { text-align: center; padding: 60px; color: #718096; font-size: 16px; }
         .no-nse-badge { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #fed7d7; color: #c53030; font-weight: bold; margin-left: 6px; }
 
-        /* ===== CHAT DRAWER ===== */
         .chat-drawer { position: fixed; top: 0; right: -450px; width: 400px; max-width: 100%; height: 100vh; background: white; box-shadow: -5px 0 15px rgba(0,0,0,0.2); transition: right 0.3s ease-in-out; z-index: 2000; display: flex; flex-direction: column; }
         .chat-drawer.open { right: 0; }
         .chat-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1999; display: none; backdrop-filter: blur(2px); }
@@ -111,7 +107,6 @@
         .chat-input-area button { width: 100%; background: #48bb78; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
         .chat-input-area button:hover { background: #38a169; }
 
-        /* ===== VIP MODAL ===== */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
         .modal-content { background: white; width: 95%; max-width: 600px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); display: flex; flex-direction: column; max-height: 85vh; overflow: hidden; }
         .modal-header { padding: 15px 20px; background: #1a365d; color: white; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
@@ -151,7 +146,6 @@
         </div>
     </div>
 
-    <!-- List / Charts toggle -->
     <div class="view-toggle-wrapper">
         <div class="view-toggle">
             <button id="btn-view-list" class="view-btn active" onclick="switchView('list')">📋 List</button>
@@ -176,6 +170,7 @@
             </label>
             <label class="checkbox-label"><input type="checkbox" id="filter-growth" onchange="handleMainFilterChange('filter-growth', 'global-growth', 'bypassGrowth')"> 70% YoY Profit Surge (Latest Qtr)</label>
             <label class="checkbox-label"><input type="checkbox" id="filter-current-qtr" onchange="applyFiltersAndRender()"> Current Quarter Surge Only <span id="current-qtr-badge" style="margin-left:6px; background:#2b6cb0; color:white; padding:2px 7px; border-radius:10px; font-size:11px; font-weight:bold;"></span></label>
+            <label class="checkbox-label"><input type="checkbox" id="filter-peak-qtr" onchange="applyFiltersAndRender()"> 🏆 Highest Ever Quarterly Result</label>
         </div>
         <div class="filter-group" style="flex: 2;">
             <h3>👁️ Column Settings</h3>
@@ -186,7 +181,6 @@
         </div>
     </div>
 
-    <!-- LIST VIEW -->
     <div id="list-section">
         <div class="stats" id="row-count">Loading data...</div>
         <div class="table-container" id="main-table-container">
@@ -199,7 +193,6 @@
         </div>
     </div>
 
-    <!-- CHARTS VIEW -->
     <div id="charts-view">
         <div class="charts-header">
             <h2>📊 TradingView Charts — All Filtered Stocks</h2>
@@ -211,7 +204,6 @@
     </div>
 </div>
 
-<!-- Chat drawer -->
 <div id="chat-overlay" class="chat-overlay" onclick="closeChat()"></div>
 <div id="chat-drawer" class="chat-drawer">
     <div class="chat-header">
@@ -226,7 +218,6 @@
     </div>
 </div>
 
-<!-- VIP Exceptions modal -->
 <div id="exceptions-modal" class="modal-overlay">
     <div class="modal-content">
         <div class="modal-header">
@@ -263,6 +254,7 @@
     let rawData = [];
     let currentFilteredData = [];
     let allColumns = [];
+    let quarterlyColumns = [];   // all columns that look like quarterly profit data
     let visibleColumns = new Set();
     let matrixColumnName = "";
     let sortColumn = "Sr no";
@@ -271,6 +263,43 @@
     let globalOverrides = { bypassPromoter: false, bypassPledged: false, bypassWc: false, bypassGrowth: false };
     let vipIndustries = new Set();
     let currentView = 'list';
+
+    /*
+      QUARTER COLUMN DETECTION
+      Columns like "Mar 20", "Dec 20", "Sep 20", "Jun 20" etc.
+      Pattern: 3-letter month abbreviation + space + 2-digit year
+    */
+    const QTR_COL_REGEX = /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{2}$/;
+
+    function detectQuarterlyColumns(cols) {
+        return cols.filter(c => QTR_COL_REGEX.test(c.trim()));
+    }
+
+    /*
+      PEAK QUARTER CHECK
+      Returns true if the FIRST quarterly column value (latest quarter)
+      is strictly the highest among all available quarterly column values
+      for that row (NaN / blank values are ignored).
+      Requires at least 2 non-blank quarterly values to be meaningful.
+    */
+    function isLatestQtrHighest(row) {
+        if (!quarterlyColumns || quarterlyColumns.length === 0) return false;
+
+        // Collect all numeric quarterly values in column order (col[0] = latest)
+        const vals = quarterlyColumns.map(c => {
+            const v = parseFloat(row[c]);
+            return isNaN(v) ? null : v;
+        });
+
+        const latestVal = vals[0];
+        if (latestVal === null) return false;                  // no latest value at all
+
+        const historicalVals = vals.slice(1).filter(v => v !== null);
+        if (historicalVals.length === 0) return false;         // nothing to compare against
+
+        const maxHistorical = Math.max(...historicalVals);
+        return latestVal > maxHistorical;                      // strictly greater than ALL prior
+    }
 
     const MASTER_INDUSTRY_MAP = {
         "Aerospace & Defense": ["Aerospace & Defense"],
@@ -333,11 +362,6 @@
         if (badge) badge.textContent = getCurrentQuarterCode();
     }
 
-    /* ===================================================
-       SYNC VIP BYPASS LABELS WITH STRICT FILTERS
-       Ensures VIP Exception labels always mirror the
-       current Strict Filter state and threshold values.
-    =================================================== */
     function syncBypassLabels() {
         const pVal  = document.getElementById('val-promoter')?.value || 50;
         const plVal = document.getElementById('val-pledged')?.value  || 10;
@@ -349,136 +373,83 @@
         const fGrowth   = document.getElementById('filter-growth')?.checked;
 
         const rules = [
-            { spanId: 'lbl-bypass-promoter', rowId: 'lbl-row-promoter', text: `🔓 Bypass Promoter Holding ≥ ${pVal}%`,            active: fPromoter },
-            { spanId: 'lbl-bypass-pledged',  rowId: 'lbl-row-pledged',  text: `🔓 Bypass Pledged Shares ≤ ${plVal}%`,            active: fPledged  },
-            { spanId: 'lbl-bypass-wc',       rowId: 'lbl-row-wc',       text: `🔓 Bypass Working Capital Days ≤ ${wcVal}`,       active: fWc       },
-            { spanId: 'lbl-bypass-growth',   rowId: 'lbl-row-growth',   text: `🔓 Bypass 70% YoY Profit Surge (Latest Qtr)`,    active: fGrowth   }
+            { spanId: 'lbl-bypass-promoter', rowId: 'lbl-row-promoter', text: `🔓 Bypass Promoter Holding ≥ ${pVal}%`,         active: fPromoter },
+            { spanId: 'lbl-bypass-pledged',  rowId: 'lbl-row-pledged',  text: `🔓 Bypass Pledged Shares ≤ ${plVal}%`,         active: fPledged  },
+            { spanId: 'lbl-bypass-wc',       rowId: 'lbl-row-wc',       text: `🔓 Bypass Working Capital Days ≤ ${wcVal}`,    active: fWc       },
+            { spanId: 'lbl-bypass-growth',   rowId: 'lbl-row-growth',   text: `🔓 Bypass 70% YoY Profit Surge (Latest Qtr)`, active: fGrowth   }
         ];
-
         rules.forEach(r => {
             const span = document.getElementById(r.spanId);
             const row  = document.getElementById(r.rowId);
             if (span) span.textContent = r.text;
-            if (row) {
-                if (r.active) {
-                    row.classList.remove('disabled-rule');
-                } else {
-                    row.classList.add('disabled-rule');
-                }
-            }
+            if (row) r.active ? row.classList.remove('disabled-rule') : row.classList.add('disabled-rule');
         });
     }
 
-    /* ===================================================
-       VIEW TOGGLE — List vs Charts
-    =================================================== */
     function switchView(mode) {
         currentView = mode;
-        const listSection  = document.getElementById('list-section');
-        const chartsView   = document.getElementById('charts-view');
-        const btnList      = document.getElementById('btn-view-list');
-        const btnCharts    = document.getElementById('btn-view-charts');
-
+        const listSection = document.getElementById('list-section');
+        const chartsView  = document.getElementById('charts-view');
+        const btnList     = document.getElementById('btn-view-list');
+        const btnCharts   = document.getElementById('btn-view-charts');
         if (mode === 'charts') {
-            listSection.style.display  = 'none';
-            chartsView.style.display   = 'block';
-            btnList.classList.remove('active');
-            btnCharts.classList.add('active');
+            listSection.style.display = 'none'; chartsView.style.display = 'block';
+            btnList.classList.remove('active'); btnCharts.classList.add('active');
             renderChartsGrid();
         } else {
-            listSection.style.display  = 'block';
-            chartsView.style.display   = 'none';
-            btnCharts.classList.remove('active');
-            btnList.classList.add('active');
+            listSection.style.display = 'block'; chartsView.style.display = 'none';
+            btnCharts.classList.remove('active'); btnList.classList.add('active');
         }
     }
 
-    /* ===================================================
-       BUILD CHARTS GRID
-    =================================================== */
     function renderChartsGrid() {
         const grid    = document.getElementById('charts-grid');
         const countEl = document.getElementById('charts-count');
-
         if (!currentFilteredData || currentFilteredData.length === 0) {
             grid.innerHTML = '<div class="charts-loading">No stocks match the current filters.</div>';
-            countEl.textContent = '0 stocks';
-            return;
+            countEl.textContent = '0 stocks'; return;
         }
-
         const nseStocks = currentFilteredData.filter(r => (r["NSE Code Exact"] || "").toString().trim() !== "");
         const bseOnly   = currentFilteredData.filter(r => (r["NSE Code Exact"] || "").toString().trim() === "");
         countEl.textContent = currentFilteredData.length + " stocks (" + nseStocks.length + " with charts)";
         grid.innerHTML = "";
-
-        nseStocks.forEach(function(row, idx) {
+        nseStocks.forEach(function(row) {
             const nse      = (row["NSE Code Exact"] || "").toString().trim();
             const symbol   = "NSE:" + nse;
             const name     = (row["Company (Page)"] || row["Name"] || nse).toString();
             const screener = (row["Screener Name Exact"] || row["Name"] || "").toString().trim();
             const industry = (row["Industry"] || "").toString();
             const surge    = (row["70% Surge"] || "").toString();
-
             const scrLink  = screener ? '<a href="https://www.screener.in/company/' + screener + '/" target="_blank">SCR</a>' : "";
             const tvLink   = '<a href="https://in.tradingview.com/chart/?symbol=' + encodeURIComponent(symbol) + '" target="_blank">📈 Open Full Chart</a>';
-
             const cfg = encodeURIComponent(JSON.stringify({
-                "symbols": [[name, symbol + "|1D"]],
-                "chartOnly": false,
-                "width": "100%",
-                "height": 400,
-                "locale": "in",
-                "colorTheme": "light",
-                "autosize": true,
-                "showVolume": true,
-                "showMA": true,
-                "hideDateRanges": false,
-                "hideMarketStatus": false,
-                "scalePosition": "right",
-                "scaleMode": "Normal",
-                "fontFamily": "Trebuchet MS",
-                "fontSize": "10",
-                "noTimeScale": false,
-                "valuesTracking": "1",
-                "changeMode": "price-and-percent",
-                "chartType": "candlesticks",
-                "upColor": "#26a69a",
-                "downColor": "#ef5350",
-                "borderUpColor": "#26a69a",
-                "borderDownColor": "#ef5350",
-                "wickUpColor": "#26a69a",
-                "wickDownColor": "#ef5350"
+                "symbols": [[name, symbol + "|1D"]], "chartOnly": false, "width": "100%", "height": 400,
+                "locale": "in", "colorTheme": "light", "autosize": true, "showVolume": true, "showMA": true,
+                "hideDateRanges": false, "hideMarketStatus": false, "scalePosition": "right", "scaleMode": "Normal",
+                "fontFamily": "Trebuchet MS", "fontSize": "10", "noTimeScale": false, "valuesTracking": "1",
+                "changeMode": "price-and-percent", "chartType": "candlesticks",
+                "upColor": "#26a69a", "downColor": "#ef5350", "borderUpColor": "#26a69a", "borderDownColor": "#ef5350",
+                "wickUpColor": "#26a69a", "wickDownColor": "#ef5350"
             }));
-
             const iframeSrc = "https://s.tradingview.com/embed-widget/symbol-overview/?locale=in#" + cfg;
             const surgeHtml = surge ? " &nbsp;|&nbsp; Surge: <b style=\"color:#276749;\">" + surge + "</b>" : "";
-
             const card = document.createElement("div");
-            card.className = "chart-card";
-            card.id = "card_" + nse;
+            card.className = "chart-card"; card.id = "card_" + nse;
             card.innerHTML =
-                '<div class="chart-card-header">' +
-                    '<div>' +
-                        '<div class="chart-card-name">' + name + '</div>' +
-                        '<div class="chart-card-meta">' + symbol + ' &nbsp;|&nbsp; ' + industry + surgeHtml + '</div>' +
-                    '</div>' +
-                    '<div class="chart-card-links">' + scrLink + tvLink + '</div>' +
-                '</div>' +
+                '<div class="chart-card-header"><div><div class="chart-card-name">' + name + '</div>' +
+                '<div class="chart-card-meta">' + symbol + ' &nbsp;|&nbsp; ' + industry + surgeHtml + '</div></div>' +
+                '<div class="chart-card-links">' + scrLink + tvLink + '</div></div>' +
                 '<iframe src="' + iframeSrc + '" width="100%" height="400" frameborder="0" allowtransparency="true" scrolling="no" style="display:block;"></iframe>';
             grid.appendChild(card);
         });
-
         if (bseOnly.length > 0) {
             const warn = document.createElement("div");
             warn.style.cssText = "grid-column:1/-1;background:#fff5f5;border:1px solid #fed7d7;border-radius:8px;padding:12px 16px;color:#c53030;font-size:13px;font-weight:600;margin-top:8px;";
-            warn.innerHTML = "⚠️ " + bseOnly.length + " BSE-only stock(s) — no chart: " + bseOnly.map(function(r){ return r["Company (Page)"] || r["Name"] || ""; }).join(", ");
+            warn.innerHTML = "⚠️ " + bseOnly.length + " BSE-only stock(s) — no chart: " + bseOnly.map(r => r["Company (Page)"] || r["Name"] || "").join(", ");
             grid.appendChild(warn);
         }
     }
 
-    /* ===================================================
-       TOGGLE LANDSCAPE (mobile)
-    =================================================== */
     async function toggleLandscape() {
         const tableContainer = document.getElementById('main-table-container');
         try {
@@ -486,17 +457,10 @@
                 if (tableContainer.requestFullscreen) await tableContainer.requestFullscreen();
                 else if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
                 if (screen.orientation && screen.orientation.lock) await screen.orientation.lock("landscape");
-            } else {
-                if (document.exitFullscreen) await document.exitFullscreen();
-            }
-        } catch (err) {
-            alert("To view in landscape mode comfortably, please physically rotate your phone.");
-        }
+            } else { if (document.exitFullscreen) await document.exitFullscreen(); }
+        } catch (err) { alert("To view in landscape mode comfortably, please physically rotate your phone."); }
     }
 
-    /* ===================================================
-       CHAT / NOTES PANEL
-    =================================================== */
     function openChat(ticker, companyName) {
         currentChatTicker = ticker;
         document.getElementById('chat-title').innerText = `📝 Notes: ${companyName}`;
@@ -506,12 +470,10 @@
         if (savedName) document.getElementById('chat-author').value = savedName;
         loadComments(ticker);
     }
-
     function closeChat() {
         document.getElementById('chat-drawer').classList.remove('open');
         document.getElementById('chat-overlay').classList.remove('open');
     }
-
     async function loadComments(ticker) {
         const msgDiv = document.getElementById('chat-messages');
         msgDiv.innerHTML = `<div class="loading" style="padding:20px; font-size:14px;">Loading notes...</div>`;
@@ -522,18 +484,10 @@
                 msgDiv.innerHTML = `<div style="text-align:center; color:#718096; font-size:13px; margin-top:20px;">No notes yet. Be the first!</div>`;
                 return;
             }
-            msgDiv.innerHTML = comments.map(c => `
-                <div class="chat-message">
-                    <div class="author">${c.author}</div>
-                    <div class="text">${c.text}</div>
-                    <div class="time">${new Date(c.timestamp).toLocaleString()}</div>
-                </div>`).join('');
+            msgDiv.innerHTML = comments.map(c => `<div class="chat-message"><div class="author">${c.author}</div><div class="text">${c.text}</div><div class="time">${new Date(c.timestamp).toLocaleString()}</div></div>`).join('');
             msgDiv.scrollTop = msgDiv.scrollHeight;
-        } catch (e) {
-            msgDiv.innerHTML = `<div style="color:#e53e3e; font-size:13px; text-align:center; margin-top:20px;">Error connecting to database.</div>`;
-        }
+        } catch (e) { msgDiv.innerHTML = `<div style="color:#e53e3e; font-size:13px; text-align:center; margin-top:20px;">Error connecting to database.</div>`; }
     }
-
     async function submitComment() {
         const author = document.getElementById('chat-author').value.trim();
         const text   = document.getElementById('chat-input').value.trim();
@@ -542,35 +496,23 @@
         const btn = document.querySelector('.chat-input-area button');
         btn.disabled = true; btn.innerText = "Posting...";
         try {
-            await fetch(CHAT_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ticker: currentChatTicker, author, text })
-            });
+            await fetch(CHAT_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticker: currentChatTicker, author, text }) });
             document.getElementById('chat-input').value = "";
             await loadComments(currentChatTicker);
         } catch (e) { alert("Failed to post note. Please try again."); }
         btn.disabled = false; btn.innerText = "Post Note";
     }
 
-    /* ===================================================
-       GITHUB TOKEN / WORKFLOW
-    =================================================== */
     function resetToken() {
         localStorage.removeItem('gh_token');
         alert("GitHub Token wiped! Click 'Run Backend Scraper' to enter a fresh PAT.");
         document.getElementById('workflow-status').innerText = "Status: Idle (Token Cleared)";
     }
-
     async function triggerWorkflow() {
         const btn = document.getElementById('run-btn');
         const statusText = document.getElementById('workflow-status');
         let token = localStorage.getItem('gh_token');
-        if (!token) {
-            token = prompt("Paste your GitHub Personal Access Token (PAT):");
-            if (!token) return;
-            localStorage.setItem('gh_token', token.trim());
-        }
+        if (!token) { token = prompt("Paste your GitHub Personal Access Token (PAT):"); if (!token) return; localStorage.setItem('gh_token', token.trim()); }
         try {
             btn.disabled = true;
             statusText.innerHTML = `<span class="spinner"></span> Starting engine...`;
@@ -584,27 +526,18 @@
             }
             statusText.innerHTML = `<span class="spinner"></span> Engine spinning up...`;
             setTimeout(() => pollWorkflowStatus(token), 5000);
-        } catch (error) {
-            statusText.innerHTML = `❌ ${error.message}`;
-            btn.disabled = false;
-        }
+        } catch (error) { statusText.innerHTML = `❌ ${error.message}`; btn.disabled = false; }
     }
-
     async function pollWorkflowStatus(token) {
         const statusText = document.getElementById('workflow-status');
         try {
-            const res = await fetch(
-                `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/runs?per_page=1`,
-                { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' } }
-            );
+            const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/runs?per_page=1`, { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' } });
             const data = await res.json();
             if (data.workflow_runs && data.workflow_runs.length > 0) {
                 const latestRun = data.workflow_runs[0];
                 if (latestRun.status === "completed") {
-                    if (latestRun.conclusion === "success") {
-                        statusText.innerHTML = `✅ Complete! Fetching fresh data...`;
-                        setTimeout(() => { fetchData(); document.getElementById('run-btn').disabled = false; statusText.innerHTML = `Status: Idle (Fresh Data Loaded)`; }, 3000);
-                    } else { statusText.innerHTML = `❌ Failed.`; document.getElementById('run-btn').disabled = false; }
+                    if (latestRun.conclusion === "success") { statusText.innerHTML = `✅ Complete! Fetching fresh data...`; setTimeout(() => { fetchData(); document.getElementById('run-btn').disabled = false; statusText.innerHTML = `Status: Idle (Fresh Data Loaded)`; }, 3000); }
+                    else { statusText.innerHTML = `❌ Failed.`; document.getElementById('run-btn').disabled = false; }
                     return;
                 } else { statusText.innerHTML = `<span class="spinner"></span> Engine running...`; }
             }
@@ -612,139 +545,66 @@
         setTimeout(() => pollWorkflowStatus(token), 10000);
     }
 
-    /* ===================================================
-       VIP EXCEPTIONS MODAL
-    =================================================== */
     function toggleGlobalOverride(ruleKey, mainFilterId, checkboxElem) {
         if (checkboxElem.checked) {
             const mainFilter = document.getElementById(mainFilterId);
-            if (!mainFilter || !mainFilter.checked) {
-                alert("PROHIBITED: You cannot exempt industries from this rule because the corresponding Strict Filter is currently OFF.");
-                checkboxElem.checked = false; return;
-            }
+            if (!mainFilter || !mainFilter.checked) { alert("PROHIBITED: You cannot exempt industries from this rule because the corresponding Strict Filter is currently OFF."); checkboxElem.checked = false; return; }
         }
         globalOverrides[ruleKey] = checkboxElem.checked;
         applyFiltersAndRender();
     }
-
     function handleMainFilterChange(filterId, overrideId, ruleKey) {
         const mainChecked = document.getElementById(filterId).checked;
         if (!mainChecked) { document.getElementById(overrideId).checked = false; globalOverrides[ruleKey] = false; }
         applyFiltersAndRender();
         syncBypassLabels();
     }
-
     function renderExceptionsTree() {
-        const container = document.getElementById("exceptions-tree-container");
-        container.innerHTML = "";
+        const container = document.getElementById("exceptions-tree-container"); container.innerHTML = "";
         Object.keys(MASTER_INDUSTRY_MAP).forEach(group => {
-            const subs   = MASTER_INDUSTRY_MAP[group];
-            const safeId = group.replace(/\W/g, '');
-            const item   = document.createElement("div");
-            item.className = "accordion-item";
-            item.innerHTML = `
-                <div class="accordion-header" onclick="toggleAccordion(event, '${safeId}')">
-                    <input type="checkbox" id="chk-grp-${safeId}" onchange="toggleGroup(event, '${group}')">
-                    <span class="accordion-title" id="title-${safeId}">${group}</span>
-                    <span class="accordion-toggle" id="arrow-${safeId}">▼</span>
-                </div>
-                <div class="accordion-body" id="body-${safeId}">
-                    ${subs.map(sub => `<label onclick="event.stopPropagation()"><input type="checkbox" onchange="toggleSub('${sub}')" id="chk-sub-${sub.replace(/\W/g,'')}">${sub}</label>`).join('')}
-                </div>`;
+            const subs = MASTER_INDUSTRY_MAP[group]; const safeId = group.replace(/\W/g, '');
+            const item = document.createElement("div"); item.className = "accordion-item";
+            item.innerHTML = `<div class="accordion-header" onclick="toggleAccordion(event, '${safeId}')"><input type="checkbox" id="chk-grp-${safeId}" onchange="toggleGroup(event, '${group}')"><span class="accordion-title" id="title-${safeId}">${group}</span><span class="accordion-toggle" id="arrow-${safeId}">▼</span></div><div class="accordion-body" id="body-${safeId}">${subs.map(sub => `<label onclick="event.stopPropagation()"><input type="checkbox" onchange="toggleSub('${sub}')" id="chk-sub-${sub.replace(/\W/g,'')}">${sub}</label>`).join('')}</div>`;
             container.appendChild(item);
         });
         updateTreeVisuals();
     }
-
     function toggleAccordion(event, safeId) {
         if (event.target.tagName.toLowerCase() === 'input') return;
-        const body  = document.getElementById(`body-${safeId}`);
-        const arrow = document.getElementById(`arrow-${safeId}`);
-        if (body.style.display === "flex") { body.style.display = "none"; arrow.classList.remove("open"); }
-        else { body.style.display = "flex"; arrow.classList.add("open"); }
+        const body = document.getElementById(`body-${safeId}`); const arrow = document.getElementById(`arrow-${safeId}`);
+        if (body.style.display === "flex") { body.style.display = "none"; arrow.classList.remove("open"); } else { body.style.display = "flex"; arrow.classList.add("open"); }
     }
-
-    function toggleGroup(event, group) {
-        event.stopPropagation();
-        const isChecked = event.target.checked;
-        MASTER_INDUSTRY_MAP[group].forEach(sub => { if (isChecked) vipIndustries.add(sub); else vipIndustries.delete(sub); });
-        updateTreeVisuals();
-    }
-
-    function toggleSub(sub) {
-        if (vipIndustries.has(sub)) vipIndustries.delete(sub); else vipIndustries.add(sub);
-        updateTreeVisuals();
-    }
-
+    function toggleGroup(event, group) { event.stopPropagation(); const isChecked = event.target.checked; MASTER_INDUSTRY_MAP[group].forEach(sub => { if (isChecked) vipIndustries.add(sub); else vipIndustries.delete(sub); }); updateTreeVisuals(); }
+    function toggleSub(sub) { if (vipIndustries.has(sub)) vipIndustries.delete(sub); else vipIndustries.add(sub); updateTreeVisuals(); }
     function updateTreeVisuals() {
         Object.keys(MASTER_INDUSTRY_MAP).forEach(group => {
-            const subs     = MASTER_INDUSTRY_MAP[group];
-            const safeId   = group.replace(/\W/g, '');
-            let checkedCount = 0;
-            subs.forEach(sub => {
-                const isChecked = vipIndustries.has(sub);
-                if (isChecked) checkedCount++;
-                const subCb = document.getElementById(`chk-sub-${sub.replace(/\W/g, '')}`);
-                if (subCb) subCb.checked = isChecked;
-            });
+            const subs = MASTER_INDUSTRY_MAP[group]; const safeId = group.replace(/\W/g, ''); let checkedCount = 0;
+            subs.forEach(sub => { const isChecked = vipIndustries.has(sub); if (isChecked) checkedCount++; const subCb = document.getElementById(`chk-sub-${sub.replace(/\W/g, '')}`); if (subCb) subCb.checked = isChecked; });
             const groupCb = document.getElementById(`chk-grp-${safeId}`);
-            if (groupCb) {
-                groupCb.checked = (checkedCount === subs.length);
-                groupCb.indeterminate = (checkedCount > 0 && checkedCount < subs.length);
-                const titleSpan = document.getElementById(`title-${safeId}`);
-                if (titleSpan) titleSpan.innerHTML = `${group} <span style="color:#718096; font-size:12px; font-weight:normal;">(${checkedCount}/${subs.length})</span>`;
-            }
+            if (groupCb) { groupCb.checked = (checkedCount === subs.length); groupCb.indeterminate = (checkedCount > 0 && checkedCount < subs.length); const titleSpan = document.getElementById(`title-${safeId}`); if (titleSpan) titleSpan.innerHTML = `${group} <span style="color:#718096; font-size:12px; font-weight:normal;">(${checkedCount}/${subs.length})</span>`; }
         });
         document.getElementById("exception-count").innerText = `${vipIndustries.size} VIP Industries Selected`;
     }
+    function openExceptionsModal() { document.getElementById("exceptions-modal").style.display = "flex"; if (document.getElementById("exceptions-tree-container").innerHTML === "") renderExceptionsTree(); syncBypassLabels(); }
+    function closeExceptionsModal() { document.getElementById("exceptions-modal").style.display = "none"; applyFiltersAndRender(); }
 
-    function openExceptionsModal() {
-        document.getElementById("exceptions-modal").style.display = "flex";
-        if (document.getElementById("exceptions-tree-container").innerHTML === "") renderExceptionsTree();
-        syncBypassLabels();
-    }
-
-    function closeExceptionsModal() {
-        document.getElementById("exceptions-modal").style.display = "none";
-        applyFiltersAndRender();
-    }
-
-    /* ===================================================
-       COLUMN DROPDOWN
-    =================================================== */
-    function toggleDropdown() {
-        const dropdown = document.getElementById("column-dropdown");
-        const btn      = document.getElementById("dropdown-btn-text");
-        dropdown.classList.toggle("show");
-        btn.classList.toggle("active");
-    }
-
+    function toggleDropdown() { const dropdown = document.getElementById("column-dropdown"); const btn = document.getElementById("dropdown-btn-text"); dropdown.classList.toggle("show"); btn.classList.toggle("active"); }
     function updateDropdownText() { document.getElementById("dropdown-btn-text").innerHTML = `👁️ ${visibleColumns.size} Columns Selected <span>▼</span>`; }
-
     window.onclick = function(event) {
         if (!event.target.matches('.dropdown-btn') && !event.target.closest('.dropdown-content') && !event.target.closest('.modal-overlay') && !event.target.closest('.chat-drawer')) {
-            const dropdown = document.getElementById("column-dropdown");
-            const btn      = document.getElementById("dropdown-btn-text");
+            const dropdown = document.getElementById("column-dropdown"); const btn = document.getElementById("dropdown-btn-text");
             if (dropdown && dropdown.classList.contains('show')) { dropdown.classList.remove('show'); btn.classList.remove('active'); }
         }
     };
 
-    /* ===================================================
-       DATA FETCH
-    =================================================== */
     async function fetchData() {
         try {
             const response = await fetch(`${DATA_URL}?t=${new Date().getTime()}`);
             if (!response.ok) throw new Error("Data not found");
             rawData = await response.json();
-
             if (rawData && rawData.length > 0) {
-                allColumns = Object.keys(rawData[0]).filter(col =>
-                    col !== "Name" &&
-                    col !== "NSE Code Exact" &&
-                    col !== "Screener Name Exact" &&
-                    col !== "Investing Name Exact"
-                );
+                allColumns = Object.keys(rawData[0]).filter(col => col !== "Name" && col !== "NSE Code Exact" && col !== "Screener Name Exact" && col !== "Investing Name Exact");
+                quarterlyColumns = detectQuarterlyColumns(allColumns);
                 matrixColumnName = allColumns.find(col => col.includes("(>70%)")) || "";
                 const defaultCols = ["Sr no","date","Company (Page)","Industry","Industry Group","Promoter Holding","Pledged %","WC Days","70% Surge"];
                 visibleColumns = new Set(defaultCols.filter(c => allColumns.includes(c)));
@@ -754,28 +614,15 @@
                 document.getElementById('table-body').innerHTML = `<tr><td class="loading" style="color:#e53e3e; font-weight:bold;" colspan="100%">⚠️ DATA SYNC ERROR: JSON is empty. Click 'Run Backend Scraper' to rebuild.</td></tr>`;
                 document.getElementById('row-count').innerText = "Showing 0 of 0 stocks";
             }
-        } catch (error) {
-            document.getElementById('table-body').innerHTML = `<tr><td class="loading" style="color:#e53e3e;" colspan="100%">Raw data not found. Run the backend scraper!</td></tr>`;
-        }
+        } catch (error) { document.getElementById('table-body').innerHTML = `<tr><td class="loading" style="color:#e53e3e;" colspan="100%">Raw data not found. Run the backend scraper!</td></tr>`; }
     }
 
     function renderColumnToggles() {
         const dropdown = document.getElementById("column-dropdown");
-        dropdown.innerHTML = allColumns.map(col => `
-            <label>
-                <input type="checkbox" value="${col}" ${visibleColumns.has(col) ? 'checked' : ''} onchange="handleColumnToggle(this)">
-                ${getDisplayName(col)}
-            </label>`).join('');
+        dropdown.innerHTML = allColumns.map(col => `<label><input type="checkbox" value="${col}" ${visibleColumns.has(col) ? 'checked' : ''} onchange="handleColumnToggle(this)">${getDisplayName(col)}</label>`).join('');
         updateDropdownText();
     }
-
-    function handleColumnToggle(checkbox) {
-        if (checkbox.checked) visibleColumns.add(checkbox.value);
-        else visibleColumns.delete(checkbox.value);
-        updateDropdownText();
-        renderTable(currentFilteredData);
-    }
-
+    function handleColumnToggle(checkbox) { if (checkbox.checked) visibleColumns.add(checkbox.value); else visibleColumns.delete(checkbox.value); updateDropdownText(); renderTable(currentFilteredData); }
     function getDisplayName(col) {
         if (col === "date")             return "Date";
         if (col === "Company (Page)")   return "Company";
@@ -787,12 +634,13 @@
        FILTER + RENDER
     =================================================== */
     function applyFiltersAndRender() {
-        const filterPromoter    = document.getElementById('filter-promoter').checked;
-        const filterPledged     = document.getElementById('filter-pledged').checked;
-        const filterWc          = document.getElementById('filter-wc').checked;
-        const filterGrowth      = document.getElementById('filter-growth').checked;
-        const filterCurrentQtr  = document.getElementById('filter-current-qtr').checked;
-        const currentQtr        = getCurrentQuarterCode();
+        const filterPromoter   = document.getElementById('filter-promoter').checked;
+        const filterPledged    = document.getElementById('filter-pledged').checked;
+        const filterWc         = document.getElementById('filter-wc').checked;
+        const filterGrowth     = document.getElementById('filter-growth').checked;
+        const filterCurrentQtr = document.getElementById('filter-current-qtr').checked;
+        const filterPeakQtr    = document.getElementById('filter-peak-qtr').checked;
+        const currentQtr       = getCurrentQuarterCode();
 
         const threshPromoter = parseFloat(document.getElementById('val-promoter').value) || 50;
         const threshPledged  = parseFloat(document.getElementById('val-pledged').value)  || 10;
@@ -807,6 +655,10 @@
             if (filterWc)       { if (!(isVip && globalOverrides.bypassWc)       && (parseFloat(row["WC Days"]) || 999) > threshWc) return false; }
             if (filterGrowth && matrixColumnName) { if (!(isVip && globalOverrides.bypassGrowth) && row[matrixColumnName] !== "Yes") return false; }
             if (filterCurrentQtr) { const surgeVal = (row["70% Surge"] || "").toString().trim(); if (surgeVal !== currentQtr) return false; }
+
+            // NEW: Highest Ever Quarterly Result filter
+            if (filterPeakQtr) { if (!isLatestQtrHighest(row)) return false; }
+
             return true;
         });
 
@@ -826,7 +678,6 @@
         currentFilteredData = filteredData;
         renderTable(filteredData);
         syncBypassLabels();
-
         if (currentView === 'charts') renderChartsGrid();
     }
 
@@ -838,12 +689,15 @@
 
     /* ===================================================
        TABLE RENDER
+       Quarterly cells are highlighted gold if that cell
+       is the maximum across all quarterly columns for
+       that row (visual aid — always visible regardless
+       of filter state).
     =================================================== */
     function renderTable(data) {
-        const thead  = document.getElementById('table-head');
-        const tbody  = document.getElementById('table-body');
+        const thead = document.getElementById('table-head');
+        const tbody = document.getElementById('table-body');
         document.getElementById('row-count').innerText = `Showing ${data.length} of ${rawData.length} stocks`;
-
         const orderedVisibleCols = allColumns.filter(col => visibleColumns.has(col));
 
         thead.innerHTML = '<tr>' + orderedVisibleCols.map(col => {
@@ -852,19 +706,18 @@
             return `<th onclick="handleSort('${col}')" title="Click to sort">${getDisplayName(col)}${sortIcon}</th>`;
         }).join('') + '</tr>';
 
-        if (data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="${orderedVisibleCols.length}" class="loading">No stocks match the criteria.</td></tr>`;
-            return;
-        }
+        if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="${orderedVisibleCols.length}" class="loading">No stocks match the criteria.</td></tr>`; return; }
 
         tbody.innerHTML = data.map((row, index) => {
-            return '<tr>' + orderedVisibleCols.map(col => {
+            // Pre-compute peak quarterly value for this row (for cell highlighting)
+            const qtrVals = quarterlyColumns.map(c => parseFloat(row[c])).filter(v => !isNaN(v));
+            const rowPeak = qtrVals.length > 0 ? Math.max(...qtrVals) : null;
 
+            return '<tr>' + orderedVisibleCols.map(col => {
                 if (col === "Sr no") {
                     const displayIndex = sortAscending ? (index + 1) : (data.length - index);
                     return `<td>${displayIndex}</td>`;
                 }
-
                 if (col === "Company (Page)") {
                     const fullName      = (row["Company (Page)"] || "").toString();
                     const rawTicker     = (row["Name"] || "").toString();
@@ -873,33 +726,19 @@
                     const investingSlug = (row["Investing Name Exact"] || "").toString().trim();
                     const safeTicker    = rawTicker.replace(/'/g, "\\'").replace(/"/g, '&quot;');
                     const safeFullName  = fullName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    const scrLink  = screenerSlug ? `<a href="https://www.screener.in/company/${screenerSlug}/" target="_blank" title="Open in Screener">SCR</a>` : '';
+                    const tvLink   = nseCode ? `<a href="https://in.tradingview.com/chart/?symbol=NSE%3A${encodeURIComponent(nseCode)}" target="_blank" title="Open TradingView in new tab">TV ↗</a>` : `<a style="opacity:0.4; cursor:not-allowed; pointer-events:none;" title="BSE-only stock">TV</a>`;
+                    const chartBtn = nseCode ? `<a href="javascript:void(0)" class="chart-btn" onclick="jumpToChart('${nseCode}','${safeFullName}')" title="See chart below">📊 Chart</a>` : '';
+                    const invLink  = investingSlug ? `<a href="https://in.investing.com/equities/${investingSlug}" target="_blank" title="Open in Investing.com" style="background:#e6fffa; color:#276749; border-color:#9ae6b4;">INV</a>` : '';
+                    return `<td><div style="font-weight:700; color:#2d3748; margin-bottom:5px;">${fullName}</div><div class="action-links">${scrLink}${tvLink}${chartBtn}${invLink}<a href="javascript:void(0)" class="note-btn" onclick="openChat('${safeTicker}', '${safeFullName}')">\ud83d\udcac Notes</a></div></td>`;
+                }
 
-                    const scrLink = screenerSlug
-                        ? `<a href="https://www.screener.in/company/${screenerSlug}/" target="_blank" title="Open in Screener">SCR</a>`
-                        : '';
-
-                    const tvLink = nseCode
-                        ? `<a href="https://in.tradingview.com/chart/?symbol=NSE%3A${encodeURIComponent(nseCode)}" target="_blank" title="Open TradingView in new tab">TV ↗</a>`
-                        : `<a style="opacity:0.4; cursor:not-allowed; pointer-events:none;" title="BSE-only stock">TV</a>`;
-
-                    const chartBtn = nseCode
-                        ? `<a href="javascript:void(0)" class="chart-btn" onclick="jumpToChart('${nseCode}','${safeFullName}')" title="See chart below">📊 Chart</a>`
-                        : '';
-
-                    const invLink = investingSlug
-                        ? `<a href="https://in.investing.com/equities/${investingSlug}" target="_blank" title="Open in Investing.com" style="background:#e6fffa; color:#276749; border-color:#9ae6b4;">INV</a>`
-                        : '';
-
-                    return `<td>
-                        <div style="font-weight:700; color:#2d3748; margin-bottom:5px;">${fullName}</div>
-                        <div class="action-links">
-                            ${scrLink}
-                            ${tvLink}
-                            ${chartBtn}
-                            ${invLink}
-                            <a href="javascript:void(0)" class="note-btn" onclick="openChat('${safeTicker}', '${safeFullName}')">💬 Notes</a>
-                        </div>
-                    </td>`;
+                // Highlight quarterly peak cell
+                if (QTR_COL_REGEX.test(col.trim()) && rowPeak !== null) {
+                    const cellVal = parseFloat(row[col]);
+                    if (!isNaN(cellVal) && cellVal === rowPeak) {
+                        return `<td><span class="badge-peak" title="Peak Quarter">${cellVal}</span></td>`;
+                    }
                 }
 
                 let val = row[col];
@@ -913,22 +752,15 @@
                 if (val === null || val === 0 || val === "") val = "-";
                 if (col === "Promoter Holding") return `<td style="text-align:right;">${val}</td>`;
                 return `<td>${val}</td>`;
-
             }).join('') + '</tr>';
         }).join('');
     }
 
     function jumpToChart(nseCode, name) {
         switchView('charts');
-        setTimeout(() => {
-            const el = document.getElementById(`tv_${nseCode}`);
-            if (el) el.closest('.chart-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 300);
+        setTimeout(() => { const el = document.getElementById(`tv_${nseCode}`); if (el) el.closest('.chart-card').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 300);
     }
 
-    /* ===================================================
-       CSV EXPORT
-    =================================================== */
     function exportToCSV() {
         if (!currentFilteredData || currentFilteredData.length === 0) { alert("No data to export."); return; }
         const orderedVisibleCols = allColumns.filter(col => visibleColumns.has(col));
@@ -937,10 +769,7 @@
             let rowArray = orderedVisibleCols.map(col => {
                 let val = row[col];
                 if (col === "Sr no") val = sortAscending ? (index + 1) : (currentFilteredData.length - index);
-                if (col === "date" && val && typeof val === 'string' && val.includes('-')) {
-                    const parts = val.split('-');
-                    if (parts.length === 3 && parts[0].length === 4) val = `${parts[2]}-${parts[1]}-${parts[0].substring(2)}`;
-                }
+                if (col === "date" && val && typeof val === 'string' && val.includes('-')) { const parts = val.split('-'); if (parts.length === 3 && parts[0].length === 4) val = `${parts[2]}-${parts[1]}-${parts[0].substring(2)}`; }
                 if (val === null || val === undefined) val = "";
                 return `"${String(val).replace(/"/g, '""')}"`;
             });
@@ -948,14 +777,10 @@
         });
         const csvBlob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
-        link.href = URL.createObjectURL(csvBlob);
-        link.download = `Terminal_Export_${new Date().toISOString().slice(0,10)}.csv`;
+        link.href = URL.createObjectURL(csvBlob); link.download = `Terminal_Export_${new Date().toISOString().slice(0,10)}.csv`;
         document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
 
-    /* ===================================================
-       INIT
-    =================================================== */
     updateCurrentQtrBadge();
     fetchData();
     renderExceptionsTree();
