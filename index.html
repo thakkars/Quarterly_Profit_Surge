@@ -39,7 +39,7 @@
         .filter-group { flex: 1; min-width: 250px; }
         .filter-group h3 { margin-top: 0; font-size: 16px; color: #2d3748; margin-bottom: 12px; border-bottom: 1px solid #cbd5e0; padding-bottom: 5px; }
         .checkbox-label { display: block; margin-bottom: 10px; cursor: pointer; font-size: 14px; font-weight: 500; }
-        .checkbox-label input { margin-right: 8px; transform: scale(1.2); cursor: pointer;}
+        .checkbox-label input[type="checkbox"] { margin-right: 8px; transform: scale(1.2); cursor: pointer;}
         .dropdown { width: 100%; }
         .dropdown-btn { background-color: #fff; border: 1px solid #cbd5e0; padding: 10px 15px; border-radius: 6px; font-size: 14px; font-weight: 600; color: #2b6cb0; cursor: pointer; width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
         .dropdown-btn:hover { background-color: #ebf8ff; border-color: #3182ce; }
@@ -48,6 +48,10 @@
         .dropdown-content.show { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
         .dropdown-content label { display: flex; align-items: center; cursor: pointer; font-size: 13px; color: #2d3748; }
         .dropdown-content input { margin-right: 6px; transform: scale(1.1); cursor: pointer; }
+
+        /* ===== THRESHOLD INPUT ===== */
+        .threshold-input { width: 55px; padding: 2px 5px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 13px; font-weight: 600; color: #2b6cb0; text-align: center; margin: 0 2px; background: #ebf8ff; }
+        .threshold-input:focus { outline: none; border-color: #3182ce; background: #fff; }
 
         /* ===== LIST VIEW ===== */
         .table-container { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; max-height: 70vh; background: white;}
@@ -157,9 +161,18 @@
     <div class="controls">
         <div class="filter-group">
             <h3>🎯 Strict Filters (Baseline Rules)</h3>
-            <label class="checkbox-label"><input type="checkbox" id="filter-promoter" onchange="handleMainFilterChange('filter-promoter', 'global-promoter', 'bypassPromoter')"> Promoter Holding ≥ 50%</label>
-            <label class="checkbox-label"><input type="checkbox" id="filter-pledged"  onchange="handleMainFilterChange('filter-pledged', 'global-pledged', 'bypassPledged')"> Pledged Shares ≤ 10%</label>
-            <label class="checkbox-label"><input type="checkbox" id="filter-wc"       onchange="handleMainFilterChange('filter-wc', 'global-wc', 'bypassWc')"> Working Capital Days ≤ 150</label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="filter-promoter" onchange="handleMainFilterChange('filter-promoter', 'global-promoter', 'bypassPromoter')">
+                Promoter Holding ≥ <input type="number" id="val-promoter" value="50" min="0" max="100" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">%
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="filter-pledged" onchange="handleMainFilterChange('filter-pledged', 'global-pledged', 'bypassPledged')">
+                Pledged Shares ≤ <input type="number" id="val-pledged" value="10" min="0" max="100" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">%
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="filter-wc" onchange="handleMainFilterChange('filter-wc', 'global-wc', 'bypassWc')">
+                Working Capital Days ≤ <input type="number" id="val-wc" value="150" min="0" max="9999" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">
+            </label>
             <label class="checkbox-label"><input type="checkbox" id="filter-growth"   onchange="handleMainFilterChange('filter-growth', 'global-growth', 'bypassGrowth')"> 70% YoY Profit Surge (Latest Qtr)</label>
             <label class="checkbox-label"><input type="checkbox" id="filter-current-qtr" onchange="applyFiltersAndRender()"> Current Quarter Surge Only <span id="current-qtr-badge" style="margin-left:6px; background:#2b6cb0; color:white; padding:2px 7px; border-radius:10px; font-size:11px; font-weight:bold;"></span></label>
         </div>
@@ -748,13 +761,17 @@
         const filterCurrentQtr  = document.getElementById('filter-current-qtr').checked;
         const currentQtr        = getCurrentQuarterCode();
 
+        const threshPromoter = parseFloat(document.getElementById('val-promoter').value) || 50;
+        const threshPledged  = parseFloat(document.getElementById('val-pledged').value)  || 10;
+        const threshWc       = parseFloat(document.getElementById('val-wc').value)       || 150;
+
         let filteredData = rawData.filter(row => {
             const subIndustry = row["Industry"] || "Not Found";
             const isVip       = vipIndustries.has(subIndustry);
 
-            if (filterPromoter) { if (!(isVip && globalOverrides.bypassPromoter) && (parseFloat(row["Promoter Holding"]) || 0) < 50) return false; }
-            if (filterPledged)  { if (!(isVip && globalOverrides.bypassPledged)  && (parseFloat(row["Pledged %"]) || 0) > 10) return false; }
-            if (filterWc)       { if (!(isVip && globalOverrides.bypassWc)       && (parseFloat(row["WC Days"]) || 999) > 150) return false; }
+            if (filterPromoter) { if (!(isVip && globalOverrides.bypassPromoter) && (parseFloat(row["Promoter Holding"]) || 0) < threshPromoter) return false; }
+            if (filterPledged)  { if (!(isVip && globalOverrides.bypassPledged)  && (parseFloat(row["Pledged %"]) || 0) > threshPledged) return false; }
+            if (filterWc)       { if (!(isVip && globalOverrides.bypassWc)       && (parseFloat(row["WC Days"]) || 999) > threshWc) return false; }
             if (filterGrowth && matrixColumnName) { if (!(isVip && globalOverrides.bypassGrowth) && row[matrixColumnName] !== "Yes") return false; }
             if (filterCurrentQtr) { const surgeVal = (row["70% Surge"] || "").toString().trim(); if (surgeVal !== currentQtr) return false; }
             return true;
