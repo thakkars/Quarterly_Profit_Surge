@@ -46,7 +46,9 @@
         .dropdown-content input { margin-right: 6px; transform: scale(1.1); cursor: pointer; }
         .threshold-input { width: 55px; padding: 2px 5px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 13px; font-weight: 600; color: #2b6cb0; text-align: center; margin: 0 2px; background: #ebf8ff; }
         .threshold-input:focus { outline: none; border-color: #3182ce; background: #fff; }
-        .table-container { overflow-x: auto; overflow-y: visible; border: 1px solid #e2e8f0; border-radius: 8px; background: white; }
+        /* Drag-to-scroll table container */
+        .table-container { overflow-x: auto; overflow-y: visible; border: 1px solid #e2e8f0; border-radius: 8px; background: white; cursor: grab; }
+        .table-container.dragging { cursor: grabbing !important; user-select: none; }
         .table-container:fullscreen { padding: 15px; max-height: 100vh; overflow: auto; background-color: white; }
         .table-container:-webkit-full-screen { padding: 15px; max-height: 100vh; overflow: auto; background-color: white; }
         table { width: 100%; border-collapse: collapse; font-size: 14px; background: white; }
@@ -258,6 +260,37 @@
     let vipIndustries = new Set();
     let currentView = 'list';
 
+    /* ── Drag-to-scroll on table container ── */
+    (function() {
+        let isDown = false, startX, scrollLeft, dragMoved = false;
+        document.addEventListener('DOMContentLoaded', function() {
+            const el = document.getElementById('main-table-container');
+            el.addEventListener('mousedown', function(e) {
+                // Only drag with primary button; ignore clicks on interactive elements
+                if (e.button !== 0) return;
+                if (e.target.closest('a, button, input, label')) return;
+                isDown = true; dragMoved = false;
+                startX = e.pageX - el.offsetLeft;
+                scrollLeft = el.scrollLeft;
+                el.classList.add('dragging');
+            });
+            el.addEventListener('mouseleave', function() { isDown = false; el.classList.remove('dragging'); });
+            el.addEventListener('mouseup', function() { isDown = false; el.classList.remove('dragging'); });
+            el.addEventListener('mousemove', function(e) {
+                if (!isDown) return;
+                e.preventDefault();
+                const x = e.pageX - el.offsetLeft;
+                const walk = (x - startX) * 1.5;
+                if (Math.abs(walk) > 3) dragMoved = true;
+                el.scrollLeft = scrollLeft - walk;
+            });
+            // Prevent click from firing on links/buttons if user actually dragged
+            el.addEventListener('click', function(e) {
+                if (dragMoved) { e.stopPropagation(); e.preventDefault(); dragMoved = false; }
+            }, true);
+        });
+    })();
+
     const QTR_COL_REGEX = /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{2}$/;
     function detectQuarterlyColumns(cols) { return cols.filter(c => QTR_COL_REGEX.test(c.trim())); }
 
@@ -332,7 +365,6 @@
         const plVal = document.getElementById('val-pledged')?.value  || 10;
         const wcVal = document.getElementById('val-wc')?.value       || 150;
         const qCode = getCurrentQuarterCode();
-
         const rules = [
             { spanId: 'lbl-bypass-promoter',    rowId: 'lbl-row-promoter',    text: `🔓 Bypass Promoter Holding ≥ ${pVal}%`,          filterId: 'filter-promoter'    },
             { spanId: 'lbl-bypass-pledged',     rowId: 'lbl-row-pledged',     text: `🔓 Bypass Pledged Shares ≤ ${plVal}%`,          filterId: 'filter-pledged'     },
@@ -342,8 +374,7 @@
             { spanId: 'lbl-bypass-peak-qtr',    rowId: 'lbl-row-peak-qtr',    text: `🔓 Bypass Highest Ever Quarterly Result`,       filterId: 'filter-peak-qtr'    }
         ];
         rules.forEach(r => {
-            const span   = document.getElementById(r.spanId);
-            const row    = document.getElementById(r.rowId);
+            const span = document.getElementById(r.spanId); const row = document.getElementById(r.rowId);
             const active = document.getElementById(r.filterId)?.checked;
             if (span) span.textContent = r.text;
             if (row) active ? row.classList.remove('disabled-rule') : row.classList.add('disabled-rule');
@@ -461,16 +492,11 @@
             const mainFilter = document.getElementById(mainFilterId);
             if (!mainFilter || !mainFilter.checked) { alert("PROHIBITED: You cannot exempt industries from this rule because the corresponding Strict Filter is currently OFF."); checkboxElem.checked = false; return; }
         }
-        globalOverrides[ruleKey] = checkboxElem.checked;
-        applyFiltersAndRender();
+        globalOverrides[ruleKey] = checkboxElem.checked; applyFiltersAndRender();
     }
     function handleMainFilterChange(filterId, overrideId, ruleKey) {
         const mainChecked = document.getElementById(filterId).checked;
-        if (!mainChecked) {
-            const overrideCb = document.getElementById(overrideId);
-            if (overrideCb) overrideCb.checked = false;
-            globalOverrides[ruleKey] = false;
-        }
+        if (!mainChecked) { const overrideCb = document.getElementById(overrideId); if (overrideCb) overrideCb.checked = false; globalOverrides[ruleKey] = false; }
         applyFiltersAndRender(); syncBypassLabels();
     }
     function renderExceptionsTree() {
@@ -556,14 +582,12 @@
         let filteredData = rawData.filter(row => {
             const subIndustry = row["Industry"] || "Not Found";
             const isVip = vipIndustries.has(subIndustry);
-
             if (filterPromoter)   { if (!(isVip && globalOverrides.bypassPromoter)    && (parseFloat(row["Promoter Holding"]) || 0) < threshPromoter) return false; }
             if (filterPledged)    { if (!(isVip && globalOverrides.bypassPledged)     && (parseFloat(row["Pledged %"]) || 0) > threshPledged) return false; }
             if (filterWc)         { if (!(isVip && globalOverrides.bypassWc)          && (parseFloat(row["WC Days"]) || 999) > threshWc) return false; }
             if (filterGrowth && matrixColumnName) { if (!(isVip && globalOverrides.bypassGrowth) && row[matrixColumnName] !== "Yes") return false; }
             if (filterCurrentQtr) { if (!(isVip && globalOverrides.bypassCurrentQtr) && (row["70% Surge"] || "").toString().trim() !== currentQtr) return false; }
             if (filterPeakQtr)    { if (!(isVip && globalOverrides.bypassPeakQtr)    && !isLatestQtrHighest(row)) return false; }
-
             return true;
         });
 
