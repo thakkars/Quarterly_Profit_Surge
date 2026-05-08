@@ -36,6 +36,7 @@
         .filter-group h3 { margin-top: 0; font-size: 16px; color: #2d3748; margin-bottom: 12px; border-bottom: 1px solid #cbd5e0; padding-bottom: 5px; }
         .checkbox-label { display: block; margin-bottom: 10px; cursor: pointer; font-size: 14px; font-weight: 500; }
         .checkbox-label input[type="checkbox"] { margin-right: 8px; transform: scale(1.2); cursor: pointer;}
+        .filter-divider { border: none; border-top: 1px dashed #cbd5e0; margin: 10px 0; }
         .dropdown { width: 100%; }
         .dropdown-btn { background-color: #fff; border: 1px solid #cbd5e0; padding: 10px 15px; border-radius: 6px; font-size: 14px; font-weight: 600; color: #2b6cb0; cursor: pointer; width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
         .dropdown-btn:hover { background-color: #ebf8ff; border-color: #3182ce; }
@@ -46,7 +47,6 @@
         .dropdown-content input { margin-right: 6px; transform: scale(1.1); cursor: pointer; }
         .threshold-input { width: 55px; padding: 2px 5px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 13px; font-weight: 600; color: #2b6cb0; text-align: center; margin: 0 2px; background: #ebf8ff; }
         .threshold-input:focus { outline: none; border-color: #3182ce; background: #fff; }
-        /* Drag-to-scroll table container */
         .table-container { overflow-x: auto; overflow-y: visible; border: 1px solid #e2e8f0; border-radius: 8px; background: white; cursor: grab; }
         .table-container.dragging { cursor: grabbing !important; user-select: none; }
         .table-container:fullscreen { padding: 15px; max-height: 100vh; overflow: auto; background-color: white; }
@@ -109,6 +109,7 @@
         .global-overrides-panel { background: #ebf8ff; border: 1px solid #bee3f8; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
         .global-overrides-panel h4 { margin: 0 0 5px 0; color: #2b6cb0; font-size: 15px; }
         .global-overrides-panel p { font-size: 12px; color: #4a5568; margin-top: 0; margin-bottom: 10px; }
+        .modal-filter-divider { border: none; border-top: 1px dashed #bee3f8; margin: 8px 0 10px 0; }
         .global-override-label { display: block; font-size: 13.5px; color: #2d3748; margin-bottom: 8px; cursor: pointer; font-weight: 500; }
         .global-override-label input { margin-right: 8px; transform: scale(1.15); cursor: pointer; }
         .global-override-label.disabled-rule { opacity: 0.4; pointer-events: none; }
@@ -149,6 +150,13 @@
     <div class="controls">
         <div class="filter-group">
             <h3>🎯 Strict Filters (Baseline Rules)</h3>
+            <!-- Non-editable filters first -->
+            <label class="checkbox-label"><input type="checkbox" id="filter-growth" onchange="handleMainFilterChange('filter-growth', 'global-growth', 'bypassGrowth')"> 70% YoY Profit Surge (Latest Qtr)</label>
+            <label class="checkbox-label"><input type="checkbox" id="filter-current-qtr" onchange="handleMainFilterChange('filter-current-qtr', 'global-current-qtr', 'bypassCurrentQtr')"> Current Quarter Surge Only <span id="current-qtr-badge" style="margin-left:6px; background:#2b6cb0; color:white; padding:2px 7px; border-radius:10px; font-size:11px; font-weight:bold;"></span></label>
+            <label class="checkbox-label"><input type="checkbox" id="filter-peak-qtr" onchange="handleMainFilterChange('filter-peak-qtr', 'global-peak-qtr', 'bypassPeakQtr')"> 🏆 Highest Ever Quarterly Result</label>
+            <!-- Divider -->
+            <hr class="filter-divider">
+            <!-- Editable threshold filters -->
             <label class="checkbox-label">
                 <input type="checkbox" id="filter-promoter" onchange="handleMainFilterChange('filter-promoter', 'global-promoter', 'bypassPromoter')">
                 Promoter Holding ≥ <input type="number" id="val-promoter" value="50" min="0" max="100" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">%
@@ -161,9 +169,6 @@
                 <input type="checkbox" id="filter-wc" onchange="handleMainFilterChange('filter-wc', 'global-wc', 'bypassWc')">
                 Working Capital Days ≤ <input type="number" id="val-wc" value="150" min="0" max="9999" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">
             </label>
-            <label class="checkbox-label"><input type="checkbox" id="filter-growth" onchange="handleMainFilterChange('filter-growth', 'global-growth', 'bypassGrowth')"> 70% YoY Profit Surge (Latest Qtr)</label>
-            <label class="checkbox-label"><input type="checkbox" id="filter-current-qtr" onchange="handleMainFilterChange('filter-current-qtr', 'global-current-qtr', 'bypassCurrentQtr')"> Current Quarter Surge Only <span id="current-qtr-badge" style="margin-left:6px; background:#2b6cb0; color:white; padding:2px 7px; border-radius:10px; font-size:11px; font-weight:bold;"></span></label>
-            <label class="checkbox-label"><input type="checkbox" id="filter-peak-qtr" onchange="handleMainFilterChange('filter-peak-qtr', 'global-peak-qtr', 'bypassPeakQtr')"> 🏆 Highest Ever Quarterly Result</label>
             <label class="checkbox-label">
                 <input type="checkbox" id="filter-msi" onchange="handleMainFilterChange('filter-msi', 'global-msi', 'bypassMsi')">
                 MSI Price Strength &gt; <input type="number" id="val-msi" value="80" min="0" max="100" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">
@@ -226,12 +231,16 @@
             <div class="global-overrides-panel">
                 <h4>Global Exception Overrides</h4>
                 <p>Select which rules the VIP Industries (checked below) are allowed to ignore. Only active Strict Filters can be bypassed.</p>
-                <label class="global-override-label" id="lbl-row-promoter"><input type="checkbox" id="global-promoter" onchange="toggleGlobalOverride('bypassPromoter', 'filter-promoter', this)"> <span id="lbl-bypass-promoter">🔓 Bypass Promoter Holding ≥ 50%</span></label>
-                <label class="global-override-label" id="lbl-row-pledged"><input type="checkbox" id="global-pledged" onchange="toggleGlobalOverride('bypassPledged', 'filter-pledged', this)"> <span id="lbl-bypass-pledged">🔓 Bypass Pledged Shares ≤ 10%</span></label>
-                <label class="global-override-label" id="lbl-row-wc"><input type="checkbox" id="global-wc" onchange="toggleGlobalOverride('bypassWc', 'filter-wc', this)"> <span id="lbl-bypass-wc">🔓 Bypass Working Capital Days ≤ 150</span></label>
+                <!-- Non-editable bypass labels first -->
                 <label class="global-override-label" id="lbl-row-growth"><input type="checkbox" id="global-growth" onchange="toggleGlobalOverride('bypassGrowth', 'filter-growth', this)"> <span id="lbl-bypass-growth">🔓 Bypass 70% YoY Profit Surge (Latest Qtr)</span></label>
                 <label class="global-override-label" id="lbl-row-current-qtr"><input type="checkbox" id="global-current-qtr" onchange="toggleGlobalOverride('bypassCurrentQtr', 'filter-current-qtr', this)"> <span id="lbl-bypass-current-qtr">🔓 Bypass Current Quarter Surge Only</span></label>
                 <label class="global-override-label" id="lbl-row-peak-qtr"><input type="checkbox" id="global-peak-qtr" onchange="toggleGlobalOverride('bypassPeakQtr', 'filter-peak-qtr', this)"> <span id="lbl-bypass-peak-qtr">🔓 Bypass Highest Ever Quarterly Result</span></label>
+                <!-- Divider -->
+                <hr class="modal-filter-divider">
+                <!-- Editable threshold bypass labels -->
+                <label class="global-override-label" id="lbl-row-promoter"><input type="checkbox" id="global-promoter" onchange="toggleGlobalOverride('bypassPromoter', 'filter-promoter', this)"> <span id="lbl-bypass-promoter">🔓 Bypass Promoter Holding ≥ 50%</span></label>
+                <label class="global-override-label" id="lbl-row-pledged"><input type="checkbox" id="global-pledged" onchange="toggleGlobalOverride('bypassPledged', 'filter-pledged', this)"> <span id="lbl-bypass-pledged">🔓 Bypass Pledged Shares ≤ 10%</span></label>
+                <label class="global-override-label" id="lbl-row-wc"><input type="checkbox" id="global-wc" onchange="toggleGlobalOverride('bypassWc', 'filter-wc', this)"> <span id="lbl-bypass-wc">🔓 Bypass Working Capital Days ≤ 150</span></label>
                 <label class="global-override-label" id="lbl-row-msi"><input type="checkbox" id="global-msi" onchange="toggleGlobalOverride('bypassMsi', 'filter-msi', this)"> <span id="lbl-bypass-msi">🔓 Bypass MSI Price Strength > 80</span></label>
             </div>
             <div class="tree-header-text">Select VIP Industries:</div>
@@ -364,19 +373,19 @@
     function updateCurrentQtrBadge() { const badge = document.getElementById('current-qtr-badge'); if (badge) badge.textContent = getCurrentQuarterCode(); }
 
     function syncBypassLabels() {
-        const pVal  = document.getElementById('val-promoter')?.value || 50;
-        const plVal = document.getElementById('val-pledged')?.value  || 10;
-        const wcVal = document.getElementById('val-wc')?.value       || 150;
-        const msiVal = document.getElementById('val-msi')?.value     || 80;
-        const qCode = getCurrentQuarterCode();
+        const pVal   = document.getElementById('val-promoter')?.value || 50;
+        const plVal  = document.getElementById('val-pledged')?.value  || 10;
+        const wcVal  = document.getElementById('val-wc')?.value       || 150;
+        const msiVal = document.getElementById('val-msi')?.value      || 80;
+        const qCode  = getCurrentQuarterCode();
         const rules = [
-            { spanId: 'lbl-bypass-promoter',    rowId: 'lbl-row-promoter',    text: `🔓 Bypass Promoter Holding ≥ ${pVal}%`,          filterId: 'filter-promoter'    },
-            { spanId: 'lbl-bypass-pledged',     rowId: 'lbl-row-pledged',     text: `🔓 Bypass Pledged Shares ≤ ${plVal}%`,          filterId: 'filter-pledged'     },
-            { spanId: 'lbl-bypass-wc',          rowId: 'lbl-row-wc',          text: `🔓 Bypass Working Capital Days ≤ ${wcVal}`,     filterId: 'filter-wc'          },
-            { spanId: 'lbl-bypass-growth',      rowId: 'lbl-row-growth',      text: `🔓 Bypass 70% YoY Profit Surge (Latest Qtr)`,  filterId: 'filter-growth'      },
-            { spanId: 'lbl-bypass-current-qtr', rowId: 'lbl-row-current-qtr', text: `🔓 Bypass Current Quarter Surge Only (${qCode})`, filterId: 'filter-current-qtr' },
-            { spanId: 'lbl-bypass-peak-qtr',    rowId: 'lbl-row-peak-qtr',    text: `🔓 Bypass Highest Ever Quarterly Result`,       filterId: 'filter-peak-qtr'    },
-            { spanId: 'lbl-bypass-msi',         rowId: 'lbl-row-msi',         text: `🔓 Bypass MSI Price Strength > ${msiVal}`,      filterId: 'filter-msi'         }
+            { spanId: 'lbl-bypass-growth',      rowId: 'lbl-row-growth',      text: `🔓 Bypass 70% YoY Profit Surge (Latest Qtr)`,    filterId: 'filter-growth'      },
+            { spanId: 'lbl-bypass-current-qtr', rowId: 'lbl-row-current-qtr', text: `🔓 Bypass Current Quarter Surge Only (${qCode})`,  filterId: 'filter-current-qtr' },
+            { spanId: 'lbl-bypass-peak-qtr',    rowId: 'lbl-row-peak-qtr',    text: `🔓 Bypass Highest Ever Quarterly Result`,         filterId: 'filter-peak-qtr'    },
+            { spanId: 'lbl-bypass-promoter',    rowId: 'lbl-row-promoter',    text: `🔓 Bypass Promoter Holding ≥ ${pVal}%`,            filterId: 'filter-promoter'    },
+            { spanId: 'lbl-bypass-pledged',     rowId: 'lbl-row-pledged',     text: `🔓 Bypass Pledged Shares ≤ ${plVal}%`,            filterId: 'filter-pledged'     },
+            { spanId: 'lbl-bypass-wc',          rowId: 'lbl-row-wc',          text: `🔓 Bypass Working Capital Days ≤ ${wcVal}`,       filterId: 'filter-wc'          },
+            { spanId: 'lbl-bypass-msi',         rowId: 'lbl-row-msi',         text: `🔓 Bypass MSI Price Strength > ${msiVal}`,        filterId: 'filter-msi'         }
         ];
         rules.forEach(r => {
             const span = document.getElementById(r.spanId); const row = document.getElementById(r.rowId);
@@ -573,12 +582,12 @@
     }
 
     function applyFiltersAndRender() {
-        const filterPromoter   = document.getElementById('filter-promoter').checked;
-        const filterPledged    = document.getElementById('filter-pledged').checked;
-        const filterWc         = document.getElementById('filter-wc').checked;
         const filterGrowth     = document.getElementById('filter-growth').checked;
         const filterCurrentQtr = document.getElementById('filter-current-qtr').checked;
         const filterPeakQtr    = document.getElementById('filter-peak-qtr').checked;
+        const filterPromoter   = document.getElementById('filter-promoter').checked;
+        const filterPledged    = document.getElementById('filter-pledged').checked;
+        const filterWc         = document.getElementById('filter-wc').checked;
         const filterMsi        = document.getElementById('filter-msi').checked;
         const currentQtr       = getCurrentQuarterCode();
         const threshPromoter   = parseFloat(document.getElementById('val-promoter').value) || 50;
@@ -589,13 +598,13 @@
         let filteredData = rawData.filter(row => {
             const subIndustry = row["Industry"] || "Not Found";
             const isVip = vipIndustries.has(subIndustry);
-            if (filterPromoter)   { if (!(isVip && globalOverrides.bypassPromoter)    && (parseFloat(row["Promoter Holding"]) || 0) < threshPromoter) return false; }
-            if (filterPledged)    { if (!(isVip && globalOverrides.bypassPledged)     && (parseFloat(row["Pledged %"]) || 0) > threshPledged) return false; }
-            if (filterWc)         { if (!(isVip && globalOverrides.bypassWc)          && (parseFloat(row["WC Days"]) || 999) > threshWc) return false; }
-            if (filterGrowth && matrixColumnName) { if (!(isVip && globalOverrides.bypassGrowth) && row[matrixColumnName] !== "Yes") return false; }
+            if (filterGrowth && matrixColumnName) { if (!(isVip && globalOverrides.bypassGrowth)      && row[matrixColumnName] !== "Yes") return false; }
             if (filterCurrentQtr) { if (!(isVip && globalOverrides.bypassCurrentQtr) && (row["70% Surge"] || "").toString().trim() !== currentQtr) return false; }
             if (filterPeakQtr)    { if (!(isVip && globalOverrides.bypassPeakQtr)    && !isLatestQtrHighest(row)) return false; }
-            if (filterMsi)        { if (!(isVip && globalOverrides.bypassMsi)         && (parseFloat(row["MSI Price Strength"]) || 0) <= threshMsi) return false; }
+            if (filterPromoter)   { if (!(isVip && globalOverrides.bypassPromoter)   && (parseFloat(row["Promoter Holding"]) || 0) < threshPromoter) return false; }
+            if (filterPledged)    { if (!(isVip && globalOverrides.bypassPledged)    && (parseFloat(row["Pledged %"]) || 0) > threshPledged) return false; }
+            if (filterWc)         { if (!(isVip && globalOverrides.bypassWc)         && (parseFloat(row["WC Days"]) || 999) > threshWc) return false; }
+            if (filterMsi)        { if (!(isVip && globalOverrides.bypassMsi)        && (parseFloat(row["MSI Price Strength"]) || 0) <= threshMsi) return false; }
             return true;
         });
 
