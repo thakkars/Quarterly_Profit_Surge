@@ -313,7 +313,7 @@ def detect_latest_quarter(row_dict):
     }
     quarter_candidates = []
     for k in row_dict:
-        if k in non_quarter_keys or "(>70%)" in k: continue
+        if k in non_quarter_keys: continue
         try: quarter_candidates.append((pd.to_datetime(k, format="%b %Y"), k))
         except: pass
     if not quarter_candidates: return None
@@ -337,9 +337,11 @@ def transform_and_order_data(df):
     for col in base_cols + metric_cols:
         if col not in df.columns: df[col] = ""
 
+    # Collect only raw quarterly columns — skip any (>70%) or 70% Surge leftovers
     quarter_cols_raw = [
         c for c in df.columns
-        if c not in base_cols and c not in metric_cols and "(>70%)" not in c and c != "70% Surge"
+        if c not in base_cols and c not in metric_cols
+        and "(>70%)" not in c and c != "70% Surge"
     ]
     parsed_dates = []
     for c in quarter_cols_raw:
@@ -348,31 +350,10 @@ def transform_and_order_data(df):
     parsed_dates.sort(key=lambda x: x[0], reverse=True)
     sorted_quarter_cols = [x[1] for x in parsed_dates]
 
-    temp_df = pd.DataFrame()
-    for c in sorted_quarter_cols:
-        temp_df[c] = pd.to_numeric(df[c].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
-
-    matrix_cols     = []
-    surge_tags_list = [[] for _ in range(len(df))]
-
-    for dt, col_current in parsed_dates:
-        try:
-            dt_prev_year = dt.replace(year=dt.year - 1)
-            col_prev     = dt_prev_year.strftime("%b %Y")
-            if col_prev in temp_df.columns:
-                jump_col = f"{dt.strftime('%b%y')} (>70%) {dt_prev_year.strftime('%b%y')}"
-                matrix_cols.append(jump_col)
-                condition    = (temp_df[col_current] >= 1.7 * temp_df[col_prev]) & (temp_df[col_prev] > 0)
-                df[jump_col] = np.where(condition, "Yes", "")
-                tag = dt.strftime('%b')[0] + dt.strftime('%y')
-                for idx, is_surge in enumerate(condition):
-                    if is_surge:
-                        surge_tags_list[idx].append(tag)
-        except: pass
-
-    df["70% Surge"] = [", ".join(tags) for tags in surge_tags_list]
-    final_cols = base_cols + sorted_quarter_cols + metric_cols + matrix_cols + ["70% Surge"]
-    df = df[final_cols].copy()
+    # Final column order: base | quarters | metrics
+    # (>70%) matrix columns and 70% Surge are intentionally excluded — handled in index.html
+    final_cols = base_cols + sorted_quarter_cols + metric_cols
+    df = df[[c for c in final_cols if c in df.columns]].copy()
     df["Sr no"] = range(1, len(df) + 1)
     return df
 
