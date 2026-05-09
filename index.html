@@ -298,25 +298,26 @@
     let currentView = 'list';
 
     // ── YoY virtual columns ──────────────────────────────────────────────────
-    // Prefix used to distinguish YoY virtual columns from real data columns
     const YOY_PREFIX = "__yoy__";
+
+    /**
+     * Matches quarterly column names with either 2-digit or 4-digit years.
+     * e.g. "Mar 26", "Mar 2026", "Dec 2025", "Sep 25"
+     */
+    const QTR_COL_REGEX = /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{2,4}$/;
+
+    function detectQuarterlyColumns(cols) { return cols.filter(c => QTR_COL_REGEX.test(c.trim())); }
 
     /**
      * Build the 9 rolling YoY column descriptors from the current quarterlyColumns list.
      * Each descriptor: { id, label, newCol, oldCol }
-     * id      – internal key stored in columnOrder / visibleColumns
-     * label   – displayed header  e.g. "Mar26 - Mar25"
-     * newCol  – the "current" quarterly column name in rawData  e.g. "Mar 26"
-     * oldCol  – the prior-year quarterly column name            e.g. "Mar 25"
      */
     function buildYoYDescriptors() {
         if (!quarterlyColumns || quarterlyColumns.length < 5) return [];
         const descs = [];
-        // We need pairs offset by 4 quarters (same quarter, prior year)
         for (let i = 0; i < quarterlyColumns.length - 4 && descs.length < 9; i++) {
             const newCol = quarterlyColumns[i];
             const oldCol = quarterlyColumns[i + 4];
-            // Build short label: "Mar 26" → "Mar26"
             const shortNew = newCol.replace(/\s+/g, '');
             const shortOld = oldCol.replace(/\s+/g, '');
             const label = `${shortNew} - ${shortOld}`;
@@ -369,9 +370,6 @@
             }, true);
         });
     })();
-
-    const QTR_COL_REGEX = /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{2}$/;
-    function detectQuarterlyColumns(cols) { return cols.filter(c => QTR_COL_REGEX.test(c.trim())); }
 
     function isLatestQtrHighest(row) {
         if (!quarterlyColumns || quarterlyColumns.length === 0) return false;
@@ -767,7 +765,9 @@
                 const parts = latestQtrCol.trim().split(" ");
                 const qtrLetter = parts[0] ? parts[0][0].toUpperCase() : "";
                 const qtrYear   = parts[1] || "";
-                const latestCode = qtrLetter + qtrYear;
+                // Handle both 2-digit and 4-digit year for quarter code comparison
+                const qtrYearShort = qtrYear.length === 4 ? qtrYear.slice(-2) : qtrYear;
+                const latestCode = qtrLetter + qtrYearShort;
                 if (!(isVip && globalOverrides.bypassCurrentQtr) && latestCode !== currentQtr) return false;
                 if (!(isVip && globalOverrides.bypassCurrentQtr) && !hasYoYSurge(row, 70)) return false;
             }
