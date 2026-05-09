@@ -150,13 +150,16 @@
     <div class="controls">
         <div class="filter-group">
             <h3>🎯 Strict Filters (Baseline Rules)</h3>
-            <!-- Non-editable filters first -->
-            <label class="checkbox-label"><input type="checkbox" id="filter-growth" onchange="handleMainFilterChange('filter-growth', 'global-growth', 'bypassGrowth')"> 70% YoY Profit Surge (Latest Qtr)</label>
+            <!-- Non-editable filters -->
             <label class="checkbox-label"><input type="checkbox" id="filter-current-qtr" onchange="handleMainFilterChange('filter-current-qtr', 'global-current-qtr', 'bypassCurrentQtr')"> Current Quarter Surge Only <span id="current-qtr-badge" style="margin-left:6px; background:#2b6cb0; color:white; padding:2px 7px; border-radius:10px; font-size:11px; font-weight:bold;"></span></label>
             <label class="checkbox-label"><input type="checkbox" id="filter-peak-qtr" onchange="handleMainFilterChange('filter-peak-qtr', 'global-peak-qtr', 'bypassPeakQtr')"> 🏆 Highest Ever Quarterly Result</label>
             <!-- Divider -->
             <hr class="filter-divider">
             <!-- Editable threshold filters -->
+            <label class="checkbox-label">
+                <input type="checkbox" id="filter-growth" onchange="handleMainFilterChange('filter-growth', 'global-growth', 'bypassGrowth')">
+                Latest Qtr. YoY Operating Profit ≥ <input type="number" id="val-growth" value="70" min="1" max="9999" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">%
+            </label>
             <label class="checkbox-label">
                 <input type="checkbox" id="filter-promoter" onchange="handleMainFilterChange('filter-promoter', 'global-promoter', 'bypassPromoter')">
                 Promoter Holding ≥ <input type="number" id="val-promoter" value="50" min="0" max="100" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">%
@@ -232,12 +235,12 @@
                 <h4>Global Exception Overrides</h4>
                 <p>Select which rules the VIP Industries (checked below) are allowed to ignore. Only active Strict Filters can be bypassed.</p>
                 <!-- Non-editable bypass labels first -->
-                <label class="global-override-label" id="lbl-row-growth"><input type="checkbox" id="global-growth" onchange="toggleGlobalOverride('bypassGrowth', 'filter-growth', this)"> <span id="lbl-bypass-growth">🔓 Bypass 70% YoY Profit Surge (Latest Qtr)</span></label>
                 <label class="global-override-label" id="lbl-row-current-qtr"><input type="checkbox" id="global-current-qtr" onchange="toggleGlobalOverride('bypassCurrentQtr', 'filter-current-qtr', this)"> <span id="lbl-bypass-current-qtr">🔓 Bypass Current Quarter Surge Only</span></label>
                 <label class="global-override-label" id="lbl-row-peak-qtr"><input type="checkbox" id="global-peak-qtr" onchange="toggleGlobalOverride('bypassPeakQtr', 'filter-peak-qtr', this)"> <span id="lbl-bypass-peak-qtr">🔓 Bypass Highest Ever Quarterly Result</span></label>
                 <!-- Divider -->
                 <hr class="modal-filter-divider">
                 <!-- Editable threshold bypass labels -->
+                <label class="global-override-label" id="lbl-row-growth"><input type="checkbox" id="global-growth" onchange="toggleGlobalOverride('bypassGrowth', 'filter-growth', this)"> <span id="lbl-bypass-growth">🔓 Bypass Latest Qtr. YoY Operating Profit ≥ 70%</span></label>
                 <label class="global-override-label" id="lbl-row-promoter"><input type="checkbox" id="global-promoter" onchange="toggleGlobalOverride('bypassPromoter', 'filter-promoter', this)"> <span id="lbl-bypass-promoter">🔓 Bypass Promoter Holding ≥ 50%</span></label>
                 <label class="global-override-label" id="lbl-row-pledged"><input type="checkbox" id="global-pledged" onchange="toggleGlobalOverride('bypassPledged', 'filter-pledged', this)"> <span id="lbl-bypass-pledged">🔓 Bypass Pledged Shares ≤ 10%</span></label>
                 <label class="global-override-label" id="lbl-row-wc"><input type="checkbox" id="global-wc" onchange="toggleGlobalOverride('bypassWc', 'filter-wc', this)"> <span id="lbl-bypass-wc">🔓 Bypass Working Capital Days ≤ 150</span></label>
@@ -266,7 +269,6 @@
     let allColumns = [];
     let quarterlyColumns = [];
     let visibleColumns = new Set();
-    let matrixColumnName = "";
     let sortColumn = "Sr no";
     let sortAscending = true;
     let currentChatTicker = "";
@@ -314,6 +316,18 @@
         const historicalVals = vals.slice(1).filter(v => v !== null);
         if (historicalVals.length === 0) return false;
         return latestVal > Math.max(...historicalVals);
+    }
+
+    /* ── Frontend YoY surge check ── */
+    function hasYoYSurge(row, thresholdPct) {
+        if (!quarterlyColumns || quarterlyColumns.length < 5) return false;
+        // quarterlyColumns[0] = latest, quarterlyColumns[4] = same qtr last year (e.g. Mar 25 vs Mar 24)
+        const latestCol   = quarterlyColumns[0];
+        const sameQtrPrev = quarterlyColumns[4]; // 4 quarters back = same quarter prior year
+        const latest  = parseFloat(row[latestCol]);
+        const prevYr  = parseFloat(row[sameQtrPrev]);
+        if (isNaN(latest) || isNaN(prevYr) || prevYr <= 0) return false;
+        return latest >= prevYr * (1 + thresholdPct / 100);
     }
 
     const MASTER_INDUSTRY_MAP = {
@@ -373,19 +387,20 @@
     function updateCurrentQtrBadge() { const badge = document.getElementById('current-qtr-badge'); if (badge) badge.textContent = getCurrentQuarterCode(); }
 
     function syncBypassLabels() {
+        const gVal   = document.getElementById('val-growth')?.value   || 70;
         const pVal   = document.getElementById('val-promoter')?.value || 50;
         const plVal  = document.getElementById('val-pledged')?.value  || 10;
         const wcVal  = document.getElementById('val-wc')?.value       || 150;
         const msiVal = document.getElementById('val-msi')?.value      || 80;
         const qCode  = getCurrentQuarterCode();
         const rules = [
-            { spanId: 'lbl-bypass-growth',      rowId: 'lbl-row-growth',      text: `🔓 Bypass 70% YoY Profit Surge (Latest Qtr)`,    filterId: 'filter-growth'      },
-            { spanId: 'lbl-bypass-current-qtr', rowId: 'lbl-row-current-qtr', text: `🔓 Bypass Current Quarter Surge Only (${qCode})`,  filterId: 'filter-current-qtr' },
-            { spanId: 'lbl-bypass-peak-qtr',    rowId: 'lbl-row-peak-qtr',    text: `🔓 Bypass Highest Ever Quarterly Result`,         filterId: 'filter-peak-qtr'    },
-            { spanId: 'lbl-bypass-promoter',    rowId: 'lbl-row-promoter',    text: `🔓 Bypass Promoter Holding ≥ ${pVal}%`,            filterId: 'filter-promoter'    },
-            { spanId: 'lbl-bypass-pledged',     rowId: 'lbl-row-pledged',     text: `🔓 Bypass Pledged Shares ≤ ${plVal}%`,            filterId: 'filter-pledged'     },
-            { spanId: 'lbl-bypass-wc',          rowId: 'lbl-row-wc',          text: `🔓 Bypass Working Capital Days ≤ ${wcVal}`,       filterId: 'filter-wc'          },
-            { spanId: 'lbl-bypass-msi',         rowId: 'lbl-row-msi',         text: `🔓 Bypass MSI Price Strength > ${msiVal}`,        filterId: 'filter-msi'         }
+            { spanId: 'lbl-bypass-current-qtr', rowId: 'lbl-row-current-qtr', text: `🔓 Bypass Current Quarter Surge Only (${qCode})`,            filterId: 'filter-current-qtr' },
+            { spanId: 'lbl-bypass-peak-qtr',    rowId: 'lbl-row-peak-qtr',    text: `🔓 Bypass Highest Ever Quarterly Result`,                      filterId: 'filter-peak-qtr'    },
+            { spanId: 'lbl-bypass-growth',      rowId: 'lbl-row-growth',      text: `🔓 Bypass Latest Qtr. YoY Operating Profit ≥ ${gVal}%`,        filterId: 'filter-growth'      },
+            { spanId: 'lbl-bypass-promoter',    rowId: 'lbl-row-promoter',    text: `🔓 Bypass Promoter Holding ≥ ${pVal}%`,                        filterId: 'filter-promoter'    },
+            { spanId: 'lbl-bypass-pledged',     rowId: 'lbl-row-pledged',     text: `🔓 Bypass Pledged Shares ≤ ${plVal}%`,                         filterId: 'filter-pledged'     },
+            { spanId: 'lbl-bypass-wc',          rowId: 'lbl-row-wc',          text: `🔓 Bypass Working Capital Days ≤ ${wcVal}`,                    filterId: 'filter-wc'          },
+            { spanId: 'lbl-bypass-msi',         rowId: 'lbl-row-msi',         text: `🔓 Bypass MSI Price Strength > ${msiVal}`,                     filterId: 'filter-msi'         }
         ];
         rules.forEach(r => {
             const span = document.getElementById(r.spanId); const row = document.getElementById(r.rowId);
@@ -419,14 +434,13 @@
             const nse = (row["NSE Code Exact"] || "").toString().trim(); const symbol = "NSE:" + nse;
             const name = (row["Company (Page)"] || row["Name"] || nse).toString();
             const screener = (row["Screener Name Exact"] || row["Name"] || "").toString().trim();
-            const industry = (row["Industry"] || "").toString(); const surge = (row["70% Surge"] || "").toString();
+            const industry = (row["Industry"] || "").toString();
             const scrLink = screener ? '<a href="https://www.screener.in/company/' + screener + '/" target="_blank">SCR</a>' : "";
             const tvLink = '<a href="https://in.tradingview.com/chart/?symbol=' + encodeURIComponent(symbol) + '" target="_blank">📈 Open Full Chart</a>';
             const cfg = encodeURIComponent(JSON.stringify({ "symbols": [[name, symbol + "|1D"]], "chartOnly": false, "width": "100%", "height": 400, "locale": "in", "colorTheme": "light", "autosize": true, "showVolume": true, "showMA": true, "hideDateRanges": false, "hideMarketStatus": false, "scalePosition": "right", "scaleMode": "Normal", "fontFamily": "Trebuchet MS", "fontSize": "10", "noTimeScale": false, "valuesTracking": "1", "changeMode": "price-and-percent", "chartType": "candlesticks", "upColor": "#26a69a", "downColor": "#ef5350", "borderUpColor": "#26a69a", "borderDownColor": "#ef5350", "wickUpColor": "#26a69a", "wickDownColor": "#ef5350" }));
             const iframeSrc = "https://s.tradingview.com/embed-widget/symbol-overview/?locale=in#" + cfg;
-            const surgeHtml = surge ? " &nbsp;|&nbsp; Surge: <b style=\"color:#276749;\">" + surge + "</b>" : "";
             const card = document.createElement("div"); card.className = "chart-card"; card.id = "card_" + nse;
-            card.innerHTML = '<div class="chart-card-header"><div><div class="chart-card-name">' + name + '</div><div class="chart-card-meta">' + symbol + ' &nbsp;|&nbsp; ' + industry + surgeHtml + '</div></div><div class="chart-card-links">' + scrLink + tvLink + '</div></div><iframe src="' + iframeSrc + '" width="100%" height="400" frameborder="0" allowtransparency="true" scrolling="no" style="display:block;"></iframe>';
+            card.innerHTML = '<div class="chart-card-header"><div><div class="chart-card-name">' + name + '</div><div class="chart-card-meta">' + symbol + ' &nbsp;|&nbsp; ' + industry + '</div></div><div class="chart-card-links">' + scrLink + tvLink + '</div></div><iframe src="' + iframeSrc + '" width="100%" height="400" frameborder="0" allowtransparency="true" scrolling="no" style="display:block;"></iframe>';
             grid.appendChild(card);
         });
         if (bseOnly.length > 0) {
@@ -557,8 +571,7 @@
             if (rawData && rawData.length > 0) {
                 allColumns = Object.keys(rawData[0]).filter(col => col !== "Name" && col !== "NSE Code Exact" && col !== "Screener Name Exact" && col !== "Investing Name Exact");
                 quarterlyColumns = detectQuarterlyColumns(allColumns);
-                matrixColumnName = allColumns.find(col => col.includes("(>70%)")) || "";
-                const defaultCols = ["Sr no","date","Company (Page)","Industry","Industry Group","Promoter Holding","Pledged %","WC Days","70% Surge"];
+                const defaultCols = ["Sr no","date","Company (Page)","Industry","Industry Group","Promoter Holding","Pledged %","WC Days"];
                 visibleColumns = new Set(defaultCols.filter(c => allColumns.includes(c)));
                 renderColumnToggles(); applyFiltersAndRender();
             } else {
@@ -590,6 +603,7 @@
         const filterWc         = document.getElementById('filter-wc').checked;
         const filterMsi        = document.getElementById('filter-msi').checked;
         const currentQtr       = getCurrentQuarterCode();
+        const threshGrowth     = parseFloat(document.getElementById('val-growth').value)   || 70;
         const threshPromoter   = parseFloat(document.getElementById('val-promoter').value) || 50;
         const threshPledged    = parseFloat(document.getElementById('val-pledged').value)  || 10;
         const threshWc         = parseFloat(document.getElementById('val-wc').value)       || 150;
@@ -598,8 +612,17 @@
         let filteredData = rawData.filter(row => {
             const subIndustry = row["Industry"] || "Not Found";
             const isVip = vipIndustries.has(subIndustry);
-            if (filterGrowth && matrixColumnName) { if (!(isVip && globalOverrides.bypassGrowth)      && row[matrixColumnName] !== "Yes") return false; }
-            if (filterCurrentQtr) { if (!(isVip && globalOverrides.bypassCurrentQtr) && (row["70% Surge"] || "").toString().trim() !== currentQtr) return false; }
+            if (filterGrowth)     { if (!(isVip && globalOverrides.bypassGrowth)      && !hasYoYSurge(row, threshGrowth)) return false; }
+            if (filterCurrentQtr) {
+                // detect current quarter from latest quarterly column name e.g. "Mar 26" -> "M26"
+                const latestQtrCol = quarterlyColumns[0] || "";
+                const parts = latestQtrCol.trim().split(" ");
+                const qtrLetter = parts[0] ? parts[0][0].toUpperCase() : "";
+                const qtrYear   = parts[1] || "";
+                const latestCode = qtrLetter + qtrYear;
+                if (!(isVip && globalOverrides.bypassCurrentQtr) && latestCode !== currentQtr) return false;
+                if (!(isVip && globalOverrides.bypassCurrentQtr) && !hasYoYSurge(row, 70)) return false;
+            }
             if (filterPeakQtr)    { if (!(isVip && globalOverrides.bypassPeakQtr)    && !isLatestQtrHighest(row)) return false; }
             if (filterPromoter)   { if (!(isVip && globalOverrides.bypassPromoter)   && (parseFloat(row["Promoter Holding"]) || 0) < threshPromoter) return false; }
             if (filterPledged)    { if (!(isVip && globalOverrides.bypassPledged)    && (parseFloat(row["Pledged %"]) || 0) > threshPledged) return false; }
