@@ -41,10 +41,22 @@
         .dropdown-btn { background-color: #fff; border: 1px solid #cbd5e0; padding: 10px 15px; border-radius: 6px; font-size: 14px; font-weight: 600; color: #2b6cb0; cursor: pointer; width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
         .dropdown-btn:hover { background-color: #ebf8ff; border-color: #3182ce; }
         .dropdown-btn.active { border-radius: 6px 6px 0 0; border-bottom-color: transparent; }
-        .dropdown-content { display: none; background-color: #fff; border: 1px solid #cbd5e0; border-top: none; border-radius: 0 0 6px 6px; padding: 15px; max-height: 250px; overflow-y: auto; }
-        .dropdown-content.show { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
-        .dropdown-content label { display: flex; align-items: center; cursor: pointer; font-size: 13px; color: #2d3748; }
-        .dropdown-content input { margin-right: 6px; transform: scale(1.1); cursor: pointer; }
+        .dropdown-content { display: none; background-color: #fff; border: 1px solid #cbd5e0; border-top: none; border-radius: 0 0 6px 6px; max-height: 300px; overflow-y: auto; }
+        .dropdown-content.show { display: flex; flex-direction: column; }
+        .col-toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #f7fafc; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 5; }
+        .col-select-all-btn { background: #2b6cb0; color: white; border: none; padding: 4px 11px; border-radius: 4px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .col-select-all-btn:hover { background: #2c5282; }
+        .col-select-none-btn { background: #e2e8f0; color: #4a5568; border: none; padding: 4px 11px; border-radius: 4px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .col-select-none-btn:hover { background: #cbd5e0; color: #2d3748; }
+        .col-toolbar-hint { font-size: 11px; color: #a0aec0; margin-left: auto; }
+        .col-items-list { display: flex; flex-direction: column; padding: 6px 0; }
+        .col-item { display: flex; align-items: center; padding: 7px 12px; cursor: grab; user-select: none; gap: 8px; border-radius: 4px; transition: background 0.15s; }
+        .col-item:hover { background: #ebf8ff; }
+        .col-item.drag-over { background: #bee3f8; border-top: 2px solid #3182ce; }
+        .col-item.dragging-item { opacity: 0.4; background: #e2e8f0; }
+        .col-drag-handle { color: #a0aec0; font-size: 13px; flex-shrink: 0; cursor: grab; }
+        .col-item input[type="checkbox"] { margin: 0; transform: scale(1.1); cursor: pointer; flex-shrink: 0; }
+        .col-item-label { font-size: 13px; color: #2d3748; flex: 1; cursor: pointer; }
         .threshold-input { width: 55px; padding: 2px 5px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 13px; font-weight: 600; color: #2b6cb0; text-align: center; margin: 0 2px; background: #ebf8ff; }
         .threshold-input:focus { outline: none; border-color: #3182ce; background: #fff; }
         .table-container { overflow-x: auto; overflow-y: visible; border: 1px solid #e2e8f0; border-radius: 8px; background: white; cursor: grab; }
@@ -150,12 +162,9 @@
     <div class="controls">
         <div class="filter-group">
             <h3>🎯 Strict Filters (Baseline Rules)</h3>
-            <!-- Non-editable filters -->
             <label class="checkbox-label"><input type="checkbox" id="filter-current-qtr" onchange="handleMainFilterChange('filter-current-qtr', 'global-current-qtr', 'bypassCurrentQtr')"> Current Quarter Surge Only <span id="current-qtr-badge" style="margin-left:6px; background:#2b6cb0; color:white; padding:2px 7px; border-radius:10px; font-size:11px; font-weight:bold;"></span></label>
             <label class="checkbox-label"><input type="checkbox" id="filter-peak-qtr" onchange="handleMainFilterChange('filter-peak-qtr', 'global-peak-qtr', 'bypassPeakQtr')"> 🏆 Highest Ever Quarterly Result</label>
-            <!-- Divider -->
             <hr class="filter-divider">
-            <!-- Editable threshold filters -->
             <label class="checkbox-label">
                 <input type="checkbox" id="filter-growth" onchange="handleMainFilterChange('filter-growth', 'global-growth', 'bypassGrowth')">
                 Latest Qtr. YoY Operating Profit ≥ <input type="number" id="val-growth" value="70" min="1" max="9999" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">%
@@ -181,7 +190,14 @@
             <h3>👁️ Column Settings</h3>
             <div class="dropdown">
                 <button onclick="toggleDropdown()" class="dropdown-btn" id="dropdown-btn-text">Select Columns ▼</button>
-                <div id="column-dropdown" class="dropdown-content"></div>
+                <div id="column-dropdown" class="dropdown-content">
+                    <div class="col-toolbar">
+                        <button class="col-select-all-btn" onclick="selectAllColumns(event)">Select All</button>
+                        <button class="col-select-none-btn" onclick="selectNoneColumns(event)">Deselect All</button>
+                        <span class="col-toolbar-hint">☰ Drag to reorder</span>
+                    </div>
+                    <div class="col-items-list" id="col-items-list"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -234,12 +250,9 @@
             <div class="global-overrides-panel">
                 <h4>Global Exception Overrides</h4>
                 <p>Select which rules the VIP Industries (checked below) are allowed to ignore. Only active Strict Filters can be bypassed.</p>
-                <!-- Non-editable bypass labels first -->
                 <label class="global-override-label" id="lbl-row-current-qtr"><input type="checkbox" id="global-current-qtr" onchange="toggleGlobalOverride('bypassCurrentQtr', 'filter-current-qtr', this)"> <span id="lbl-bypass-current-qtr">🔓 Bypass Current Quarter Surge Only</span></label>
                 <label class="global-override-label" id="lbl-row-peak-qtr"><input type="checkbox" id="global-peak-qtr" onchange="toggleGlobalOverride('bypassPeakQtr', 'filter-peak-qtr', this)"> <span id="lbl-bypass-peak-qtr">🔓 Bypass Highest Ever Quarterly Result</span></label>
-                <!-- Divider -->
                 <hr class="modal-filter-divider">
-                <!-- Editable threshold bypass labels -->
                 <label class="global-override-label" id="lbl-row-growth"><input type="checkbox" id="global-growth" onchange="toggleGlobalOverride('bypassGrowth', 'filter-growth', this)"> <span id="lbl-bypass-growth">🔓 Bypass Latest Qtr. YoY Operating Profit ≥ 70%</span></label>
                 <label class="global-override-label" id="lbl-row-promoter"><input type="checkbox" id="global-promoter" onchange="toggleGlobalOverride('bypassPromoter', 'filter-promoter', this)"> <span id="lbl-bypass-promoter">🔓 Bypass Promoter Holding ≥ 50%</span></label>
                 <label class="global-override-label" id="lbl-row-pledged"><input type="checkbox" id="global-pledged" onchange="toggleGlobalOverride('bypassPledged', 'filter-pledged', this)"> <span id="lbl-bypass-pledged">🔓 Bypass Pledged Shares ≤ 10%</span></label>
@@ -267,6 +280,7 @@
     let rawData = [];
     let currentFilteredData = [];
     let allColumns = [];
+    let columnOrder = [];       // user-defined display order
     let quarterlyColumns = [];
     let visibleColumns = new Set();
     let sortColumn = "Sr no";
@@ -318,12 +332,10 @@
         return latestVal > Math.max(...historicalVals);
     }
 
-    /* ── Frontend YoY surge check ── */
     function hasYoYSurge(row, thresholdPct) {
         if (!quarterlyColumns || quarterlyColumns.length < 5) return false;
-        // quarterlyColumns[0] = latest, quarterlyColumns[4] = same qtr last year (e.g. Mar 25 vs Mar 24)
         const latestCol   = quarterlyColumns[0];
-        const sameQtrPrev = quarterlyColumns[4]; // 4 quarters back = same quarter prior year
+        const sameQtrPrev = quarterlyColumns[4];
         const latest  = parseFloat(row[latestCol]);
         const prevYr  = parseFloat(row[sameQtrPrev]);
         if (isNaN(latest) || isNaN(prevYr) || prevYr <= 0) return false;
@@ -394,13 +406,13 @@
         const msiVal = document.getElementById('val-msi')?.value      || 80;
         const qCode  = getCurrentQuarterCode();
         const rules = [
-            { spanId: 'lbl-bypass-current-qtr', rowId: 'lbl-row-current-qtr', text: `🔓 Bypass Current Quarter Surge Only (${qCode})`,            filterId: 'filter-current-qtr' },
-            { spanId: 'lbl-bypass-peak-qtr',    rowId: 'lbl-row-peak-qtr',    text: `🔓 Bypass Highest Ever Quarterly Result`,                      filterId: 'filter-peak-qtr'    },
-            { spanId: 'lbl-bypass-growth',      rowId: 'lbl-row-growth',      text: `🔓 Bypass Latest Qtr. YoY Operating Profit ≥ ${gVal}%`,        filterId: 'filter-growth'      },
-            { spanId: 'lbl-bypass-promoter',    rowId: 'lbl-row-promoter',    text: `🔓 Bypass Promoter Holding ≥ ${pVal}%`,                        filterId: 'filter-promoter'    },
-            { spanId: 'lbl-bypass-pledged',     rowId: 'lbl-row-pledged',     text: `🔓 Bypass Pledged Shares ≤ ${plVal}%`,                         filterId: 'filter-pledged'     },
-            { spanId: 'lbl-bypass-wc',          rowId: 'lbl-row-wc',          text: `🔓 Bypass Working Capital Days ≤ ${wcVal}`,                    filterId: 'filter-wc'          },
-            { spanId: 'lbl-bypass-msi',         rowId: 'lbl-row-msi',         text: `🔓 Bypass MSI Price Strength > ${msiVal}`,                     filterId: 'filter-msi'         }
+            { spanId: 'lbl-bypass-current-qtr', rowId: 'lbl-row-current-qtr', text: `🔓 Bypass Current Quarter Surge Only (${qCode})`,     filterId: 'filter-current-qtr' },
+            { spanId: 'lbl-bypass-peak-qtr',    rowId: 'lbl-row-peak-qtr',    text: `🔓 Bypass Highest Ever Quarterly Result`,               filterId: 'filter-peak-qtr'    },
+            { spanId: 'lbl-bypass-growth',      rowId: 'lbl-row-growth',      text: `🔓 Bypass Latest Qtr. YoY Operating Profit ≥ ${gVal}%`, filterId: 'filter-growth'      },
+            { spanId: 'lbl-bypass-promoter',    rowId: 'lbl-row-promoter',    text: `🔓 Bypass Promoter Holding ≥ ${pVal}%`,               filterId: 'filter-promoter'    },
+            { spanId: 'lbl-bypass-pledged',     rowId: 'lbl-row-pledged',     text: `🔓 Bypass Pledged Shares ≤ ${plVal}%`,                filterId: 'filter-pledged'     },
+            { spanId: 'lbl-bypass-wc',          rowId: 'lbl-row-wc',          text: `🔓 Bypass Working Capital Days ≤ ${wcVal}`,         filterId: 'filter-wc'          },
+            { spanId: 'lbl-bypass-msi',         rowId: 'lbl-row-msi',         text: `🔓 Bypass MSI Price Strength > ${msiVal}`,            filterId: 'filter-msi'         }
         ];
         rules.forEach(r => {
             const span = document.getElementById(r.spanId); const row = document.getElementById(r.rowId);
@@ -409,6 +421,84 @@
             if (row) active ? row.classList.remove('disabled-rule') : row.classList.add('disabled-rule');
         });
     }
+
+    /* ═══════════════════════════════════════════
+       COLUMN SETTINGS — Select All / Drag reorder
+    ═══════════════════════════════════════════ */
+    let dragSrcIndex = null;
+
+    function renderColumnToggles() {
+        const list = document.getElementById('col-items-list');
+        list.innerHTML = '';
+        columnOrder.forEach((col, idx) => {
+            const item = document.createElement('div');
+            item.className = 'col-item';
+            item.setAttribute('draggable', 'true');
+            item.dataset.col = col;
+            item.dataset.idx = idx;
+            item.innerHTML =
+                `<span class="col-drag-handle" title="Drag to reorder">⋮⋮</span>` +
+                `<input type="checkbox" id="chk-col-${idx}" ${visibleColumns.has(col) ? 'checked' : ''} onchange="handleColumnToggle(this, '${col}')" onclick="event.stopPropagation()">` +
+                `<label class="col-item-label" for="chk-col-${idx}">${getDisplayName(col)}</label>`;
+
+            item.addEventListener('dragstart', e => {
+                dragSrcIndex = idx;
+                item.classList.add('dragging-item');
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            item.addEventListener('dragend', () => {
+                item.classList.remove('dragging-item');
+                document.querySelectorAll('.col-item').forEach(el => el.classList.remove('drag-over'));
+            });
+            item.addEventListener('dragover', e => {
+                e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+                document.querySelectorAll('.col-item').forEach(el => el.classList.remove('drag-over'));
+                item.classList.add('drag-over');
+            });
+            item.addEventListener('drop', e => {
+                e.preventDefault();
+                if (dragSrcIndex === null || dragSrcIndex === idx) return;
+                const moved = columnOrder.splice(dragSrcIndex, 1)[0];
+                columnOrder.splice(idx, 0, moved);
+                dragSrcIndex = null;
+                renderColumnToggles();
+                updateDropdownText();
+                renderTable(currentFilteredData);
+            });
+            list.appendChild(item);
+        });
+        updateDropdownText();
+    }
+
+    function handleColumnToggle(checkbox, col) {
+        if (checkbox.checked) visibleColumns.add(col); else visibleColumns.delete(col);
+        updateDropdownText();
+        renderTable(currentFilteredData);
+    }
+
+    function selectAllColumns(e) {
+        e.stopPropagation();
+        columnOrder.forEach(col => visibleColumns.add(col));
+        renderColumnToggles();
+        updateDropdownText();
+        renderTable(currentFilteredData);
+    }
+
+    function selectNoneColumns(e) {
+        e.stopPropagation();
+        // Always keep at least Company column visible
+        visibleColumns.clear();
+        visibleColumns.add('Company (Page)');
+        renderColumnToggles();
+        updateDropdownText();
+        renderTable(currentFilteredData);
+    }
+
+    function updateDropdownText() {
+        document.getElementById('dropdown-btn-text').innerHTML = `👁️ ${visibleColumns.size} Columns Selected <span>▼</span>`;
+    }
+
+    /* ══════════════════════════════ */
 
     function switchView(mode) {
         currentView = mode;
@@ -554,8 +644,10 @@
     function openExceptionsModal() { document.getElementById("exceptions-modal").style.display = "flex"; if (document.getElementById("exceptions-tree-container").innerHTML === "") renderExceptionsTree(); syncBypassLabels(); }
     function closeExceptionsModal() { document.getElementById("exceptions-modal").style.display = "none"; applyFiltersAndRender(); }
 
-    function toggleDropdown() { const dropdown = document.getElementById("column-dropdown"); const btn = document.getElementById("dropdown-btn-text"); dropdown.classList.toggle("show"); btn.classList.toggle("active"); }
-    function updateDropdownText() { document.getElementById("dropdown-btn-text").innerHTML = `👁️ ${visibleColumns.size} Columns Selected <span>▼</span>`; }
+    function toggleDropdown() {
+        const dropdown = document.getElementById("column-dropdown"); const btn = document.getElementById("dropdown-btn-text");
+        dropdown.classList.toggle("show"); btn.classList.toggle("active");
+    }
     window.onclick = function(event) {
         if (!event.target.matches('.dropdown-btn') && !event.target.closest('.dropdown-content') && !event.target.closest('.modal-overlay') && !event.target.closest('.chat-drawer')) {
             const dropdown = document.getElementById("column-dropdown"); const btn = document.getElementById("dropdown-btn-text");
@@ -571,6 +663,7 @@
             if (rawData && rawData.length > 0) {
                 allColumns = Object.keys(rawData[0]).filter(col => col !== "Name" && col !== "NSE Code Exact" && col !== "Screener Name Exact" && col !== "Investing Name Exact");
                 quarterlyColumns = detectQuarterlyColumns(allColumns);
+                columnOrder = [...allColumns];  // initialise order from raw column order
                 const defaultCols = ["Sr no","date","Company (Page)","Industry","Industry Group","Promoter Holding","Pledged %","WC Days"];
                 visibleColumns = new Set(defaultCols.filter(c => allColumns.includes(c)));
                 renderColumnToggles(); applyFiltersAndRender();
@@ -581,12 +674,6 @@
         } catch (error) { document.getElementById('table-body').innerHTML = `<tr><td class="loading" style="color:#e53e3e;" colspan="100%">Raw data not found. Run the backend scraper!</td></tr>`; }
     }
 
-    function renderColumnToggles() {
-        const dropdown = document.getElementById("column-dropdown");
-        dropdown.innerHTML = allColumns.map(col => `<label><input type="checkbox" value="${col}" ${visibleColumns.has(col) ? 'checked' : ''} onchange="handleColumnToggle(this)">${getDisplayName(col)}</label>`).join('');
-        updateDropdownText();
-    }
-    function handleColumnToggle(checkbox) { if (checkbox.checked) visibleColumns.add(checkbox.value); else visibleColumns.delete(checkbox.value); updateDropdownText(); renderTable(currentFilteredData); }
     function getDisplayName(col) {
         if (col === "date") return "Date";
         if (col === "Company (Page)") return "Company";
@@ -614,7 +701,6 @@
             const isVip = vipIndustries.has(subIndustry);
             if (filterGrowth)     { if (!(isVip && globalOverrides.bypassGrowth)      && !hasYoYSurge(row, threshGrowth)) return false; }
             if (filterCurrentQtr) {
-                // detect current quarter from latest quarterly column name e.g. "Mar 26" -> "M26"
                 const latestQtrCol = quarterlyColumns[0] || "";
                 const parts = latestQtrCol.trim().split(" ");
                 const qtrLetter = parts[0] ? parts[0][0].toUpperCase() : "";
@@ -653,7 +739,8 @@
     function renderTable(data) {
         const thead = document.getElementById('table-head'); const tbody = document.getElementById('table-body');
         document.getElementById('row-count').innerText = `Showing ${data.length} of ${rawData.length} stocks`;
-        const orderedVisibleCols = allColumns.filter(col => visibleColumns.has(col));
+        // Use columnOrder to drive display; only show visible columns
+        const orderedVisibleCols = columnOrder.filter(col => visibleColumns.has(col));
 
         thead.innerHTML = '<tr>' + orderedVisibleCols.map(col => {
             let sortIcon = '';
@@ -697,7 +784,7 @@
 
     function exportToCSV() {
         if (!currentFilteredData || currentFilteredData.length === 0) { alert("No data to export."); return; }
-        const orderedVisibleCols = allColumns.filter(col => visibleColumns.has(col));
+        const orderedVisibleCols = columnOrder.filter(col => visibleColumns.has(col));
         let csvLines = [orderedVisibleCols.map(c => `"${getDisplayName(c)}"`).join(',')];
         currentFilteredData.forEach((row, index) => {
             let rowArray = orderedVisibleCols.map(col => {
