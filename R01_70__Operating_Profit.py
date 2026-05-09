@@ -35,6 +35,7 @@ else:
 MASTER_FILE_PATH   = os.path.join(FOLDER_PATH, "Master File.xlsx")
 RAW_FILE_PATH      = os.path.join(FOLDER_PATH, "Raw Data.xlsx")
 RAW_JSON_PATH      = os.path.join(FOLDER_PATH, "rawdata.json")
+PROGRESS_JSON_PATH = os.path.join(FOLDER_PATH, "progress.json")
 INDUSTRY_FILE_PATH = os.path.join(FOLDER_PATH, "Screener_Industry_Data.xlsx")
 
 os.makedirs(FOLDER_PATH, exist_ok=True)
@@ -48,13 +49,14 @@ R2_ACCESS_KEY = os.environ.get("R2_ACCESS_KEY_ID",     "")
 R2_SECRET_KEY = os.environ.get("R2_SECRET_ACCESS_KEY", "")
 R2_ENDPOINT   = os.environ.get("R2_ENDPOINT_URL",      "")
 
-R2_MASTER_KEY   = "Master File.xlsx"
-R2_RAW_KEY      = "Raw Data.xlsx"
-R2_RAW_JSON_KEY = "rawdata.json"
-R2_INDUSTRY_KEY = "Screener_Industry_Data.xlsx"
+R2_MASTER_KEY    = "Master File.xlsx"
+R2_RAW_KEY       = "Raw Data.xlsx"
+R2_RAW_JSON_KEY  = "rawdata.json"
+R2_INDUSTRY_KEY  = "Screener_Industry_Data.xlsx"
+R2_PROGRESS_KEY  = "progress.json"
 
 # ─── MSI CONFIG (guest mode scraping) ──────────────────────
-MSI_ENABLED   = True   # set False to disable MSI scraping
+MSI_ENABLED   = True
 MSI_BASE_URL  = "https://marketsmithindia.com/mstool/eval"
 MSI_COLS      = [
     "MSI EPS Strength",
@@ -63,6 +65,60 @@ MSI_COLS      = [
     "MSI Group Rank",
     "MSI Master Score",
 ]
+
+# ═══════════════════════════════════════════════════════════
+# PROGRESS TELEMETRY
+# ═══════════════════════════════════════════════════════════
+def push_progress(phase, completed, total, current_company="", status="running", elapsed_sec=0):
+    """
+    Write progress.json locally and upload to R2.
+    phase: 'initialising' | 'collecting' | 'scraping' | 'enriching' | 'finalising' | 'complete' | 'failed'
+    """
+    pct = round((completed / total * 100)) if total > 0 else 0
+    eta_sec = 0
+    if completed > 0 and total > completed and elapsed_sec > 0:
+        rate = elapsed_sec / completed          # seconds per stock
+        eta_sec = int(rate * (total - completed))
+
+    payload = {
+        "phase":           phase,
+        "status":          status,
+        "completed":       completed,
+        "total":           total,
+        "pct":             pct,
+        "current_company": current_company,
+        "elapsed_sec":     int(elapsed_sec),
+        "eta_sec":         eta_sec,
+        "ts":              datetime.utcnow().isoformat() + "Z",
+    }
+    try:
+        with open(PROGRESS_JSON_PATH, "w") as f:
+            json.dump(payload, f)
+        if IS_GITHUB_ACTIONS:
+            r2_upload_progress()
+    except Exception as e:
+        print(f"⚠️  Progress push failed: {e}")
+
+def r2_upload_progress():
+    """Lightweight upload of just progress.json — called after every stock."""
+    try:
+        import boto3
+        client = boto3.client(
+            "s3",
+            endpoint_url          = R2_ENDPOINT,
+            aws_access_key_id     = R2_ACCESS_KEY,
+            aws_secret_access_key = R2_SECRET_KEY,
+            region_name           = "auto",
+        )
+        client.upload_file(
+            PROGRESS_JSON_PATH, R2_BUCKET, R2_PROGRESS_KEY,
+            ExtraArgs={
+                'ContentType': 'application/json',
+                'CacheControl': 'no-cache, no-store, must-revalidate'
+            }
+        )
+    except Exception as e:
+        print(f"⚠️  R2 progress upload failed: {e}")
 
 # ═══════════════════════════════════════════════════════════
 # R2 HELPERS
@@ -129,13 +185,6 @@ def load_industry_maps():
         return {}, {}
 
 def load_symbol_maps():
-    """
-    VLOOKUP equivalent using Screener_Industry_Data.xlsx:
-      - Primary key  : Full Name (col A) matched against scraped "Company (Page)"
-      - NSE Code     : col D (VLOOKUP index 4)  → NSE Code Exact
-      - BSE Code     : col C (VLOOKUP index 3)  → fallback if NSE Code blank
-      - Screener slug: NSE Code → BSE Code → blank (3-level priority)
-    """
     if not os.path.exists(INDUSTRY_FILE_PATH):
         print("⚠️  Screener_Industry_Data.xlsx not found — symbol maps empty")
         return {}
@@ -146,25 +195,20 @@ def load_symbol_maps():
             full_name = str(row["Full Name"]).strip()
             if not full_name or full_name.lower() == "nan":
                 continue
-
             nse = str(row["NSE Code"]).strip() if pd.notna(row["NSE Code"]) else ""
             bse = str(row["BSE Code"]).strip() if pd.notna(row["BSE Code"]) else ""
-
             if nse.lower() in ("nan", "none", ""):
                 nse = ""
             if bse.lower() in ("nan", "none", ""):
                 bse = ""
             if bse and bse.endswith(".0"):
                 bse = bse[:-2]
-
             screener_slug = nse if nse else bse
-
             mapping[full_name.lower()] = {
                 "NSE_Code":      nse,
                 "BSE_Code":      bse,
                 "Screener_Name": screener_slug
             }
-
         print(f"✅ Loaded {len(mapping)} symbol mappings from Screener_Industry_Data.xlsx")
         return mapping
     except Exception as e:
@@ -174,22 +218,17 @@ def load_symbol_maps():
 def enrich_with_data(row_dict, industry_map, group_map, symbol_map):
     full_name_clean  = str(row_dict.get("Company (Page)", "")).strip().lower()
     short_name_clean = str(row_dict.get("Name", "")).strip().lower()
-
     row_dict["Industry"]       = industry_map.get(full_name_clean, "Not Found")
     row_dict["Industry Group"] = group_map.get(full_name_clean, "Not Found")
-
     mapped = symbol_map.get(full_name_clean) or symbol_map.get(short_name_clean) or {}
-
     row_dict["NSE Code Exact"]      = mapped.get("NSE_Code", "")
     row_dict["Screener Name Exact"] = mapped.get("Screener_Name", "")
-
     if not row_dict["Screener Name Exact"]:
         row_dict["Screener Name Exact"] = str(row_dict.get("Name", "")).strip()
-
     return row_dict
 
 # ═══════════════════════════════════════════════════════════
-# SELENIUM DRIVER INIT (shared helper)
+# SELENIUM DRIVER INIT
 # ═══════════════════════════════════════════════════════════
 def init_driver():
     opts = Options()
@@ -204,7 +243,6 @@ def init_driver():
     else:
         return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=opts)
 
-# Screener driver
 driver = init_driver()
 wait   = WebDriverWait(driver, 15)
 
@@ -212,13 +250,6 @@ wait   = WebDriverWait(driver, 15)
 # MARKETSMITH INDIA (MSI) GUEST SCRAPER
 # ═══════════════════════════════════════════════════════════
 def msi_get_metric_value(msi_driver, msi_wait, header_text):
-    """
-    Generic helper for one MSI metric (EPS Strength, Price Strength, Buyer Demand, Group Rank).
-    Uses pattern:
-      <h4>header_text</h4>
-      ...
-      <h3> <span>LABEL :</span> <span>VALUE</span> </h3>
-    """
     try:
         h4 = msi_wait.until(
             EC.presence_of_element_located(
@@ -237,10 +268,7 @@ def msi_get_metric_value(msi_driver, msi_wait, header_text):
 
 def msi_get_master_score(msi_driver):
     try:
-        ms = msi_driver.find_element(
-            By.CSS_SELECTOR,
-            "#masterScoreIndicator .masters b"
-        )
+        ms = msi_driver.find_element(By.CSS_SELECTOR, "#masterScoreIndicator .masters b")
         return ms.text.strip()
     except Exception:
         pass
@@ -254,9 +282,6 @@ def msi_get_master_score(msi_driver):
         return ""
 
 def msi_scrape_symbol(msi_driver, msi_wait, symbol):
-    """
-    Scrape MSI metrics for one symbol in guest mode.
-    """
     result = {
         "MSI EPS Strength":   "",
         "MSI Price Strength": "",
@@ -264,56 +289,37 @@ def msi_scrape_symbol(msi_driver, msi_wait, symbol):
         "MSI Group Rank":     "",
         "MSI Master Score":   "",
     }
-
     if not symbol:
         return result
-
     url = f"{MSI_BASE_URL}/{symbol.lower()}/evaluation.jsp"
     try:
         msi_driver.get(url)
-        msi_wait.until(
-            EC.presence_of_element_located(
-                (By.CSS_SELECTOR, "span")
-            )
-        )
+        msi_wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "span")))
         time.sleep(1.5)
-
         result["MSI EPS Strength"]   = msi_get_metric_value(msi_driver, msi_wait, "EPS Strength")
         result["MSI Price Strength"] = msi_get_metric_value(msi_driver, msi_wait, "Price Strength")
         result["MSI Buyer Demand"]   = msi_get_metric_value(msi_driver, msi_wait, "Buyer Demand")
         result["MSI Group Rank"]     = msi_get_metric_value(msi_driver, msi_wait, "Group Rank")
         result["MSI Master Score"]   = msi_get_master_score(msi_driver)
-
     except Exception as e:
         print(f"  MSI error for {symbol}: {e}")
-
     return result
 
 def attach_msi_metrics(row_dict, msi_cache, msi_driver, msi_wait):
-    """
-    Add MSI fields to a row_dict using NSE Code or Screener Name.
-    Uses simple in-memory cache to avoid re-scraping same symbol.
-    """
     if not MSI_ENABLED or msi_driver is None:
         for c in MSI_COLS:
             row_dict.setdefault(c, "")
         return row_dict
-
     symbol = str(
-        row_dict.get("NSE Code Exact")
-        or row_dict.get("Screener Name Exact")
-        or ""
+        row_dict.get("NSE Code Exact") or row_dict.get("Screener Name Exact") or ""
     ).strip().upper()
-
     if not symbol:
         for c in MSI_COLS:
             row_dict.setdefault(c, "")
         return row_dict
-
     if symbol in msi_cache:
         row_dict.update(msi_cache[symbol])
         return row_dict
-
     metrics = msi_scrape_symbol(msi_driver, msi_wait, symbol)
     msi_cache[symbol] = metrics
     row_dict.update(metrics)
@@ -436,12 +442,10 @@ def scrape_company(company_info):
                 time.sleep(1.5)
             except:
                 pass
-
         full_name = get_company_full_name()
         if full_name == "Unknown":
             slug = url.rstrip("/").split("/")[-1]
             full_name = slug if slug else short_name
-
         return {
             "Name": short_name,
             "Company (Page)": full_name,
@@ -503,11 +507,9 @@ def transform_and_order_data(df):
         "WC Days",
         *MSI_COLS,
     ]
-
     for col in base_cols + metric_cols:
         if col not in df.columns:
             df[col] = ""
-
     quarter_cols_raw = [
         c for c in df.columns
         if c not in base_cols
@@ -515,7 +517,6 @@ def transform_and_order_data(df):
         and "(>70%)" not in c
         and c != "70% Surge"
     ]
-
     parsed_dates = []
     for c in quarter_cols_raw:
         try:
@@ -524,8 +525,6 @@ def transform_and_order_data(df):
             pass
     parsed_dates.sort(key=lambda x: x[0], reverse=True)
     sorted_quarter_cols = [x[1] for x in parsed_dates]
-
-    # (>70%) matrix and 70% Surge are excluded from output — handled on the frontend
     final_cols = base_cols + sorted_quarter_cols + metric_cols
     df = df[[c for c in final_cols if c in df.columns]].copy()
     df["Sr no"] = range(1, len(df) + 1)
@@ -558,7 +557,6 @@ def append_rows_to_raw_excel(rows, sheet_name):
     else:
         with pd.ExcelWriter(RAW_FILE_PATH, engine='openpyxl') as writer:
             df_new.to_excel(writer, sheet_name=sheet_name, index=False)
-
     wb = load_workbook(RAW_FILE_PATH)
     ws = wb[sheet_name]
     for row in ws.iter_rows():
@@ -589,25 +587,34 @@ def generate_raw_json(sheet_name):
 # ═══════════════════════════════════════════════════════════
 # MAIN
 # ═══════════════════════════════════════════════════════════
+run_start = time.time()
 try:
+    push_progress("initialising", 0, 1, "Authenticating with Screener.in...")
+
     INDUSTRY_MAP, GROUP_MAP = load_industry_maps()
     SYMBOL_MAP              = load_symbol_maps()
 
-    # MSI driver + cache (guest mode)
     msi_driver = init_driver() if MSI_ENABLED else None
     msi_wait   = WebDriverWait(msi_driver, 20) if MSI_ENABLED and msi_driver else None
     msi_cache  = {}
 
     login()
+
+    push_progress("collecting", 0, 1, "Enumerating universe from Screener screen...")
     company_data_list = collect_all_company_data()
+    total = len(company_data_list)
+    print(f"📊 Universe identified: {total} equities")
+    push_progress("collecting", 0, total, f"Universe identified: {total} equities")
 
     if company_data_list:
+        push_progress("scraping", 0, total, company_data_list[0]['short_name'])
+
         first_scraped = scrape_company(company_data_list[0])
         first_row     = enrich_with_data(first_scraped, INDUSTRY_MAP, GROUP_MAP, SYMBOL_MAP)
         first_row     = attach_msi_metrics(first_row, msi_cache, msi_driver, msi_wait)
+        push_progress("scraping", 1, total, first_row.get("Company (Page)", ""), elapsed_sec=time.time()-run_start)
 
-        target_sheet  = detect_latest_quarter(first_row) or datetime.now().strftime("%b %y")
-
+        target_sheet   = detect_latest_quarter(first_row) or datetime.now().strftime("%b %y")
         existing_names = get_existing_companies_in_sheet(target_sheet)
         pending_rows   = [] if str(first_row.get("Name", "")).strip() in existing_names else [first_row]
 
@@ -616,11 +623,21 @@ try:
             if str(c['short_name']).strip() not in existing_names
         ]
 
+        completed_count = 1
         for i, info in enumerate(remaining, start=2):
             scraped  = scrape_company(info)
             enriched = enrich_with_data(scraped, INDUSTRY_MAP, GROUP_MAP, SYMBOL_MAP)
             enriched = attach_msi_metrics(enriched, msi_cache, msi_driver, msi_wait)
             pending_rows.append(enriched)
+            completed_count += 1
+
+            push_progress(
+                "scraping",
+                completed_count,
+                total,
+                enriched.get("Company (Page)", info['short_name']),
+                elapsed_sec=time.time() - run_start
+            )
 
             if len(pending_rows) >= 10:
                 append_rows_to_raw_excel(pending_rows, target_sheet)
@@ -629,6 +646,7 @@ try:
         if pending_rows:
             append_rows_to_raw_excel(pending_rows, target_sheet)
 
+        push_progress("finalising", total, total, "Serialising dataset & committing to R2...")
         generate_raw_json(target_sheet)
 
         if IS_GITHUB_ACTIONS:
@@ -636,9 +654,12 @@ try:
             r2_upload(RAW_JSON_PATH,    R2_RAW_JSON_KEY)
             r2_upload(MASTER_FILE_PATH, R2_MASTER_KEY)
 
+        push_progress("complete", total, total, "Dataset refreshed successfully.", status="complete", elapsed_sec=time.time()-run_start)
+
 except Exception as e:
     print(f"\n❌ Fatal error: {e}")
     traceback.print_exc()
+    push_progress("failed", 0, 0, str(e), status="failed")
 finally:
     try:
         driver.quit()
