@@ -57,6 +57,8 @@
         .col-drag-handle { color: #a0aec0; font-size: 13px; flex-shrink: 0; cursor: grab; }
         .col-item input[type="checkbox"] { margin: 0; transform: scale(1.1); cursor: pointer; flex-shrink: 0; }
         .col-item-label { font-size: 13px; color: #2d3748; flex: 1; cursor: pointer; }
+        /* YoY column label styling in dropdown */
+        .col-item-label.yoy-label { color: #6b46c1; font-style: italic; }
         .threshold-input { width: 55px; padding: 2px 5px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 13px; font-weight: 600; color: #2b6cb0; text-align: center; margin: 0 2px; background: #ebf8ff; }
         .threshold-input:focus { outline: none; border-color: #3182ce; background: #fff; }
         .table-container { overflow-x: auto; overflow-y: visible; border: 1px solid #e2e8f0; border-radius: 8px; background: white; cursor: grab; }
@@ -67,10 +69,15 @@
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
         th { background-color: #2b6cb0; color: white; position: sticky; top: 0; font-weight: 600; z-index: 10; cursor: pointer; transition: background 0.2s; user-select: none; }
         th:hover { background-color: #1a365d; }
+        th.yoy-th { background-color: #553c9a; }
+        th.yoy-th:hover { background-color: #44337a; }
         .sort-icon { font-size: 12px; margin-left: 5px; opacity: 0.7; }
         tr:hover { background-color: #ebf8ff; }
         .badge-yes { background-color: #48bb78; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
         .badge-peak { background-color: #d69e2e; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        .yoy-pos { color: #276749; font-weight: 700; }
+        .yoy-neg { color: #c53030; font-weight: 700; }
+        .yoy-na  { color: #a0aec0; font-size: 12px; }
         .loading { text-align: center; padding: 40px; font-size: 18px; color: #718096; }
         .stats { text-align: right; font-size: 14px; color: #4a5568; margin-bottom: 10px; font-weight: 600; }
         .action-links { margin-top: 6px; display: flex; gap: 5px; flex-wrap: wrap; }
@@ -280,7 +287,7 @@
     let rawData = [];
     let currentFilteredData = [];
     let allColumns = [];
-    let columnOrder = [];       // user-defined display order
+    let columnOrder = [];
     let quarterlyColumns = [];
     let visibleColumns = new Set();
     let sortColumn = "Sr no";
@@ -289,6 +296,50 @@
     let globalOverrides = { bypassPromoter: false, bypassPledged: false, bypassWc: false, bypassGrowth: false, bypassCurrentQtr: false, bypassPeakQtr: false, bypassMsi: false };
     let vipIndustries = new Set();
     let currentView = 'list';
+
+    // ── YoY virtual columns ──────────────────────────────────────────────────
+    // Prefix used to distinguish YoY virtual columns from real data columns
+    const YOY_PREFIX = "__yoy__";
+
+    /**
+     * Build the 9 rolling YoY column descriptors from the current quarterlyColumns list.
+     * Each descriptor: { id, label, newCol, oldCol }
+     * id      – internal key stored in columnOrder / visibleColumns
+     * label   – displayed header  e.g. "Mar26 - Mar25"
+     * newCol  – the "current" quarterly column name in rawData  e.g. "Mar 26"
+     * oldCol  – the prior-year quarterly column name            e.g. "Mar 25"
+     */
+    function buildYoYDescriptors() {
+        if (!quarterlyColumns || quarterlyColumns.length < 5) return [];
+        const descs = [];
+        // We need pairs offset by 4 quarters (same quarter, prior year)
+        for (let i = 0; i < quarterlyColumns.length - 4 && descs.length < 9; i++) {
+            const newCol = quarterlyColumns[i];
+            const oldCol = quarterlyColumns[i + 4];
+            // Build short label: "Mar 26" → "Mar26"
+            const shortNew = newCol.replace(/\s+/g, '');
+            const shortOld = oldCol.replace(/\s+/g, '');
+            const label = `${shortNew} - ${shortOld}`;
+            descs.push({ id: YOY_PREFIX + label, label, newCol, oldCol });
+        }
+        return descs;
+    }
+
+    /** Compute YoY ratio for a single row given descriptor */
+    function calcYoY(row, desc) {
+        const newVal = parseFloat(row[desc.newCol]);
+        const oldVal = parseFloat(row[desc.oldCol]);
+        if (isNaN(newVal) || isNaN(oldVal) || oldVal === 0) return null;
+        return (newVal - oldVal) / Math.abs(oldVal);
+    }
+
+    /** Format ratio as percentage string for display */
+    function formatYoY(ratio) {
+        if (ratio === null) return null;
+        const sign = ratio >= 0 ? '+' : '';
+        return sign + (ratio * 100).toFixed(1) + '%';
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     /* ── Drag-to-scroll on table container ── */
     (function() {
@@ -431,15 +482,18 @@
         const list = document.getElementById('col-items-list');
         list.innerHTML = '';
         columnOrder.forEach((col, idx) => {
+            const isYoY = col.startsWith(YOY_PREFIX);
             const item = document.createElement('div');
             item.className = 'col-item';
             item.setAttribute('draggable', 'true');
             item.dataset.col = col;
             item.dataset.idx = idx;
+            const labelClass = isYoY ? 'col-item-label yoy-label' : 'col-item-label';
+            const displayLbl = isYoY ? ('📊 ' + col.slice(YOY_PREFIX.length)) : getDisplayName(col);
             item.innerHTML =
                 `<span class="col-drag-handle" title="Drag to reorder">⋮⋮</span>` +
                 `<input type="checkbox" id="chk-col-${idx}" ${visibleColumns.has(col) ? 'checked' : ''} onchange="handleColumnToggle(this, '${col}')" onclick="event.stopPropagation()">` +
-                `<label class="col-item-label" for="chk-col-${idx}">${getDisplayName(col)}</label>`;
+                `<label class="${labelClass}" for="chk-col-${idx}">${displayLbl}</label>`;
 
             item.addEventListener('dragstart', e => {
                 dragSrcIndex = idx;
@@ -486,7 +540,6 @@
 
     function selectNoneColumns(e) {
         e.stopPropagation();
-        // Always keep at least Company column visible
         visibleColumns.clear();
         visibleColumns.add('Company (Page)');
         renderColumnToggles();
@@ -663,9 +716,17 @@
             if (rawData && rawData.length > 0) {
                 allColumns = Object.keys(rawData[0]).filter(col => col !== "Name" && col !== "NSE Code Exact" && col !== "Screener Name Exact" && col !== "Investing Name Exact");
                 quarterlyColumns = detectQuarterlyColumns(allColumns);
-                columnOrder = [...allColumns];  // initialise order from raw column order
+
+                // Build YoY virtual column IDs and append to columnOrder (off by default)
+                const yoyDescs = buildYoYDescriptors();
+                const yoyIds = yoyDescs.map(d => d.id);
+
+                columnOrder = [...allColumns, ...yoyIds];
+
                 const defaultCols = ["Sr no","date","Company (Page)","Industry","Industry Group","Promoter Holding","Pledged %","WC Days"];
                 visibleColumns = new Set(defaultCols.filter(c => allColumns.includes(c)));
+                // YoY columns are NOT added to visibleColumns → off by default
+
                 renderColumnToggles(); applyFiltersAndRender();
             } else {
                 document.getElementById('table-body').innerHTML = `<tr><td class="loading" style="color:#e53e3e; font-weight:bold;" colspan="100%">⚠️ DATA SYNC ERROR: JSON is empty. Click 'Run Backend Scraper' to rebuild.</td></tr>`;
@@ -678,6 +739,7 @@
         if (col === "date") return "Date";
         if (col === "Company (Page)") return "Company";
         if (col === "Promoter Holding") return "Promoter %";
+        if (col.startsWith(YOY_PREFIX)) return col.slice(YOY_PREFIX.length);
         return col;
     }
 
@@ -717,10 +779,19 @@
             return true;
         });
 
+        // Sort — handle YoY virtual columns
         if (sortColumn && sortColumn !== "Sr no") {
+            const yoyDescs = buildYoYDescriptors();
+            const sortYoY = yoyDescs.find(d => d.id === sortColumn);
             filteredData.sort((a, b) => {
-                let valA = a[sortColumn] ?? -999999, valB = b[sortColumn] ?? -999999;
-                if (valA === "") valA = -999999; if (valB === "") valB = -999999;
+                let valA, valB;
+                if (sortYoY) {
+                    valA = calcYoY(a, sortYoY) ?? -999999;
+                    valB = calcYoY(b, sortYoY) ?? -999999;
+                } else {
+                    valA = a[sortColumn] ?? -999999; valB = b[sortColumn] ?? -999999;
+                    if (valA === "") valA = -999999; if (valB === "") valB = -999999;
+                }
                 const numA = parseFloat(valA), numB = parseFloat(valB);
                 if (!isNaN(numA) && !isNaN(numB)) return sortAscending ? numA - numB : numB - numA;
                 const strA = String(valA).toLowerCase(), strB = String(valB).toLowerCase();
@@ -739,13 +810,17 @@
     function renderTable(data) {
         const thead = document.getElementById('table-head'); const tbody = document.getElementById('table-body');
         document.getElementById('row-count').innerText = `Showing ${data.length} of ${rawData.length} stocks`;
-        // Use columnOrder to drive display; only show visible columns
         const orderedVisibleCols = columnOrder.filter(col => visibleColumns.has(col));
+        const yoyDescs = buildYoYDescriptors();
+        const yoyMap = Object.fromEntries(yoyDescs.map(d => [d.id, d]));
 
         thead.innerHTML = '<tr>' + orderedVisibleCols.map(col => {
+            const isYoY = col.startsWith(YOY_PREFIX);
             let sortIcon = '';
             if (sortColumn === col) sortIcon = sortAscending ? '<span class="sort-icon">🔼</span>' : '<span class="sort-icon">🔽</span>';
-            return `<th onclick="handleSort('${col}')" title="Click to sort">${getDisplayName(col)}${sortIcon}</th>`;
+            const thClass = isYoY ? 'class="yoy-th"' : '';
+            const label = isYoY ? ('📊 ' + getDisplayName(col)) : getDisplayName(col);
+            return `<th ${thClass} onclick="handleSort('${col}')" title="${isYoY ? 'YoY % Growth — click to sort' : 'Click to sort'}">${label}${sortIcon}</th>`;
         }).join('') + '</tr>';
 
         if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="${orderedVisibleCols.length}" class="loading">No stocks match the criteria.</td></tr>`; return; }
@@ -755,6 +830,17 @@
             const rowPeak = qtrVals.length > 0 ? Math.max(...qtrVals) : null;
 
             return '<tr>' + orderedVisibleCols.map(col => {
+                // ── YoY virtual column rendering ──
+                if (col.startsWith(YOY_PREFIX)) {
+                    const desc = yoyMap[col];
+                    if (!desc) return '<td><span class="yoy-na">—</span></td>';
+                    const ratio = calcYoY(row, desc);
+                    if (ratio === null) return '<td><span class="yoy-na">n/a</span></td>';
+                    const formatted = formatYoY(ratio);
+                    const cls = ratio >= 0 ? 'yoy-pos' : 'yoy-neg';
+                    return `<td><span class="${cls}">${formatted}</span></td>`;
+                }
+                // ── Regular column rendering ──
                 if (col === "Sr no") { const displayIndex = sortAscending ? (index + 1) : (data.length - index); return `<td>${displayIndex}</td>`; }
                 if (col === "Company (Page)") {
                     const fullName = (row["Company (Page)"] || "").toString();
@@ -785,9 +871,16 @@
     function exportToCSV() {
         if (!currentFilteredData || currentFilteredData.length === 0) { alert("No data to export."); return; }
         const orderedVisibleCols = columnOrder.filter(col => visibleColumns.has(col));
-        let csvLines = [orderedVisibleCols.map(c => `"${getDisplayName(c)}"`).join(',')];
+        const yoyDescs = buildYoYDescriptors();
+        const yoyMap = Object.fromEntries(yoyDescs.map(d => [d.id, d]));
+        let csvLines = [orderedVisibleCols.map(c => `"${c.startsWith(YOY_PREFIX) ? getDisplayName(c) : getDisplayName(c)}"`).join(',')];
         currentFilteredData.forEach((row, index) => {
             let rowArray = orderedVisibleCols.map(col => {
+                if (col.startsWith(YOY_PREFIX)) {
+                    const desc = yoyMap[col];
+                    const ratio = desc ? calcYoY(row, desc) : null;
+                    return `"${ratio !== null ? formatYoY(ratio) : ''}"`;
+                }
                 let val = row[col];
                 if (col === "Sr no") val = sortAscending ? (index + 1) : (currentFilteredData.length - index);
                 if (col === "date" && val && typeof val === 'string' && val.includes('-')) { const parts = val.split('-'); if (parts.length === 3 && parts[0].length === 4) val = `${parts[2]}-${parts[1]}-${parts[0].substring(2)}`; }
