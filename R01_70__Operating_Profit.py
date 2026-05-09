@@ -25,7 +25,7 @@ IS_GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS", "false").lower() == "true"
 
 USERNAME   = os.environ.get("SCREENER_USERNAME", "deepak.khatwani2712@gmail.com")
 PASSWORD   = os.environ.get("SCREENER_PASSWORD", "gaurav23")
-SCREEN_URL = "https://www.screener.in/screens/742984/top-growers/"
+SCREEN_URL = "https://www.screener.in/screens/3647191/equity-research-github/"
 
 if IS_GITHUB_ACTIONS:
     FOLDER_PATH = "/tmp/screener_data"
