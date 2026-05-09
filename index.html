@@ -9,7 +9,6 @@
         .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 15px; }
         h1 { color: #1a365d; margin: 0; }
-
         .action-panel { display: flex; align-items: center; gap: 10px; background: #edf2f7; padding: 10px 15px; border-radius: 8px; border: 1px solid #cbd5e0; flex-wrap: wrap;}
         #run-btn { background-color: #2b6cb0; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
         #run-btn:hover { background-color: #2c5282; }
@@ -25,41 +24,69 @@
             .mobile-only-btn { display: inline-block; background-color: #ed8936; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
             .mobile-only-btn:hover { background-color: #dd6b20; }
         }
-        #workflow-status { font-size: 13px; font-weight: 600; color: #4a5568; margin-left: auto; }
-        .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(0,0,0,0.1); border-radius: 50%; border-top-color: #2b6cb0; animation: spin 1s ease-in-out infinite; vertical-align: middle; margin-right: 5px; }
+        /* ── Scraper Telemetry Widget ── */
+        #scraper-telemetry { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; min-width: 220px; }
+        #telemetry-headline { font-size: 12px; font-weight: 700; color: #4a5568; letter-spacing: 0.03em; }
+        #telemetry-headline.running { color: #2b6cb0; }
+        #telemetry-headline.success { color: #276749; }
+        #telemetry-headline.error   { color: #c53030; }
+        #telemetry-detail { font-size: 11px; color: #718096; font-weight: 500; }
+        #telemetry-bar-wrap { width: 100%; height: 6px; background: #e2e8f0; border-radius: 999px; overflow: hidden; display: none; }
+        #telemetry-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #3182ce, #63b3ed); border-radius: 999px; transition: width 0.6s ease; }
+        #telemetry-bar-wrap.active { display: block; }
+        /* ─────────────────────────────── */
+        .spinner { display: inline-block; width: 11px; height: 11px; border: 2px solid rgba(0,0,0,0.1); border-radius: 50%; border-top-color: #2b6cb0; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 4px; }
         @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* ===== VIEW TOGGLE ===== */
         .view-toggle-wrapper { display: flex; justify-content: flex-end; margin-bottom: 12px; }
         .view-toggle { display: inline-flex; border: 1px solid #cbd5e0; border-radius: 999px; overflow: hidden; background: #edf2f7; }
         .view-btn { border: none; padding: 7px 20px; font-size: 13px; cursor: pointer; background: transparent; color: #4a5568; font-weight: 600; transition: 0.2s; }
         .view-btn.active { background: #2b6cb0; color: #fff; border-radius: 999px; }
-
         .controls { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 20px; padding: 15px; background: #edf2f7; border-radius: 8px; align-items: flex-start; }
         .filter-group { flex: 1; min-width: 250px; }
         .filter-group h3 { margin-top: 0; font-size: 16px; color: #2d3748; margin-bottom: 12px; border-bottom: 1px solid #cbd5e0; padding-bottom: 5px; }
         .checkbox-label { display: block; margin-bottom: 10px; cursor: pointer; font-size: 14px; font-weight: 500; }
-        .checkbox-label input { margin-right: 8px; transform: scale(1.2); cursor: pointer;}
+        .checkbox-label input[type="checkbox"] { margin-right: 8px; transform: scale(1.2); cursor: pointer;}
+        .filter-divider { border: none; border-top: 1px dashed #cbd5e0; margin: 10px 0; }
         .dropdown { width: 100%; }
         .dropdown-btn { background-color: #fff; border: 1px solid #cbd5e0; padding: 10px 15px; border-radius: 6px; font-size: 14px; font-weight: 600; color: #2b6cb0; cursor: pointer; width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
         .dropdown-btn:hover { background-color: #ebf8ff; border-color: #3182ce; }
         .dropdown-btn.active { border-radius: 6px 6px 0 0; border-bottom-color: transparent; }
-        .dropdown-content { display: none; background-color: #fff; border: 1px solid #cbd5e0; border-top: none; border-radius: 0 0 6px 6px; padding: 15px; max-height: 250px; overflow-y: auto; }
-        .dropdown-content.show { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
-        .dropdown-content label { display: flex; align-items: center; cursor: pointer; font-size: 13px; color: #2d3748; }
-        .dropdown-content input { margin-right: 6px; transform: scale(1.1); cursor: pointer; }
-
-        /* ===== LIST VIEW ===== */
-        .table-container { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; max-height: 70vh; background: white;}
+        .dropdown-content { display: none; background-color: #fff; border: 1px solid #cbd5e0; border-top: none; border-radius: 0 0 6px 6px; max-height: 300px; overflow-y: auto; }
+        .dropdown-content.show { display: flex; flex-direction: column; }
+        .col-toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #f7fafc; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 5; }
+        .col-select-all-btn { background: #2b6cb0; color: white; border: none; padding: 4px 11px; border-radius: 4px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .col-select-all-btn:hover { background: #2c5282; }
+        .col-select-none-btn { background: #e2e8f0; color: #4a5568; border: none; padding: 4px 11px; border-radius: 4px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .col-select-none-btn:hover { background: #cbd5e0; color: #2d3748; }
+        .col-toolbar-hint { font-size: 11px; color: #a0aec0; margin-left: auto; }
+        .col-items-list { display: flex; flex-direction: column; padding: 6px 0; }
+        .col-item { display: flex; align-items: center; padding: 7px 12px; cursor: grab; user-select: none; gap: 8px; border-radius: 4px; transition: background 0.15s; }
+        .col-item:hover { background: #ebf8ff; }
+        .col-item.drag-over { background: #bee3f8; border-top: 2px solid #3182ce; }
+        .col-item.dragging-item { opacity: 0.4; background: #e2e8f0; }
+        .col-drag-handle { color: #a0aec0; font-size: 13px; flex-shrink: 0; cursor: grab; }
+        .col-item input[type="checkbox"] { margin: 0; transform: scale(1.1); cursor: pointer; flex-shrink: 0; }
+        .col-item-label { font-size: 13px; color: #2d3748; flex: 1; cursor: pointer; }
+        .col-item-label.yoy-label { color: #6b46c1; font-style: italic; }
+        .threshold-input { width: 55px; padding: 2px 5px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 13px; font-weight: 600; color: #2b6cb0; text-align: center; margin: 0 2px; background: #ebf8ff; }
+        .threshold-input:focus { outline: none; border-color: #3182ce; background: #fff; }
+        .table-container { overflow-x: auto; overflow-y: visible; border: 1px solid #e2e8f0; border-radius: 8px; background: white; cursor: grab; }
+        .table-container.dragging { cursor: grabbing !important; user-select: none; }
         .table-container:fullscreen { padding: 15px; max-height: 100vh; overflow: auto; background-color: white; }
         .table-container:-webkit-full-screen { padding: 15px; max-height: 100vh; overflow: auto; background-color: white; }
         table { width: 100%; border-collapse: collapse; font-size: 14px; background: white; }
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
         th { background-color: #2b6cb0; color: white; position: sticky; top: 0; font-weight: 600; z-index: 10; cursor: pointer; transition: background 0.2s; user-select: none; }
         th:hover { background-color: #1a365d; }
+        th.yoy-th { background-color: #553c9a; }
+        th.yoy-th:hover { background-color: #44337a; }
         .sort-icon { font-size: 12px; margin-left: 5px; opacity: 0.7; }
         tr:hover { background-color: #ebf8ff; }
         .badge-yes { background-color: #48bb78; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        .badge-peak { background-color: #d69e2e; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        .yoy-pos { color: #276749; font-weight: 700; }
+        .yoy-neg { color: #c53030; font-weight: 700; }
+        .yoy-na  { color: #a0aec0; font-size: 12px; }
         .loading { text-align: center; padding: 40px; font-size: 18px; color: #718096; }
         .stats { text-align: right; font-size: 14px; color: #4a5568; margin-bottom: 10px; font-weight: 600; }
         .action-links { margin-top: 6px; display: flex; gap: 5px; flex-wrap: wrap; }
@@ -69,8 +96,6 @@
         .action-links .note-btn:hover { background: #90cdf4; color: #1a365d; }
         .action-links .chart-btn { background: #c6f6d5; color: #276749; border-color: #9ae6b4; }
         .action-links .chart-btn:hover { background: #9ae6b4; color: #1a4731; }
-
-        /* ===== CHARTS VIEW ===== */
         #charts-view { display: none; }
         .charts-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
         .charts-header h2 { font-size: 15px; color: #2d3748; margin: 0; }
@@ -86,9 +111,6 @@
         .chart-card-links a:hover { background: #cbd5e0; }
         .chart-card iframe { display:block; width:100%; height:400px; border:none; }
         .charts-loading { text-align: center; padding: 60px; color: #718096; font-size: 16px; }
-        .no-nse-badge { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #fed7d7; color: #c53030; font-weight: bold; margin-left: 6px; }
-
-        /* ===== CHAT DRAWER ===== */
         .chat-drawer { position: fixed; top: 0; right: -450px; width: 400px; max-width: 100%; height: 100vh; background: white; box-shadow: -5px 0 15px rgba(0,0,0,0.2); transition: right 0.3s ease-in-out; z-index: 2000; display: flex; flex-direction: column; }
         .chat-drawer.open { right: 0; }
         .chat-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1999; display: none; backdrop-filter: blur(2px); }
@@ -106,8 +128,6 @@
         .chat-input-area textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; resize: none; box-sizing: border-box; margin-bottom: 10px; font-family: inherit; font-size: 14px; }
         .chat-input-area button { width: 100%; background: #48bb78; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
         .chat-input-area button:hover { background: #38a169; }
-
-        /* ===== VIP MODAL ===== */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
         .modal-content { background: white; width: 95%; max-width: 600px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); display: flex; flex-direction: column; max-height: 85vh; overflow: hidden; }
         .modal-header { padding: 15px 20px; background: #1a365d; color: white; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
@@ -117,8 +137,10 @@
         .global-overrides-panel { background: #ebf8ff; border: 1px solid #bee3f8; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
         .global-overrides-panel h4 { margin: 0 0 5px 0; color: #2b6cb0; font-size: 15px; }
         .global-overrides-panel p { font-size: 12px; color: #4a5568; margin-top: 0; margin-bottom: 10px; }
+        .modal-filter-divider { border: none; border-top: 1px dashed #bee3f8; margin: 8px 0 10px 0; }
         .global-override-label { display: block; font-size: 13.5px; color: #2d3748; margin-bottom: 8px; cursor: pointer; font-weight: 500; }
         .global-override-label input { margin-right: 8px; transform: scale(1.15); cursor: pointer; }
+        .global-override-label.disabled-rule { opacity: 0.4; pointer-events: none; }
         .tree-header-text { font-size: 15px; font-weight: bold; color: #1a365d; margin-bottom: 10px; padding-left: 5px; border-bottom: 2px solid #cbd5e0; padding-bottom: 5px; }
         .accordion-item { border: 1px solid #cbd5e0; border-radius: 6px; margin-bottom: 8px; background: white; overflow: hidden; }
         .accordion-header { display: flex; align-items: center; padding: 12px 15px; cursor: pointer; transition: 0.2s; user-select: none; }
@@ -142,11 +164,15 @@
             <button id="exceptions-btn" onclick="openExceptionsModal()">⚙️ VIP Exceptions</button>
             <button id="export-btn" onclick="exportToCSV()">📥 Export CSV</button>
             <button id="landscape-btn" class="mobile-only-btn" onclick="toggleLandscape()">📱 Flip Table</button>
-            <span id="workflow-status">Status: Idle</span>
+            <!-- Live Scraper Telemetry -->
+            <div id="scraper-telemetry">
+                <span id="telemetry-headline">Status: Idle</span>
+                <span id="telemetry-detail"></span>
+                <div id="telemetry-bar-wrap"><div id="telemetry-bar"></div></div>
+            </div>
         </div>
     </div>
 
-    <!-- List / Charts toggle -->
     <div class="view-toggle-wrapper">
         <div class="view-toggle">
             <button id="btn-view-list" class="view-btn active" onclick="switchView('list')">📋 List</button>
@@ -157,22 +183,46 @@
     <div class="controls">
         <div class="filter-group">
             <h3>🎯 Strict Filters (Baseline Rules)</h3>
-            <label class="checkbox-label"><input type="checkbox" id="filter-promoter" onchange="handleMainFilterChange('filter-promoter', 'global-promoter', 'bypassPromoter')"> Promoter Holding ≥ 50%</label>
-            <label class="checkbox-label"><input type="checkbox" id="filter-pledged"  onchange="handleMainFilterChange('filter-pledged', 'global-pledged', 'bypassPledged')"> Pledged Shares ≤ 10%</label>
-            <label class="checkbox-label"><input type="checkbox" id="filter-wc"       onchange="handleMainFilterChange('filter-wc', 'global-wc', 'bypassWc')"> Working Capital Days ≤ 150</label>
-            <label class="checkbox-label"><input type="checkbox" id="filter-growth"   onchange="handleMainFilterChange('filter-growth', 'global-growth', 'bypassGrowth')"> 70% YoY Profit Surge (Latest Qtr)</label>
-            <label class="checkbox-label"><input type="checkbox" id="filter-current-qtr" onchange="applyFiltersAndRender()"> Current Quarter Surge Only <span id="current-qtr-badge" style="margin-left:6px; background:#2b6cb0; color:white; padding:2px 7px; border-radius:10px; font-size:11px; font-weight:bold;"></span></label>
+            <label class="checkbox-label"><input type="checkbox" id="filter-current-qtr" onchange="handleMainFilterChange('filter-current-qtr', 'global-current-qtr', 'bypassCurrentQtr')"> Current Quarter Surge Only <span id="current-qtr-badge" style="margin-left:6px; background:#2b6cb0; color:white; padding:2px 7px; border-radius:10px; font-size:11px; font-weight:bold;"></span></label>
+            <label class="checkbox-label"><input type="checkbox" id="filter-peak-qtr" onchange="handleMainFilterChange('filter-peak-qtr', 'global-peak-qtr', 'bypassPeakQtr')"> 🏆 Highest Ever Quarterly Result</label>
+            <hr class="filter-divider">
+            <label class="checkbox-label">
+                <input type="checkbox" id="filter-growth" onchange="handleMainFilterChange('filter-growth', 'global-growth', 'bypassGrowth')">
+                Latest Qtr. YoY Operating Profit ≥ <input type="number" id="val-growth" value="70" min="1" max="9999" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">%
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="filter-promoter" onchange="handleMainFilterChange('filter-promoter', 'global-promoter', 'bypassPromoter')">
+                Promoter Holding ≥ <input type="number" id="val-promoter" value="50" min="0" max="100" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">%
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="filter-pledged" onchange="handleMainFilterChange('filter-pledged', 'global-pledged', 'bypassPledged')">
+                Pledged Shares ≤ <input type="number" id="val-pledged" value="10" min="0" max="100" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">%
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="filter-wc" onchange="handleMainFilterChange('filter-wc', 'global-wc', 'bypassWc')">
+                Working Capital Days ≤ <input type="number" id="val-wc" value="150" min="0" max="9999" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="filter-msi" onchange="handleMainFilterChange('filter-msi', 'global-msi', 'bypassMsi')">
+                MSI Price Strength &gt; <input type="number" id="val-msi" value="80" min="0" max="100" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">
+            </label>
         </div>
         <div class="filter-group" style="flex: 2;">
             <h3>👁️ Column Settings</h3>
             <div class="dropdown">
                 <button onclick="toggleDropdown()" class="dropdown-btn" id="dropdown-btn-text">Select Columns ▼</button>
-                <div id="column-dropdown" class="dropdown-content"></div>
+                <div id="column-dropdown" class="dropdown-content">
+                    <div class="col-toolbar">
+                        <button class="col-select-all-btn" onclick="selectAllColumns(event)">Select All</button>
+                        <button class="col-select-none-btn" onclick="selectNoneColumns(event)">Deselect All</button>
+                        <span class="col-toolbar-hint">☰ Drag to reorder</span>
+                    </div>
+                    <div class="col-items-list" id="col-items-list"></div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- LIST VIEW -->
     <div id="list-section">
         <div class="stats" id="row-count">Loading data...</div>
         <div class="table-container" id="main-table-container">
@@ -185,7 +235,6 @@
         </div>
     </div>
 
-    <!-- CHARTS VIEW -->
     <div id="charts-view">
         <div class="charts-header">
             <h2>📊 TradingView Charts — All Filtered Stocks</h2>
@@ -197,7 +246,6 @@
     </div>
 </div>
 
-<!-- Chat drawer -->
 <div id="chat-overlay" class="chat-overlay" onclick="closeChat()"></div>
 <div id="chat-drawer" class="chat-drawer">
     <div class="chat-header">
@@ -222,11 +270,15 @@
         <div class="modal-body">
             <div class="global-overrides-panel">
                 <h4>Global Exception Overrides</h4>
-                <p>Select which rules the VIP Industries (checked below) are allowed to ignore.</p>
-                <label class="global-override-label"><input type="checkbox" id="global-promoter" onchange="toggleGlobalOverride('bypassPromoter', 'filter-promoter', this)"> 🔓 Bypass Promoter Holding ≥ 50%</label>
-                <label class="global-override-label"><input type="checkbox" id="global-pledged"  onchange="toggleGlobalOverride('bypassPledged', 'filter-pledged', this)"> 🔓 Bypass Pledged Shares ≤ 10%</label>
-                <label class="global-override-label"><input type="checkbox" id="global-wc"       onchange="toggleGlobalOverride('bypassWc', 'filter-wc', this)"> 🔓 Bypass Working Capital Days ≤ 150</label>
-                <label class="global-override-label"><input type="checkbox" id="global-growth"   onchange="toggleGlobalOverride('bypassGrowth', 'filter-growth', this)"> 🔓 Bypass 70% YoY Profit Surge</label>
+                <p>Select which rules the VIP Industries (checked below) are allowed to ignore. Only active Strict Filters can be bypassed.</p>
+                <label class="global-override-label" id="lbl-row-current-qtr"><input type="checkbox" id="global-current-qtr" onchange="toggleGlobalOverride('bypassCurrentQtr', 'filter-current-qtr', this)"> <span id="lbl-bypass-current-qtr">🔓 Bypass Current Quarter Surge Only</span></label>
+                <label class="global-override-label" id="lbl-row-peak-qtr"><input type="checkbox" id="global-peak-qtr" onchange="toggleGlobalOverride('bypassPeakQtr', 'filter-peak-qtr', this)"> <span id="lbl-bypass-peak-qtr">🔓 Bypass Highest Ever Quarterly Result</span></label>
+                <hr class="modal-filter-divider">
+                <label class="global-override-label" id="lbl-row-growth"><input type="checkbox" id="global-growth" onchange="toggleGlobalOverride('bypassGrowth', 'filter-growth', this)"> <span id="lbl-bypass-growth">🔓 Bypass Latest Qtr. YoY Operating Profit ≥ 70%</span></label>
+                <label class="global-override-label" id="lbl-row-promoter"><input type="checkbox" id="global-promoter" onchange="toggleGlobalOverride('bypassPromoter', 'filter-promoter', this)"> <span id="lbl-bypass-promoter">🔓 Bypass Promoter Holding ≥ 50%</span></label>
+                <label class="global-override-label" id="lbl-row-pledged"><input type="checkbox" id="global-pledged" onchange="toggleGlobalOverride('bypassPledged', 'filter-pledged', this)"> <span id="lbl-bypass-pledged">🔓 Bypass Pledged Shares ≤ 10%</span></label>
+                <label class="global-override-label" id="lbl-row-wc"><input type="checkbox" id="global-wc" onchange="toggleGlobalOverride('bypassWc', 'filter-wc', this)"> <span id="lbl-bypass-wc">🔓 Bypass Working Capital Days ≤ 150</span></label>
+                <label class="global-override-label" id="lbl-row-msi"><input type="checkbox" id="global-msi" onchange="toggleGlobalOverride('bypassMsi', 'filter-msi', this)"> <span id="lbl-bypass-msi">🔓 Bypass MSI Price Strength > 80</span></label>
             </div>
             <div class="tree-header-text">Select VIP Industries:</div>
             <div id="exceptions-tree-container"></div>
@@ -244,19 +296,132 @@
     const WORKFLOW_FILE  = "run_screener.yml";
     const BRANCH         = "main";
     const DATA_URL       = "https://pub-9afc232687c44eebbb8cae359c7ac460.r2.dev/rawdata.json";
+    const PROGRESS_URL   = "https://pub-9afc232687c44eebbb8cae359c7ac460.r2.dev/progress.json";
     const CHAT_API_URL   = "https://terminal-api.deepakkhatwani.workers.dev/api/comments";
 
     let rawData = [];
     let currentFilteredData = [];
     let allColumns = [];
+    let columnOrder = [];
+    let quarterlyColumns = [];
     let visibleColumns = new Set();
-    let matrixColumnName = "";
     let sortColumn = "Sr no";
     let sortAscending = true;
     let currentChatTicker = "";
-    let globalOverrides = { bypassPromoter: false, bypassPledged: false, bypassWc: false, bypassGrowth: false };
+    let globalOverrides = { bypassPromoter: false, bypassPledged: false, bypassWc: false, bypassGrowth: false, bypassCurrentQtr: false, bypassPeakQtr: false, bypassMsi: false };
     let vipIndustries = new Set();
     let currentView = 'list';
+    let _scrapeStartTime = null;
+
+    // ── Telemetry helpers ────────────────────────────────────────────────────
+    function setTelemetry(headline, detail, pct, state) {
+        const h = document.getElementById('telemetry-headline');
+        const d = document.getElementById('telemetry-detail');
+        const bar = document.getElementById('telemetry-bar');
+        const wrap = document.getElementById('telemetry-bar-wrap');
+        h.className = state || '';
+        h.innerHTML = headline;
+        d.textContent = detail || '';
+        if (pct !== null && pct !== undefined) {
+            wrap.classList.add('active');
+            bar.style.width = Math.min(100, Math.max(0, pct)) + '%';
+        } else {
+            wrap.classList.remove('active');
+            bar.style.width = '0%';
+        }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // ── YoY virtual columns ──────────────────────────────────────────────────
+    const YOY_PREFIX = "__yoy__";
+    const QTR_COL_REGEX = /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{2,4}$/;
+    const MONTH_LETTER = { Jan:'J', Feb:'F', Mar:'M', Apr:'A', May:'My', Jun:'J', Jul:'Jl', Aug:'Au', Sep:'S', Oct:'O', Nov:'N', Dec:'D' };
+
+    function toQtrCode(colName) {
+        const parts = colName.trim().split(/\s+/);
+        const mon = parts[0];
+        const yr  = parts[1] || '';
+        const letter = MONTH_LETTER[mon] || mon[0].toUpperCase();
+        const yearShort = yr.length === 4 ? yr.slice(-2) : yr;
+        return letter + yearShort;
+    }
+
+    function detectQuarterlyColumns(cols) { return cols.filter(c => QTR_COL_REGEX.test(c.trim())); }
+
+    function buildYoYDescriptors() {
+        if (!quarterlyColumns || quarterlyColumns.length < 5) return [];
+        const descs = [];
+        for (let i = 0; i < quarterlyColumns.length - 4 && descs.length < 9; i++) {
+            const newCol = quarterlyColumns[i];
+            const oldCol = quarterlyColumns[i + 4];
+            const label = `${toQtrCode(newCol)} - ${toQtrCode(oldCol)}`;
+            descs.push({ id: YOY_PREFIX + label, label, newCol, oldCol });
+        }
+        return descs;
+    }
+
+    function calcYoY(row, desc) {
+        const newVal = parseFloat(row[desc.newCol]);
+        const oldVal = parseFloat(row[desc.oldCol]);
+        if (isNaN(newVal) || isNaN(oldVal) || oldVal === 0) return null;
+        return (newVal - oldVal) / Math.abs(oldVal);
+    }
+
+    function formatYoY(ratio) {
+        if (ratio === null) return null;
+        const sign = ratio >= 0 ? '+' : '';
+        return sign + (ratio * 100).toFixed(1) + '%';
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /* ── Drag-to-scroll on table container ── */
+    (function() {
+        let isDown = false, startX, scrollLeft, dragMoved = false;
+        document.addEventListener('DOMContentLoaded', function() {
+            const el = document.getElementById('main-table-container');
+            el.addEventListener('mousedown', function(e) {
+                if (e.button !== 0) return;
+                if (e.target.closest('a, button, input, label')) return;
+                isDown = true; dragMoved = false;
+                startX = e.pageX - el.offsetLeft;
+                scrollLeft = el.scrollLeft;
+                el.classList.add('dragging');
+            });
+            el.addEventListener('mouseleave', function() { isDown = false; el.classList.remove('dragging'); });
+            el.addEventListener('mouseup', function() { isDown = false; el.classList.remove('dragging'); });
+            el.addEventListener('mousemove', function(e) {
+                if (!isDown) return;
+                e.preventDefault();
+                const x = e.pageX - el.offsetLeft;
+                const walk = (x - startX) * 1.5;
+                if (Math.abs(walk) > 3) dragMoved = true;
+                el.scrollLeft = scrollLeft - walk;
+            });
+            el.addEventListener('click', function(e) {
+                if (dragMoved) { e.stopPropagation(); e.preventDefault(); dragMoved = false; }
+            }, true);
+        });
+    })();
+
+    function isLatestQtrHighest(row) {
+        if (!quarterlyColumns || quarterlyColumns.length === 0) return false;
+        const vals = quarterlyColumns.map(c => { const v = parseFloat(row[c]); return isNaN(v) ? null : v; });
+        const latestVal = vals[0];
+        if (latestVal === null) return false;
+        const historicalVals = vals.slice(1).filter(v => v !== null);
+        if (historicalVals.length === 0) return false;
+        return latestVal > Math.max(...historicalVals);
+    }
+
+    function hasYoYSurge(row, thresholdPct) {
+        if (!quarterlyColumns || quarterlyColumns.length < 5) return false;
+        const latestCol   = quarterlyColumns[0];
+        const sameQtrPrev = quarterlyColumns[4];
+        const latest  = parseFloat(row[latestCol]);
+        const prevYr  = parseFloat(row[sameQtrPrev]);
+        if (isNaN(latest) || isNaN(prevYr) || prevYr <= 0) return false;
+        return latest >= prevYr * (1 + thresholdPct / 100);
+    }
 
     const MASTER_INDUSTRY_MAP = {
         "Aerospace & Defense": ["Aerospace & Defense"],
@@ -304,137 +469,159 @@
     };
 
     function getCurrentQuarterCode() {
-        const now = new Date();
-        const month = now.getMonth() + 1;
-        const yr = String(now.getFullYear()).slice(-2);
-        const prevYr = String(now.getFullYear() - 1).slice(-2);
+        const now = new Date(); const month = now.getMonth() + 1;
+        const yr = String(now.getFullYear()).slice(-2); const prevYr = String(now.getFullYear() - 1).slice(-2);
         if (month >= 1 && month <= 3)  return `D${prevYr}`;
         if (month >= 4 && month <= 6)  return `M${yr}`;
         if (month >= 7 && month <= 9)  return `S${yr}`;
         return `D${yr}`;
     }
 
-    function updateCurrentQtrBadge() {
-        const badge = document.getElementById('current-qtr-badge');
-        if (badge) badge.textContent = getCurrentQuarterCode();
+    function updateCurrentQtrBadge() { const badge = document.getElementById('current-qtr-badge'); if (badge) badge.textContent = getCurrentQuarterCode(); }
+
+    function syncBypassLabels() {
+        const gVal   = document.getElementById('val-growth')?.value   || 70;
+        const pVal   = document.getElementById('val-promoter')?.value || 50;
+        const plVal  = document.getElementById('val-pledged')?.value  || 10;
+        const wcVal  = document.getElementById('val-wc')?.value       || 150;
+        const msiVal = document.getElementById('val-msi')?.value      || 80;
+        const qCode  = getCurrentQuarterCode();
+        const rules = [
+            { spanId: 'lbl-bypass-current-qtr', rowId: 'lbl-row-current-qtr', text: `🔓 Bypass Current Quarter Surge Only (${qCode})`,     filterId: 'filter-current-qtr' },
+            { spanId: 'lbl-bypass-peak-qtr',    rowId: 'lbl-row-peak-qtr',    text: `🔓 Bypass Highest Ever Quarterly Result`,               filterId: 'filter-peak-qtr'    },
+            { spanId: 'lbl-bypass-growth',      rowId: 'lbl-row-growth',      text: `🔓 Bypass Latest Qtr. YoY Operating Profit ≥ ${gVal}%`, filterId: 'filter-growth'      },
+            { spanId: 'lbl-bypass-promoter',    rowId: 'lbl-row-promoter',    text: `🔓 Bypass Promoter Holding ≥ ${pVal}%`,               filterId: 'filter-promoter'    },
+            { spanId: 'lbl-bypass-pledged',     rowId: 'lbl-row-pledged',     text: `🔓 Bypass Pledged Shares ≤ ${plVal}%`,                filterId: 'filter-pledged'     },
+            { spanId: 'lbl-bypass-wc',          rowId: 'lbl-row-wc',          text: `🔓 Bypass Working Capital Days ≤ ${wcVal}`,         filterId: 'filter-wc'          },
+            { spanId: 'lbl-bypass-msi',         rowId: 'lbl-row-msi',         text: `🔓 Bypass MSI Price Strength > ${msiVal}`,            filterId: 'filter-msi'         }
+        ];
+        rules.forEach(r => {
+            const span = document.getElementById(r.spanId); const row = document.getElementById(r.rowId);
+            const active = document.getElementById(r.filterId)?.checked;
+            if (span) span.textContent = r.text;
+            if (row) active ? row.classList.remove('disabled-rule') : row.classList.add('disabled-rule');
+        });
     }
 
-    /* ===================================================
-       VIEW TOGGLE — List vs Charts
-    =================================================== */
+    /* ═══════════════════════════════════════════
+       COLUMN SETTINGS — Select All / Drag reorder
+    ═══════════════════════════════════════════ */
+    let dragSrcIndex = null;
+
+    function renderColumnToggles() {
+        const list = document.getElementById('col-items-list');
+        list.innerHTML = '';
+        columnOrder.forEach((col, idx) => {
+            const isYoY = col.startsWith(YOY_PREFIX);
+            const item = document.createElement('div');
+            item.className = 'col-item';
+            item.setAttribute('draggable', 'true');
+            item.dataset.col = col;
+            item.dataset.idx = idx;
+            const labelClass = isYoY ? 'col-item-label yoy-label' : 'col-item-label';
+            const displayLbl = isYoY ? ('📊 ' + col.slice(YOY_PREFIX.length)) : getDisplayName(col);
+            item.innerHTML =
+                `<span class="col-drag-handle" title="Drag to reorder">⋮⋮</span>` +
+                `<input type="checkbox" id="chk-col-${idx}" ${visibleColumns.has(col) ? 'checked' : ''} onchange="handleColumnToggle(this, '${col}')" onclick="event.stopPropagation()">` +
+                `<label class="${labelClass}" for="chk-col-${idx}">${displayLbl}</label>`;
+
+            item.addEventListener('dragstart', e => {
+                dragSrcIndex = idx;
+                item.classList.add('dragging-item');
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            item.addEventListener('dragend', () => {
+                item.classList.remove('dragging-item');
+                document.querySelectorAll('.col-item').forEach(el => el.classList.remove('drag-over'));
+            });
+            item.addEventListener('dragover', e => {
+                e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+                document.querySelectorAll('.col-item').forEach(el => el.classList.remove('drag-over'));
+                item.classList.add('drag-over');
+            });
+            item.addEventListener('drop', e => {
+                e.preventDefault();
+                if (dragSrcIndex === null || dragSrcIndex === idx) return;
+                const moved = columnOrder.splice(dragSrcIndex, 1)[0];
+                columnOrder.splice(idx, 0, moved);
+                dragSrcIndex = null;
+                renderColumnToggles();
+                updateDropdownText();
+                renderTable(currentFilteredData);
+            });
+            list.appendChild(item);
+        });
+        updateDropdownText();
+    }
+
+    function handleColumnToggle(checkbox, col) {
+        if (checkbox.checked) visibleColumns.add(col); else visibleColumns.delete(col);
+        updateDropdownText();
+        renderTable(currentFilteredData);
+    }
+
+    function selectAllColumns(e) {
+        e.stopPropagation();
+        columnOrder.forEach(col => visibleColumns.add(col));
+        renderColumnToggles();
+        updateDropdownText();
+        renderTable(currentFilteredData);
+    }
+
+    function selectNoneColumns(e) {
+        e.stopPropagation();
+        visibleColumns.clear();
+        visibleColumns.add('Company (Page)');
+        renderColumnToggles();
+        updateDropdownText();
+        renderTable(currentFilteredData);
+    }
+
+    function updateDropdownText() {
+        document.getElementById('dropdown-btn-text').innerHTML = `👁️ ${visibleColumns.size} Columns Selected <span>▼</span>`;
+    }
+
+    /* ══════════════════════════════ */
+
     function switchView(mode) {
         currentView = mode;
-        const listSection  = document.getElementById('list-section');
-        const chartsView   = document.getElementById('charts-view');
-        const btnList      = document.getElementById('btn-view-list');
-        const btnCharts    = document.getElementById('btn-view-charts');
-
+        const listSection = document.getElementById('list-section'); const chartsView = document.getElementById('charts-view');
+        const btnList = document.getElementById('btn-view-list'); const btnCharts = document.getElementById('btn-view-charts');
         if (mode === 'charts') {
-            listSection.style.display  = 'none';
-            chartsView.style.display   = 'block';
-            btnList.classList.remove('active');
-            btnCharts.classList.add('active');
-            renderChartsGrid();
+            listSection.style.display = 'none'; chartsView.style.display = 'block';
+            btnList.classList.remove('active'); btnCharts.classList.add('active'); renderChartsGrid();
         } else {
-            listSection.style.display  = 'block';
-            chartsView.style.display   = 'none';
-            btnCharts.classList.remove('active');
-            btnList.classList.add('active');
+            listSection.style.display = 'block'; chartsView.style.display = 'none';
+            btnCharts.classList.remove('active'); btnList.classList.add('active');
         }
     }
 
-    /* ===================================================
-       BUILD CHARTS GRID
-       Uses TradingView symbol-overview widget with
-       chartOnly:true — works for NSE India stocks on
-       third-party websites. Clicking the chart opens
-       the full TradingView chart in a new tab.
-    =================================================== */
     function renderChartsGrid() {
-        const grid    = document.getElementById('charts-grid');
-        const countEl = document.getElementById('charts-count');
-
-        if (!currentFilteredData || currentFilteredData.length === 0) {
-            grid.innerHTML = '<div class="charts-loading">No stocks match the current filters.</div>';
-            countEl.textContent = '0 stocks';
-            return;
-        }
-
+        const grid = document.getElementById('charts-grid'); const countEl = document.getElementById('charts-count');
+        if (!currentFilteredData || currentFilteredData.length === 0) { grid.innerHTML = '<div class="charts-loading">No stocks match the current filters.</div>'; countEl.textContent = '0 stocks'; return; }
         const nseStocks = currentFilteredData.filter(r => (r["NSE Code Exact"] || "").toString().trim() !== "");
         const bseOnly   = currentFilteredData.filter(r => (r["NSE Code Exact"] || "").toString().trim() === "");
         countEl.textContent = currentFilteredData.length + " stocks (" + nseStocks.length + " with charts)";
         grid.innerHTML = "";
-
-        nseStocks.forEach(function(row, idx) {
-            const nse      = (row["NSE Code Exact"] || "").toString().trim();
-            const symbol   = "NSE:" + nse;
-            const name     = (row["Company (Page)"] || row["Name"] || nse).toString();
+        nseStocks.forEach(function(row) {
+            const nse = (row["NSE Code Exact"] || "").toString().trim(); const symbol = "NSE:" + nse;
+            const name = (row["Company (Page)"] || row["Name"] || nse).toString();
             const screener = (row["Screener Name Exact"] || row["Name"] || "").toString().trim();
             const industry = (row["Industry"] || "").toString();
-            const surge    = (row["70% Surge"] || "").toString();
-
-            const scrLink  = screener ? '<a href="https://www.screener.in/company/' + screener + '/" target="_blank">SCR</a>' : "";
-            const tvLink   = '<a href="https://in.tradingview.com/chart/?symbol=' + encodeURIComponent(symbol) + '" target="_blank">📈 Open Full Chart</a>';
-
-            // TradingView symbol-overview iframe — this URL format is NOT blocked by X-Frame-Options
-            const cfg = encodeURIComponent(JSON.stringify({
-                "symbols": [[name, symbol + "|1D"]],
-                "chartOnly": false,
-                "width": "100%",
-                "height": 400,
-                "locale": "in",
-                "colorTheme": "light",
-                "autosize": true,
-                "showVolume": true,
-                "showMA": true,
-                "hideDateRanges": false,
-                "hideMarketStatus": false,
-                "scalePosition": "right",
-                "scaleMode": "Normal",
-                "fontFamily": "Trebuchet MS",
-                "fontSize": "10",
-                "noTimeScale": false,
-                "valuesTracking": "1",
-                "changeMode": "price-and-percent",
-                "chartType": "candlesticks",
-                "upColor": "#26a69a",
-                "downColor": "#ef5350",
-                "borderUpColor": "#26a69a",
-                "borderDownColor": "#ef5350",
-                "wickUpColor": "#26a69a",
-                "wickDownColor": "#ef5350"
-            }));
-
+            const scrLink = screener ? '<a href="https://www.screener.in/company/' + screener + '/" target="_blank">SCR</a>' : "";
+            const tvLink = '<a href="https://in.tradingview.com/chart/?symbol=' + encodeURIComponent(symbol) + '" target="_blank">📈 Open Full Chart</a>';
+            const cfg = encodeURIComponent(JSON.stringify({ "symbols": [[name, symbol + "|1D"]], "chartOnly": false, "width": "100%", "height": 400, "locale": "in", "colorTheme": "light", "autosize": true, "showVolume": true, "showMA": true, "hideDateRanges": false, "hideMarketStatus": false, "scalePosition": "right", "scaleMode": "Normal", "fontFamily": "Trebuchet MS", "fontSize": "10", "noTimeScale": false, "valuesTracking": "1", "changeMode": "price-and-percent", "chartType": "candlesticks", "upColor": "#26a69a", "downColor": "#ef5350", "borderUpColor": "#26a69a", "borderDownColor": "#ef5350", "wickUpColor": "#26a69a", "wickDownColor": "#ef5350" }));
             const iframeSrc = "https://s.tradingview.com/embed-widget/symbol-overview/?locale=in#" + cfg;
-            const surgeHtml = surge ? " &nbsp;|&nbsp; Surge: <b style=\"color:#276749;\">" + surge + "</b>" : "";
-
-            const card = document.createElement("div");
-            card.className = "chart-card";
-            card.id = "card_" + nse;
-            card.innerHTML =
-                '<div class="chart-card-header">' +
-                    '<div>' +
-                        '<div class="chart-card-name">' + name + '</div>' +
-                        '<div class="chart-card-meta">' + symbol + ' &nbsp;|&nbsp; ' + industry + surgeHtml + '</div>' +
-                    '</div>' +
-                    '<div class="chart-card-links">' + scrLink + tvLink + '</div>' +
-                '</div>' +
-                '<iframe src="' + iframeSrc + '" width="100%" height="400" frameborder="0" allowtransparency="true" scrolling="no" style="display:block;"></iframe>';
+            const card = document.createElement("div"); card.className = "chart-card"; card.id = "card_" + nse;
+            card.innerHTML = '<div class="chart-card-header"><div><div class="chart-card-name">' + name + '</div><div class="chart-card-meta">' + symbol + ' &nbsp;|&nbsp; ' + industry + '</div></div><div class="chart-card-links">' + scrLink + tvLink + '</div></div><iframe src="' + iframeSrc + '" width="100%" height="400" frameborder="0" allowtransparency="true" scrolling="no" style="display:block;"></iframe>';
             grid.appendChild(card);
         });
-
         if (bseOnly.length > 0) {
-            const warn = document.createElement("div");
-            warn.style.cssText = "grid-column:1/-1;background:#fff5f5;border:1px solid #fed7d7;border-radius:8px;padding:12px 16px;color:#c53030;font-size:13px;font-weight:600;margin-top:8px;";
-            warn.innerHTML = "⚠️ " + bseOnly.length + " BSE-only stock(s) — no chart: " + bseOnly.map(function(r){ return r["Company (Page)"] || r["Name"] || ""; }).join(", ");
-            grid.appendChild(warn);
+            const warn = document.createElement("div"); warn.style.cssText = "grid-column:1/-1;background:#fff5f5;border:1px solid #fed7d7;border-radius:8px;padding:12px 16px;color:#c53030;font-size:13px;font-weight:600;margin-top:8px;";
+            warn.innerHTML = "⚠️ " + bseOnly.length + " BSE-only stock(s) — no chart: " + bseOnly.map(r => r["Company (Page)"] || r["Name"] || "").join(", "); grid.appendChild(warn);
         }
     }
 
-
-    /* ===================================================
-       TOGGLE LANDSCAPE (mobile)
-    =================================================== */
     async function toggleLandscape() {
         const tableContainer = document.getElementById('main-table-container');
         try {
@@ -442,474 +629,249 @@
                 if (tableContainer.requestFullscreen) await tableContainer.requestFullscreen();
                 else if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
                 if (screen.orientation && screen.orientation.lock) await screen.orientation.lock("landscape");
-            } else {
-                if (document.exitFullscreen) await document.exitFullscreen();
-            }
-        } catch (err) {
-            alert("To view in landscape mode comfortably, please physically rotate your phone.");
-        }
+            } else { if (document.exitFullscreen) await document.exitFullscreen(); }
+        } catch (err) { alert("To view in landscape mode comfortably, please physically rotate your phone."); }
     }
 
-    /* ===================================================
-       CHAT / NOTES PANEL
-    =================================================== */
     function openChat(ticker, companyName) {
         currentChatTicker = ticker;
         document.getElementById('chat-title').innerText = `📝 Notes: ${companyName}`;
-        document.getElementById('chat-drawer').classList.add('open');
-        document.getElementById('chat-overlay').classList.add('open');
-        const savedName = localStorage.getItem('researcher_name');
-        if (savedName) document.getElementById('chat-author').value = savedName;
+        document.getElementById('chat-drawer').classList.add('open'); document.getElementById('chat-overlay').classList.add('open');
+        const savedName = localStorage.getItem('researcher_name'); if (savedName) document.getElementById('chat-author').value = savedName;
         loadComments(ticker);
     }
-
-    function closeChat() {
-        document.getElementById('chat-drawer').classList.remove('open');
-        document.getElementById('chat-overlay').classList.remove('open');
-    }
-
+    function closeChat() { document.getElementById('chat-drawer').classList.remove('open'); document.getElementById('chat-overlay').classList.remove('open'); }
     async function loadComments(ticker) {
-        const msgDiv = document.getElementById('chat-messages');
-        msgDiv.innerHTML = `<div class="loading" style="padding:20px; font-size:14px;">Loading notes...</div>`;
+        const msgDiv = document.getElementById('chat-messages'); msgDiv.innerHTML = `<div class="loading" style="padding:20px; font-size:14px;">Loading notes...</div>`;
         try {
-            const res = await fetch(`${CHAT_API_URL}?ticker=${encodeURIComponent(ticker)}`);
-            const comments = await res.json();
-            if (!comments || comments.length === 0) {
-                msgDiv.innerHTML = `<div style="text-align:center; color:#718096; font-size:13px; margin-top:20px;">No notes yet. Be the first!</div>`;
-                return;
-            }
-            msgDiv.innerHTML = comments.map(c => `
-                <div class="chat-message">
-                    <div class="author">${c.author}</div>
-                    <div class="text">${c.text}</div>
-                    <div class="time">${new Date(c.timestamp).toLocaleString()}</div>
-                </div>`).join('');
+            const res = await fetch(`${CHAT_API_URL}?ticker=${encodeURIComponent(ticker)}`); const comments = await res.json();
+            if (!comments || comments.length === 0) { msgDiv.innerHTML = `<div style="text-align:center; color:#718096; font-size:13px; margin-top:20px;">No notes yet. Be the first!</div>`; return; }
+            msgDiv.innerHTML = comments.map(c => `<div class="chat-message"><div class="author">${c.author}</div><div class="text">${c.text}</div><div class="time">${new Date(c.timestamp).toLocaleString()}</div></div>`).join('');
             msgDiv.scrollTop = msgDiv.scrollHeight;
-        } catch (e) {
-            msgDiv.innerHTML = `<div style="color:#e53e3e; font-size:13px; text-align:center; margin-top:20px;">Error connecting to database.</div>`;
-        }
+        } catch (e) { msgDiv.innerHTML = `<div style="color:#e53e3e; font-size:13px; text-align:center; margin-top:20px;">Error connecting to database.</div>`; }
     }
-
     async function submitComment() {
-        const author = document.getElementById('chat-author').value.trim();
-        const text   = document.getElementById('chat-input').value.trim();
+        const author = document.getElementById('chat-author').value.trim(); const text = document.getElementById('chat-input').value.trim();
         if (!author || !text) { alert("Please enter your name and a note before posting."); return; }
         localStorage.setItem('researcher_name', author);
-        const btn = document.querySelector('.chat-input-area button');
-        btn.disabled = true; btn.innerText = "Posting...";
-        try {
-            await fetch(CHAT_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ticker: currentChatTicker, author, text })
-            });
-            document.getElementById('chat-input').value = "";
-            await loadComments(currentChatTicker);
-        } catch (e) { alert("Failed to post note. Please try again."); }
+        const btn = document.querySelector('.chat-input-area button'); btn.disabled = true; btn.innerText = "Posting...";
+        try { await fetch(CHAT_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticker: currentChatTicker, author, text }) }); document.getElementById('chat-input').value = ""; await loadComments(currentChatTicker); }
+        catch (e) { alert("Failed to post note. Please try again."); }
         btn.disabled = false; btn.innerText = "Post Note";
     }
 
-    /* ===================================================
-       GITHUB TOKEN / WORKFLOW
-    =================================================== */
     function resetToken() {
         localStorage.removeItem('gh_token');
         alert("GitHub Token wiped! Click 'Run Backend Scraper' to enter a fresh PAT.");
-        document.getElementById('workflow-status').innerText = "Status: Idle (Token Cleared)";
+        setTelemetry('Status: Idle (Token Cleared)', '', null, '');
     }
 
     async function triggerWorkflow() {
         const btn = document.getElementById('run-btn');
-        const statusText = document.getElementById('workflow-status');
         let token = localStorage.getItem('gh_token');
-        if (!token) {
-            token = prompt("Paste your GitHub Personal Access Token (PAT):");
-            if (!token) return;
-            localStorage.setItem('gh_token', token.trim());
-        }
+        if (!token) { token = prompt("Paste your GitHub Personal Access Token (PAT):"); if (!token) return; localStorage.setItem('gh_token', token.trim()); }
         try {
             btn.disabled = true;
-            statusText.innerHTML = `<span class="spinner"></span> Starting engine...`;
-            const dispatchRes = await fetch(
-                `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/dispatches`,
-                { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: BRANCH }) }
-            );
+            _scrapeStartTime = Date.now();
+            setTelemetry('<span class="spinner"></span> Ignition sequence initiated…', 'Dispatching workflow to GitHub Actions', null, 'running');
+            const dispatchRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/dispatches`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: BRANCH }) });
             if (!dispatchRes.ok) {
                 if (dispatchRes.status === 401 || dispatchRes.status === 404) { localStorage.removeItem('gh_token'); throw new Error("Invalid Token. Wiped. Click Run to retry."); }
                 throw new Error(`API Error ${dispatchRes.status}`);
             }
-            statusText.innerHTML = `<span class="spinner"></span> Engine spinning up...`;
-            setTimeout(() => pollWorkflowStatus(token), 5000);
+            setTelemetry('<span class="spinner"></span> Engine online — awaiting telemetry…', 'GitHub runner is spinning up', null, 'running');
+            setTimeout(() => pollWorkflowStatus(token), 6000);
         } catch (error) {
-            statusText.innerHTML = `❌ ${error.message}`;
+            setTelemetry(`❌ ${error.message}`, '', null, 'error');
             btn.disabled = false;
         }
     }
 
     async function pollWorkflowStatus(token) {
-        const statusText = document.getElementById('workflow-status');
         try {
-            const res = await fetch(
-                `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/runs?per_page=1`,
-                { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' } }
-            );
+            // ── 1. Check GitHub Actions run status ──────────────────────────
+            const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/runs?per_page=1`, { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' } });
             const data = await res.json();
+
             if (data.workflow_runs && data.workflow_runs.length > 0) {
                 const latestRun = data.workflow_runs[0];
+
                 if (latestRun.status === "completed") {
                     if (latestRun.conclusion === "success") {
-                        statusText.innerHTML = `✅ Complete! Fetching fresh data...`;
-                        setTimeout(() => { fetchData(); document.getElementById('run-btn').disabled = false; statusText.innerHTML = `Status: Idle (Fresh Data Loaded)`; }, 3000);
-                    } else { statusText.innerHTML = `❌ Failed.`; document.getElementById('run-btn').disabled = false; }
+                        setTelemetry('✅ Ingestion complete — synchronising data feed…', 'All equities processed · refreshing terminal', 100, 'success');
+                        setTimeout(() => {
+                            fetchData();
+                            document.getElementById('run-btn').disabled = false;
+                            setTelemetry('✅ Data feed synchronised', 'Terminal loaded with fresh intelligence', null, 'success');
+                        }, 3000);
+                    } else {
+                        setTelemetry('❌ Acquisition pipeline failed', latestRun.conclusion || 'Unknown error', null, 'error');
+                        document.getElementById('run-btn').disabled = false;
+                    }
                     return;
-                } else { statusText.innerHTML = `<span class="spinner"></span> Engine running...`; }
+                }
+
+                // ── 2. Scraper is still running — fetch live progress.json ──
+                try {
+                    const prog = await fetch(`${PROGRESS_URL}?t=${Date.now()}`);
+                    if (prog.ok) {
+                        const p = await prog.json();
+                        // Expected shape: { total: 110, done: 20, phase: "ingesting" }
+                        const total   = p.total || 0;
+                        const done    = p.done  || 0;
+                        const phase   = p.phase || 'processing';
+                        const pct     = total > 0 ? Math.round((done / total) * 100) : null;
+
+                        // ETA calculation
+                        let etaStr = '';
+                        if (_scrapeStartTime && done > 0 && total > 0) {
+                            const elapsed   = (Date.now() - _scrapeStartTime) / 1000; // seconds
+                            const rate      = done / elapsed;                          // stocks/sec
+                            const remaining = (total - done) / rate;                  // seconds left
+                            if (remaining < 60)       etaStr = ` · ETA ~${Math.ceil(remaining)}s`;
+                            else if (remaining < 3600) etaStr = ` · ETA ~${Math.ceil(remaining / 60)} min`;
+                        }
+
+                        const phaseLabel = phase === 'scanning'   ? '🔍 Universe scan in progress' :
+                                           phase === 'ingesting'  ? '📥 Ingesting equity data'      :
+                                           phase === 'writing'    ? '💾 Committing to data store'   :
+                                                                    '⚙️ Processing';
+                        if (total > 0) {
+                            setTelemetry(
+                                `<span class="spinner"></span> ${phaseLabel}`,
+                                `${total} equities identified · ${done} / ${total} ingested${etaStr}`,
+                                pct,
+                                'running'
+                            );
+                        } else {
+                            setTelemetry(
+                                `<span class="spinner"></span> ${phaseLabel}`,
+                                'Cataloguing universe — stand by',
+                                null,
+                                'running'
+                            );
+                        }
+                    } else {
+                        // progress.json not yet available — generic running state
+                        const elapsedMin = _scrapeStartTime ? Math.floor((Date.now() - _scrapeStartTime) / 60000) : 0;
+                        setTelemetry(
+                            '<span class="spinner"></span> Acquisition pipeline active',
+                            `Elapsed: ${elapsedMin}m — awaiting first telemetry pulse`,
+                            null,
+                            'running'
+                        );
+                    }
+                } catch (_) {
+                    setTelemetry('<span class="spinner"></span> Acquisition pipeline active', 'Awaiting telemetry…', null, 'running');
+                }
             }
         } catch (e) {}
-        setTimeout(() => pollWorkflowStatus(token), 10000);
+        setTimeout(() => pollWorkflowStatus(token), 8000);
     }
 
-    /* ===================================================
-       VIP EXCEPTIONS MODAL
-    =================================================== */
     function toggleGlobalOverride(ruleKey, mainFilterId, checkboxElem) {
         if (checkboxElem.checked) {
             const mainFilter = document.getElementById(mainFilterId);
-            if (!mainFilter || !mainFilter.checked) {
-                alert("PROHIBITED: You cannot exempt industries from this rule because the corresponding Strict Filter is currently OFF.");
-                checkboxElem.checked = false; return;
-            }
+            if (!mainFilter || !mainFilter.checked) { alert("PROHIBITED: You cannot exempt industries from this rule because the corresponding Strict Filter is currently OFF."); checkboxElem.checked = false; return; }
         }
-        globalOverrides[ruleKey] = checkboxElem.checked;
-        applyFiltersAndRender();
+        globalOverrides[ruleKey] = checkboxElem.checked; applyFiltersAndRender();
     }
-
     function handleMainFilterChange(filterId, overrideId, ruleKey) {
         const mainChecked = document.getElementById(filterId).checked;
-        if (!mainChecked) { document.getElementById(overrideId).checked = false; globalOverrides[ruleKey] = false; }
-        applyFiltersAndRender();
+        if (!mainChecked) { const overrideCb = document.getElementById(overrideId); if (overrideCb) overrideCb.checked = false; globalOverrides[ruleKey] = false; }
+        applyFiltersAndRender(); syncBypassLabels();
     }
-
     function renderExceptionsTree() {
-        const container = document.getElementById("exceptions-tree-container");
-        container.innerHTML = "";
+        const container = document.getElementById("exceptions-tree-container"); container.innerHTML = "";
         Object.keys(MASTER_INDUSTRY_MAP).forEach(group => {
-            const subs   = MASTER_INDUSTRY_MAP[group];
-            const safeId = group.replace(/\W/g, '');
-            const item   = document.createElement("div");
-            item.className = "accordion-item";
-            item.innerHTML = `
-                <div class="accordion-header" onclick="toggleAccordion(event, '${safeId}')">
-                    <input type="checkbox" id="chk-grp-${safeId}" onchange="toggleGroup(event, '${group}')">
-                    <span class="accordion-title" id="title-${safeId}">${group}</span>
-                    <span class="accordion-toggle" id="arrow-${safeId}">▼</span>
-                </div>
-                <div class="accordion-body" id="body-${safeId}">
-                    ${subs.map(sub => `<label onclick="event.stopPropagation()"><input type="checkbox" onchange="toggleSub('${sub}')" id="chk-sub-${sub.replace(/\W/g,'')}">${sub}</label>`).join('')}
-                </div>`;
+            const subs = MASTER_INDUSTRY_MAP[group]; const safeId = group.replace(/\W/g, '');
+            const item = document.createElement("div"); item.className = "accordion-item";
+            item.innerHTML = `<div class="accordion-header" onclick="toggleAccordion(event, '${safeId}')"><input type="checkbox" id="chk-grp-${safeId}" onchange="toggleGroup(event, '${group}')"><span class="accordion-title" id="title-${safeId}">${group}</span><span class="accordion-toggle" id="arrow-${safeId}">▼</span></div><div class="accordion-body" id="body-${safeId}">${subs.map(sub => `<label onclick="event.stopPropagation()"><input type="checkbox" onchange="toggleSub('${sub}')" id="chk-sub-${sub.replace(/\W/g,'')}'">${sub}</label>`).join('')}</div>`;
             container.appendChild(item);
-        });
-        updateTreeVisuals();
+        }); updateTreeVisuals();
     }
-
     function toggleAccordion(event, safeId) {
         if (event.target.tagName.toLowerCase() === 'input') return;
-        const body  = document.getElementById(`body-${safeId}`);
-        const arrow = document.getElementById(`arrow-${safeId}`);
-        if (body.style.display === "flex") { body.style.display = "none"; arrow.classList.remove("open"); }
-        else { body.style.display = "flex"; arrow.classList.add("open"); }
+        const body = document.getElementById(`body-${safeId}`); const arrow = document.getElementById(`arrow-${safeId}`);
+        if (body.style.display === "flex") { body.style.display = "none"; arrow.classList.remove("open"); } else { body.style.display = "flex"; arrow.classList.add("open"); }
     }
-
-    function toggleGroup(event, group) {
-        event.stopPropagation();
-        const isChecked = event.target.checked;
-        MASTER_INDUSTRY_MAP[group].forEach(sub => { if (isChecked) vipIndustries.add(sub); else vipIndustries.delete(sub); });
-        updateTreeVisuals();
-    }
-
-    function toggleSub(sub) {
-        if (vipIndustries.has(sub)) vipIndustries.delete(sub); else vipIndustries.add(sub);
-        updateTreeVisuals();
-    }
-
+    function toggleGroup(event, group) { event.stopPropagation(); const isChecked = event.target.checked; MASTER_INDUSTRY_MAP[group].forEach(sub => { if (isChecked) vipIndustries.add(sub); else vipIndustries.delete(sub); }); updateTreeVisuals(); }
+    function toggleSub(sub) { if (vipIndustries.has(sub)) vipIndustries.delete(sub); else vipIndustries.add(sub); updateTreeVisuals(); }
     function updateTreeVisuals() {
         Object.keys(MASTER_INDUSTRY_MAP).forEach(group => {
-            const subs     = MASTER_INDUSTRY_MAP[group];
-            const safeId   = group.replace(/\W/g, '');
-            let checkedCount = 0;
-            subs.forEach(sub => {
-                const isChecked = vipIndustries.has(sub);
-                if (isChecked) checkedCount++;
-                const subCb = document.getElementById(`chk-sub-${sub.replace(/\W/g, '')}`);
-                if (subCb) subCb.checked = isChecked;
-            });
+            const subs = MASTER_INDUSTRY_MAP[group]; const safeId = group.replace(/\W/g, ''); let checkedCount = 0;
+            subs.forEach(sub => { const isChecked = vipIndustries.has(sub); if (isChecked) checkedCount++; const subCb = document.getElementById(`chk-sub-${sub.replace(/\W/g, '')}`); if (subCb) subCb.checked = isChecked; });
             const groupCb = document.getElementById(`chk-grp-${safeId}`);
-            if (groupCb) {
-                groupCb.checked = (checkedCount === subs.length);
-                groupCb.indeterminate = (checkedCount > 0 && checkedCount < subs.length);
-                const titleSpan = document.getElementById(`title-${safeId}`);
-                if (titleSpan) titleSpan.innerHTML = `${group} <span style="color:#718096; font-size:12px; font-weight:normal;">(${checkedCount}/${subs.length})</span>`;
-            }
-        });
-        document.getElementById("exception-count").innerText = `${vipIndustries.size} VIP Industries Selected`;
+            if (groupCb) { groupCb.checked = (checkedCount === subs.length); groupCb.indeterminate = (checkedCount > 0 && checkedCount < subs.length); const titleSpan = document.getElementById(`title-${safeId}`); if (titleSpan) titleSpan.innerHTML = `${group} <span style="color:#718096; font-size:12px; font-weight:normal;">(${checkedCount}/${subs.length})</span>`; }
+        }); document.getElementById("exception-count").innerText = `${vipIndustries.size} VIP Industries Selected`;
     }
+    function openExceptionsModal() { document.getElementById("exceptions-modal").style.display = "flex"; if (document.getElementById("exceptions-tree-container").innerHTML === "") renderExceptionsTree(); syncBypassLabels(); }
+    function closeExceptionsModal() { document.getElementById("exceptions-modal").style.display = "none"; applyFiltersAndRender(); }
 
-    function openExceptionsModal() {
-        document.getElementById("exceptions-modal").style.display = "flex";
-        if (document.getElementById("exceptions-tree-container").innerHTML === "") renderExceptionsTree();
-    }
-
-    function closeExceptionsModal() {
-        document.getElementById("exceptions-modal").style.display = "none";
-        applyFiltersAndRender();
-    }
-
-    /* ===================================================
-       COLUMN DROPDOWN
-    =================================================== */
     function toggleDropdown() {
-        const dropdown = document.getElementById("column-dropdown");
-        const btn      = document.getElementById("dropdown-btn-text");
-        dropdown.classList.toggle("show");
-        btn.classList.toggle("active");
+        const dropdown = document.getElementById("column-dropdown"); const btn = document.getElementById("dropdown-btn-text");
+        dropdown.classList.toggle("show"); btn.classList.toggle("active");
     }
-
-    function updateDropdownText() { document.getElementById("dropdown-btn-text").innerHTML = `👁️ ${visibleColumns.size} Columns Selected <span>▼</span>`; }
-
     window.onclick = function(event) {
         if (!event.target.matches('.dropdown-btn') && !event.target.closest('.dropdown-content') && !event.target.closest('.modal-overlay') && !event.target.closest('.chat-drawer')) {
-            const dropdown = document.getElementById("column-dropdown");
-            const btn      = document.getElementById("dropdown-btn-text");
+            const dropdown = document.getElementById("column-dropdown"); const btn = document.getElementById("dropdown-btn-text");
             if (dropdown && dropdown.classList.contains('show')) { dropdown.classList.remove('show'); btn.classList.remove('active'); }
         }
     };
 
-    /* ===================================================
-       DATA FETCH
-    =================================================== */
     async function fetchData() {
         try {
             const response = await fetch(`${DATA_URL}?t=${new Date().getTime()}`);
             if (!response.ok) throw new Error("Data not found");
             rawData = await response.json();
-
             if (rawData && rawData.length > 0) {
-                allColumns = Object.keys(rawData[0]).filter(col =>
-                    col !== "Name" &&
-                    col !== "NSE Code Exact" &&
-                    col !== "Screener Name Exact" &&
-                    col !== "Investing Name Exact"
-                );
-                matrixColumnName = allColumns.find(col => col.includes("(>70%)")) || "";
-                const defaultCols = ["Sr no","date","Company (Page)","Industry","Industry Group","Promoter Holding","Pledged %","WC Days","70% Surge"];
+                allColumns = Object.keys(rawData[0]).filter(col => col !== "Name" && col !== "NSE Code Exact" && col !== "Screener Name Exact" && col !== "Investing Name Exact");
+                quarterlyColumns = detectQuarterlyColumns(allColumns);
+                const yoyDescs = buildYoYDescriptors();
+                const yoyIds = yoyDescs.map(d => d.id);
+                columnOrder = [...allColumns, ...yoyIds];
+                const defaultCols = ["Sr no","date","Company (Page)","Industry","Industry Group","Promoter Holding","Pledged %","WC Days"];
                 visibleColumns = new Set(defaultCols.filter(c => allColumns.includes(c)));
-                renderColumnToggles();
-                applyFiltersAndRender();
+                renderColumnToggles(); applyFiltersAndRender();
             } else {
                 document.getElementById('table-body').innerHTML = `<tr><td class="loading" style="color:#e53e3e; font-weight:bold;" colspan="100%">⚠️ DATA SYNC ERROR: JSON is empty. Click 'Run Backend Scraper' to rebuild.</td></tr>`;
                 document.getElementById('row-count').innerText = "Showing 0 of 0 stocks";
             }
-        } catch (error) {
-            document.getElementById('table-body').innerHTML = `<tr><td class="loading" style="color:#e53e3e;" colspan="100%">Raw data not found. Run the backend scraper!</td></tr>`;
-        }
-    }
-
-    function renderColumnToggles() {
-        const dropdown = document.getElementById("column-dropdown");
-        dropdown.innerHTML = allColumns.map(col => `
-            <label>
-                <input type="checkbox" value="${col}" ${visibleColumns.has(col) ? 'checked' : ''} onchange="handleColumnToggle(this)">
-                ${getDisplayName(col)}
-            </label>`).join('');
-        updateDropdownText();
-    }
-
-    function handleColumnToggle(checkbox) {
-        if (checkbox.checked) visibleColumns.add(checkbox.value);
-        else visibleColumns.delete(checkbox.value);
-        updateDropdownText();
-        renderTable(currentFilteredData);
+        } catch (error) { document.getElementById('table-body').innerHTML = `<tr><td class="loading" style="color:#e53e3e;" colspan="100%">Raw data not found. Run the backend scraper!</td></tr>`; }
     }
 
     function getDisplayName(col) {
-        if (col === "date")             return "Date";
-        if (col === "Company (Page)")   return "Company";
+        if (col === "date") return "Date";
+        if (col === "Company (Page)") return "Company";
         if (col === "Promoter Holding") return "Promoter %";
+        if (col.startsWith(YOY_PREFIX)) return col.slice(YOY_PREFIX.length);
         return col;
     }
 
-    /* ===================================================
-       FILTER + RENDER
-    =================================================== */
     function applyFiltersAndRender() {
-        const filterPromoter    = document.getElementById('filter-promoter').checked;
-        const filterPledged     = document.getElementById('filter-pledged').checked;
-        const filterWc          = document.getElementById('filter-wc').checked;
-        const filterGrowth      = document.getElementById('filter-growth').checked;
-        const filterCurrentQtr  = document.getElementById('filter-current-qtr').checked;
-        const currentQtr        = getCurrentQuarterCode();
+        const filterGrowth     = document.getElementById('filter-growth').checked;
+        const filterCurrentQtr = document.getElementById('filter-current-qtr').checked;
+        const filterPeakQtr    = document.getElementById('filter-peak-qtr').checked;
+        const filterPromoter   = document.getElementById('filter-promoter').checked;
+        const filterPledged    = document.getElementById('filter-pledged').checked;
+        const filterWc         = document.getElementById('filter-wc').checked;
+        const filterMsi        = document.getElementById('filter-msi').checked;
+        const currentQtr       = getCurrentQuarterCode();
+        const threshGrowth     = parseFloat(document.getElementById('val-growth').value)   || 70;
+        const threshPromoter   = parseFloat(document.getElementById('val-promoter').value) || 50;
+        const threshPledged    = parseFloat(document.getElementById('val-pledged').value)  || 10;
+        const threshWc         = parseFloat(document.getElementById('val-wc').value)       || 150;
+        const threshMsi        = parseFloat(document.getElementById('val-msi').value)      || 80;
 
         let filteredData = rawData.filter(row => {
             const subIndustry = row["Industry"] || "Not Found";
-            const isVip       = vipIndustries.has(subIndustry);
-
-            if (filterPromoter) { if (!(isVip && globalOverrides.bypassPromoter) && (parseFloat(row["Promoter Holding"]) || 0) < 50) return false; }
-            if (filterPledged)  { if (!(isVip && globalOverrides.bypassPledged)  && (parseFloat(row["Pledged %"]) || 0) > 10) return false; }
-            if (filterWc)       { if (!(isVip && globalOverrides.bypassWc)       && (parseFloat(row["WC Days"]) || 999) > 150) return false; }
-            if (filterGrowth && matrixColumnName) { if (!(isVip && globalOverrides.bypassGrowth) && row[matrixColumnName] !== "Yes") return false; }
-            if (filterCurrentQtr) { const surgeVal = (row["70% Surge"] || "").toString().trim(); if (surgeVal !== currentQtr) return false; }
-            return true;
-        });
-
-        if (sortColumn && sortColumn !== "Sr no") {
-            filteredData.sort((a, b) => {
-                let valA = a[sortColumn] ?? -999999, valB = b[sortColumn] ?? -999999;
-                if (valA === "") valA = -999999; if (valB === "") valB = -999999;
-                const numA = parseFloat(valA), numB = parseFloat(valB);
-                if (!isNaN(numA) && !isNaN(numB)) return sortAscending ? numA - numB : numB - numA;
-                const strA = String(valA).toLowerCase(), strB = String(valB).toLowerCase();
-                if (strA < strB) return sortAscending ? -1 : 1;
-                if (strA > strB) return sortAscending ? 1 : -1;
-                return 0;
-            });
-        } else if (sortColumn === "Sr no" && !sortAscending) { filteredData.reverse(); }
-
-        currentFilteredData = filteredData;
-        renderTable(filteredData);
-
-        // Re-render charts if charts view is visible
-        if (currentView === 'charts') renderChartsGrid();
-    }
-
-    function handleSort(col) {
-        if (sortColumn === col) sortAscending = !sortAscending;
-        else { sortColumn = col; sortAscending = true; }
-        applyFiltersAndRender();
-    }
-
-    /* ===================================================
-       TABLE RENDER
-    =================================================== */
-    function renderTable(data) {
-        const thead  = document.getElementById('table-head');
-        const tbody  = document.getElementById('table-body');
-        document.getElementById('row-count').innerText = `Showing ${data.length} of ${rawData.length} stocks`;
-
-        const orderedVisibleCols = allColumns.filter(col => visibleColumns.has(col));
-
-        thead.innerHTML = '<tr>' + orderedVisibleCols.map(col => {
-            let sortIcon = '';
-            if (sortColumn === col) sortIcon = sortAscending ? '<span class="sort-icon">🔼</span>' : '<span class="sort-icon">🔽</span>';
-            return `<th onclick="handleSort('${col}')" title="Click to sort">${getDisplayName(col)}${sortIcon}</th>`;
-        }).join('') + '</tr>';
-
-        if (data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="${orderedVisibleCols.length}" class="loading">No stocks match the criteria.</td></tr>`;
-            return;
-        }
-
-        tbody.innerHTML = data.map((row, index) => {
-            return '<tr>' + orderedVisibleCols.map(col => {
-
-                if (col === "Sr no") {
-                    const displayIndex = sortAscending ? (index + 1) : (data.length - index);
-                    return `<td>${displayIndex}</td>`;
-                }
-
-                if (col === "Company (Page)") {
-                    const fullName      = (row["Company (Page)"] || "").toString();
-                    const rawTicker     = (row["Name"] || "").toString();
-                    const nseCode       = (row["NSE Code Exact"] || "").toString().trim();
-                    const screenerSlug  = (row["Screener Name Exact"] || rawTicker).toString().trim();
-                    const investingSlug = (row["Investing Name Exact"] || "").toString().trim();
-                    const safeTicker    = rawTicker.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                    const safeFullName  = fullName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-
-                    const scrLink = screenerSlug
-                        ? `<a href="https://www.screener.in/company/${screenerSlug}/" target="_blank" title="Open in Screener">SCR</a>`
-                        : '';
-
-                    const tvLink = nseCode
-                        ? `<a href="https://in.tradingview.com/chart/?symbol=NSE%3A${encodeURIComponent(nseCode)}" target="_blank" title="Open TradingView in new tab">TV ↗</a>`
-                        : `<a style="opacity:0.4; cursor:not-allowed; pointer-events:none;" title="BSE-only stock">TV</a>`;
-
-                    const chartBtn = nseCode
-                        ? `<a href="javascript:void(0)" class="chart-btn" onclick="jumpToChart('${nseCode}','${safeFullName}')" title="See chart below">📊 Chart</a>`
-                        : '';
-
-                    const invLink = investingSlug
-                        ? `<a href="https://in.investing.com/equities/${investingSlug}" target="_blank" title="Open in Investing.com" style="background:#e6fffa; color:#276749; border-color:#9ae6b4;">INV</a>`
-                        : '';
-
-                    return `<td>
-                        <div style="font-weight:700; color:#2d3748; margin-bottom:5px;">${fullName}</div>
-                        <div class="action-links">
-                            ${scrLink}
-                            ${tvLink}
-                            ${chartBtn}
-                            ${invLink}
-                            <a href="javascript:void(0)" class="note-btn" onclick="openChat('${safeTicker}', '${safeFullName}')">💬 Notes</a>
-                        </div>
-                    </td>`;
-                }
-
-                let val = row[col];
-                if (col === "date" && val) {
-                    if (typeof val === 'string' && val.includes('-')) {
-                        const parts = val.split('-');
-                        if (parts.length === 3 && parts[0].length === 4) val = `${parts[2]}-${parts[1]}-${parts[0].substring(2)}`;
-                    }
-                }
-                if (val === "Yes") return `<td><span class="badge-yes">Yes</span></td>`;
-                if (val === null || val === 0 || val === "") val = "-";
-                if (col === "Promoter Holding") return `<td style="text-align:right;">${val}</td>`;
-                return `<td>${val}</td>`;
-
-            }).join('') + '</tr>';
-        }).join('');
-    }
-
-    // "📊 Chart" button in List view — switch to Charts view and scroll to that stock
-    function jumpToChart(nseCode, name) {
-        switchView('charts');
-        setTimeout(() => {
-            const el = document.getElementById(`tv_${nseCode}`);
-            if (el) el.closest('.chart-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 300);
-    }
-
-    /* ===================================================
-       CSV EXPORT
-    =================================================== */
-    function exportToCSV() {
-        if (!currentFilteredData || currentFilteredData.length === 0) { alert("No data to export."); return; }
-        const orderedVisibleCols = allColumns.filter(col => visibleColumns.has(col));
-        let csvLines = [orderedVisibleCols.map(c => `"${getDisplayName(c)}"`).join(',')];
-        currentFilteredData.forEach((row, index) => {
-            let rowArray = orderedVisibleCols.map(col => {
-                let val = row[col];
-                if (col === "Sr no") val = sortAscending ? (index + 1) : (currentFilteredData.length - index);
-                if (col === "date" && val && typeof val === 'string' && val.includes('-')) {
-                    const parts = val.split('-');
-                    if (parts.length === 3 && parts[0].length === 4) val = `${parts[2]}-${parts[1]}-${parts[0].substring(2)}`;
-                }
-                if (val === null || val === undefined) val = "";
-                return `"${String(val).replace(/"/g, '""')}"`;
-            });
-            csvLines.push(rowArray.join(','));
-        });
-        const csvBlob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(csvBlob);
-        link.download = `Terminal_Export_${new Date().toISOString().slice(0,10)}.csv`;
-        document.body.appendChild(link); link.click(); document.body.removeChild(link);
-    }
-
-    /* ===================================================
-       INIT
-    =================================================== */
-    updateCurrentQtrBadge();
-    fetchData();
-    renderExceptionsTree();
-</script>
-</body>
-</html>
+            const isVip = vipIndustries.has(subIndustry);
+            if (filterGrowth)     { if (!(isVip && globalOverrides.bypassGrowth)      && !hasYoYSurge(row, threshGrowth)) return false; }
+            if (filterCurrentQtr) {
+                const latestQtrCol = quarterlyColumns[0] || "";
+                const latestCode = toQtrCode(latestQtrCol);
+                if (!(isVip && globalOverrides.bypassCurrentQtr) && latestCode !== currentQtr) return false;
+                if (!(isVip && globalOverrides.bypassCurrentQtr) && !hasYoYSurge(row, 70)) return false;
+            }
+            if (filterPeakQtr)    { if (!(isVip && globalOverrides.bypassPeakQtr)    && !isLatestQtrHighest(row)) return false; }
+            if (filterPromoter)   { if (!(
