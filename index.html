@@ -306,11 +306,28 @@
      */
     const QTR_COL_REGEX = /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{2,4}$/;
 
+    /** Month abbreviation → single uppercase letter */
+    const MONTH_LETTER = { Jan:'J', Feb:'F', Mar:'M', Apr:'A', May:'My', Jun:'J', Jul:'Jl', Aug:'Au', Sep:'S', Oct:'O', Nov:'N', Dec:'D' };
+
+    /**
+     * Convert a quarterly column name like "Mar 2026" or "Mar 26"
+     * into a compact code like "M26".
+     */
+    function toQtrCode(colName) {
+        const parts = colName.trim().split(/\s+/);
+        const mon = parts[0];
+        const yr  = parts[1] || '';
+        const letter = MONTH_LETTER[mon] || mon[0].toUpperCase();
+        const yearShort = yr.length === 4 ? yr.slice(-2) : yr;
+        return letter + yearShort;
+    }
+
     function detectQuarterlyColumns(cols) { return cols.filter(c => QTR_COL_REGEX.test(c.trim())); }
 
     /**
      * Build the 9 rolling YoY column descriptors from the current quarterlyColumns list.
      * Each descriptor: { id, label, newCol, oldCol }
+     * Labels are compact: "M26 - M25", "D25 - D24", etc.
      */
     function buildYoYDescriptors() {
         if (!quarterlyColumns || quarterlyColumns.length < 5) return [];
@@ -318,9 +335,7 @@
         for (let i = 0; i < quarterlyColumns.length - 4 && descs.length < 9; i++) {
             const newCol = quarterlyColumns[i];
             const oldCol = quarterlyColumns[i + 4];
-            const shortNew = newCol.replace(/\s+/g, '');
-            const shortOld = oldCol.replace(/\s+/g, '');
-            const label = `${shortNew} - ${shortOld}`;
+            const label = `${toQtrCode(newCol)} - ${toQtrCode(oldCol)}`;
             descs.push({ id: YOY_PREFIX + label, label, newCol, oldCol });
         }
         return descs;
@@ -673,7 +688,7 @@
         Object.keys(MASTER_INDUSTRY_MAP).forEach(group => {
             const subs = MASTER_INDUSTRY_MAP[group]; const safeId = group.replace(/\W/g, '');
             const item = document.createElement("div"); item.className = "accordion-item";
-            item.innerHTML = `<div class="accordion-header" onclick="toggleAccordion(event, '${safeId}')"><input type="checkbox" id="chk-grp-${safeId}" onchange="toggleGroup(event, '${group}')"><span class="accordion-title" id="title-${safeId}">${group}</span><span class="accordion-toggle" id="arrow-${safeId}">▼</span></div><div class="accordion-body" id="body-${safeId}">${subs.map(sub => `<label onclick="event.stopPropagation()"><input type="checkbox" onchange="toggleSub('${sub}')" id="chk-sub-${sub.replace(/\W/g,'')}">${sub}</label>`).join('')}</div>`;
+            item.innerHTML = `<div class="accordion-header" onclick="toggleAccordion(event, '${safeId}')"><input type="checkbox" id="chk-grp-${safeId}" onchange="toggleGroup(event, '${group}')"><span class="accordion-title" id="title-${safeId}">${group}</span><span class="accordion-toggle" id="arrow-${safeId}">▼</span></div><div class="accordion-body" id="body-${safeId}">${subs.map(sub => `<label onclick="event.stopPropagation()"><input type="checkbox" onchange="toggleSub('${sub}')" id="chk-sub-${sub.replace(/\W/g,'')}'">${sub}</label>`).join('')}</div>`;
             container.appendChild(item);
         }); updateTreeVisuals();
     }
@@ -762,12 +777,7 @@
             if (filterGrowth)     { if (!(isVip && globalOverrides.bypassGrowth)      && !hasYoYSurge(row, threshGrowth)) return false; }
             if (filterCurrentQtr) {
                 const latestQtrCol = quarterlyColumns[0] || "";
-                const parts = latestQtrCol.trim().split(" ");
-                const qtrLetter = parts[0] ? parts[0][0].toUpperCase() : "";
-                const qtrYear   = parts[1] || "";
-                // Handle both 2-digit and 4-digit year for quarter code comparison
-                const qtrYearShort = qtrYear.length === 4 ? qtrYear.slice(-2) : qtrYear;
-                const latestCode = qtrLetter + qtrYearShort;
+                const latestCode = toQtrCode(latestQtrCol);
                 if (!(isVip && globalOverrides.bypassCurrentQtr) && latestCode !== currentQtr) return false;
                 if (!(isVip && globalOverrides.bypassCurrentQtr) && !hasYoYSurge(row, 70)) return false;
             }
@@ -883,20 +893,4 @@
                 }
                 let val = row[col];
                 if (col === "Sr no") val = sortAscending ? (index + 1) : (currentFilteredData.length - index);
-                if (col === "date" && val && typeof val === 'string' && val.includes('-')) { const parts = val.split('-'); if (parts.length === 3 && parts[0].length === 4) val = `${parts[2]}-${parts[1]}-${parts[0].substring(2)}`; }
-                if (val === null || val === undefined) val = "";
-                return `"${String(val).replace(/"/g, '""')}"`;
-            }); csvLines.push(rowArray.join(','));
-        });
-        const csvBlob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a'); link.href = URL.createObjectURL(csvBlob); link.download = `Terminal_Export_${new Date().toISOString().slice(0,10)}.csv`;
-        document.body.appendChild(link); link.click(); document.body.removeChild(link);
-    }
-
-    updateCurrentQtrBadge();
-    fetchData();
-    renderExceptionsTree();
-    syncBypassLabels();
-</script>
-</body>
-</html>
+                if (col === "
