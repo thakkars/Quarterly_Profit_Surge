@@ -24,8 +24,18 @@
             .mobile-only-btn { display: inline-block; background-color: #ed8936; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
             .mobile-only-btn:hover { background-color: #dd6b20; }
         }
-        #workflow-status { font-size: 13px; font-weight: 600; color: #4a5568; margin-left: auto; }
-        .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(0,0,0,0.1); border-radius: 50%; border-top-color: #2b6cb0; animation: spin 1s ease-in-out infinite; vertical-align: middle; margin-right: 5px; }
+        /* ── Scraper Telemetry Widget ── */
+        #scraper-telemetry { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; min-width: 220px; }
+        #telemetry-headline { font-size: 12px; font-weight: 700; color: #4a5568; letter-spacing: 0.03em; }
+        #telemetry-headline.running { color: #2b6cb0; }
+        #telemetry-headline.success { color: #276749; }
+        #telemetry-headline.error   { color: #c53030; }
+        #telemetry-detail { font-size: 11px; color: #718096; font-weight: 500; }
+        #telemetry-bar-wrap { width: 100%; height: 6px; background: #e2e8f0; border-radius: 999px; overflow: hidden; display: none; }
+        #telemetry-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #3182ce, #63b3ed); border-radius: 999px; transition: width 0.6s ease; }
+        #telemetry-bar-wrap.active { display: block; }
+        /* ─────────────────────────────── */
+        .spinner { display: inline-block; width: 11px; height: 11px; border: 2px solid rgba(0,0,0,0.1); border-radius: 50%; border-top-color: #2b6cb0; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 4px; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .view-toggle-wrapper { display: flex; justify-content: flex-end; margin-bottom: 12px; }
         .view-toggle { display: inline-flex; border: 1px solid #cbd5e0; border-radius: 999px; overflow: hidden; background: #edf2f7; }
@@ -57,7 +67,6 @@
         .col-drag-handle { color: #a0aec0; font-size: 13px; flex-shrink: 0; cursor: grab; }
         .col-item input[type="checkbox"] { margin: 0; transform: scale(1.1); cursor: pointer; flex-shrink: 0; }
         .col-item-label { font-size: 13px; color: #2d3748; flex: 1; cursor: pointer; }
-        /* YoY column label styling in dropdown */
         .col-item-label.yoy-label { color: #6b46c1; font-style: italic; }
         .threshold-input { width: 55px; padding: 2px 5px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 13px; font-weight: 600; color: #2b6cb0; text-align: center; margin: 0 2px; background: #ebf8ff; }
         .threshold-input:focus { outline: none; border-color: #3182ce; background: #fff; }
@@ -155,7 +164,12 @@
             <button id="exceptions-btn" onclick="openExceptionsModal()">⚙️ VIP Exceptions</button>
             <button id="export-btn" onclick="exportToCSV()">📥 Export CSV</button>
             <button id="landscape-btn" class="mobile-only-btn" onclick="toggleLandscape()">📱 Flip Table</button>
-            <span id="workflow-status">Status: Idle</span>
+            <!-- Live Scraper Telemetry -->
+            <div id="scraper-telemetry">
+                <span id="telemetry-headline">Status: Idle</span>
+                <span id="telemetry-detail"></span>
+                <div id="telemetry-bar-wrap"><div id="telemetry-bar"></div></div>
+            </div>
         </div>
     </div>
 
@@ -282,6 +296,7 @@
     const WORKFLOW_FILE  = "run_screener.yml";
     const BRANCH         = "main";
     const DATA_URL       = "https://pub-9afc232687c44eebbb8cae359c7ac460.r2.dev/rawdata.json";
+    const PROGRESS_URL   = "https://pub-9afc232687c44eebbb8cae359c7ac460.r2.dev/progress.json";
     const CHAT_API_URL   = "https://terminal-api.deepakkhatwani.workers.dev/api/comments";
 
     let rawData = [];
@@ -296,23 +311,32 @@
     let globalOverrides = { bypassPromoter: false, bypassPledged: false, bypassWc: false, bypassGrowth: false, bypassCurrentQtr: false, bypassPeakQtr: false, bypassMsi: false };
     let vipIndustries = new Set();
     let currentView = 'list';
+    let _scrapeStartTime = null;
+
+    // ── Telemetry helpers ────────────────────────────────────────────────────
+    function setTelemetry(headline, detail, pct, state) {
+        const h = document.getElementById('telemetry-headline');
+        const d = document.getElementById('telemetry-detail');
+        const bar = document.getElementById('telemetry-bar');
+        const wrap = document.getElementById('telemetry-bar-wrap');
+        h.className = state || '';
+        h.innerHTML = headline;
+        d.textContent = detail || '';
+        if (pct !== null && pct !== undefined) {
+            wrap.classList.add('active');
+            bar.style.width = Math.min(100, Math.max(0, pct)) + '%';
+        } else {
+            wrap.classList.remove('active');
+            bar.style.width = '0%';
+        }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     // ── YoY virtual columns ──────────────────────────────────────────────────
     const YOY_PREFIX = "__yoy__";
-
-    /**
-     * Matches quarterly column names with either 2-digit or 4-digit years.
-     * e.g. "Mar 26", "Mar 2026", "Dec 2025", "Sep 25"
-     */
     const QTR_COL_REGEX = /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{2,4}$/;
-
-    /** Month abbreviation → single uppercase letter */
     const MONTH_LETTER = { Jan:'J', Feb:'F', Mar:'M', Apr:'A', May:'My', Jun:'J', Jul:'Jl', Aug:'Au', Sep:'S', Oct:'O', Nov:'N', Dec:'D' };
 
-    /**
-     * Convert a quarterly column name like "Mar 2026" or "Mar 26"
-     * into a compact code like "M26".
-     */
     function toQtrCode(colName) {
         const parts = colName.trim().split(/\s+/);
         const mon = parts[0];
@@ -324,11 +348,6 @@
 
     function detectQuarterlyColumns(cols) { return cols.filter(c => QTR_COL_REGEX.test(c.trim())); }
 
-    /**
-     * Build the 9 rolling YoY column descriptors from the current quarterlyColumns list.
-     * Each descriptor: { id, label, newCol, oldCol }
-     * Labels are compact: "M26 - M25", "D25 - D24", etc.
-     */
     function buildYoYDescriptors() {
         if (!quarterlyColumns || quarterlyColumns.length < 5) return [];
         const descs = [];
@@ -341,7 +360,6 @@
         return descs;
     }
 
-    /** Compute YoY ratio for a single row given descriptor */
     function calcYoY(row, desc) {
         const newVal = parseFloat(row[desc.newCol]);
         const oldVal = parseFloat(row[desc.oldCol]);
@@ -349,7 +367,6 @@
         return (newVal - oldVal) / Math.abs(oldVal);
     }
 
-    /** Format ratio as percentage string for display */
     function formatYoY(ratio) {
         if (ratio === null) return null;
         const sign = ratio >= 0 ? '+' : '';
@@ -643,32 +660,113 @@
         btn.disabled = false; btn.innerText = "Post Note";
     }
 
-    function resetToken() { localStorage.removeItem('gh_token'); alert("GitHub Token wiped! Click 'Run Backend Scraper' to enter a fresh PAT."); document.getElementById('workflow-status').innerText = "Status: Idle (Token Cleared)"; }
+    function resetToken() {
+        localStorage.removeItem('gh_token');
+        alert("GitHub Token wiped! Click 'Run Backend Scraper' to enter a fresh PAT.");
+        setTelemetry('Status: Idle (Token Cleared)', '', null, '');
+    }
+
     async function triggerWorkflow() {
-        const btn = document.getElementById('run-btn'); const statusText = document.getElementById('workflow-status');
+        const btn = document.getElementById('run-btn');
         let token = localStorage.getItem('gh_token');
         if (!token) { token = prompt("Paste your GitHub Personal Access Token (PAT):"); if (!token) return; localStorage.setItem('gh_token', token.trim()); }
         try {
-            btn.disabled = true; statusText.innerHTML = `<span class="spinner"></span> Starting engine...`;
+            btn.disabled = true;
+            _scrapeStartTime = Date.now();
+            setTelemetry('<span class="spinner"></span> Ignition sequence initiated…', 'Dispatching workflow to GitHub Actions', null, 'running');
             const dispatchRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/dispatches`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: BRANCH }) });
-            if (!dispatchRes.ok) { if (dispatchRes.status === 401 || dispatchRes.status === 404) { localStorage.removeItem('gh_token'); throw new Error("Invalid Token. Wiped. Click Run to retry."); } throw new Error(`API Error ${dispatchRes.status}`); }
-            statusText.innerHTML = `<span class="spinner"></span> Engine spinning up...`; setTimeout(() => pollWorkflowStatus(token), 5000);
-        } catch (error) { statusText.innerHTML = `❌ ${error.message}`; btn.disabled = false; }
+            if (!dispatchRes.ok) {
+                if (dispatchRes.status === 401 || dispatchRes.status === 404) { localStorage.removeItem('gh_token'); throw new Error("Invalid Token. Wiped. Click Run to retry."); }
+                throw new Error(`API Error ${dispatchRes.status}`);
+            }
+            setTelemetry('<span class="spinner"></span> Engine online — awaiting telemetry…', 'GitHub runner is spinning up', null, 'running');
+            setTimeout(() => pollWorkflowStatus(token), 6000);
+        } catch (error) {
+            setTelemetry(`❌ ${error.message}`, '', null, 'error');
+            btn.disabled = false;
+        }
     }
+
     async function pollWorkflowStatus(token) {
-        const statusText = document.getElementById('workflow-status');
         try {
+            // ── 1. Check GitHub Actions run status ──────────────────────────
             const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/runs?per_page=1`, { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' } });
             const data = await res.json();
+
             if (data.workflow_runs && data.workflow_runs.length > 0) {
                 const latestRun = data.workflow_runs[0];
+
                 if (latestRun.status === "completed") {
-                    if (latestRun.conclusion === "success") { statusText.innerHTML = `✅ Complete! Fetching fresh data...`; setTimeout(() => { fetchData(); document.getElementById('run-btn').disabled = false; statusText.innerHTML = `Status: Idle (Fresh Data Loaded)`; }, 3000); }
-                    else { statusText.innerHTML = `❌ Failed.`; document.getElementById('run-btn').disabled = false; } return;
-                } else { statusText.innerHTML = `<span class="spinner"></span> Engine running...`; }
+                    if (latestRun.conclusion === "success") {
+                        setTelemetry('✅ Ingestion complete — synchronising data feed…', 'All equities processed · refreshing terminal', 100, 'success');
+                        setTimeout(() => {
+                            fetchData();
+                            document.getElementById('run-btn').disabled = false;
+                            setTelemetry('✅ Data feed synchronised', 'Terminal loaded with fresh intelligence', null, 'success');
+                        }, 3000);
+                    } else {
+                        setTelemetry('❌ Acquisition pipeline failed', latestRun.conclusion || 'Unknown error', null, 'error');
+                        document.getElementById('run-btn').disabled = false;
+                    }
+                    return;
+                }
+
+                // ── 2. Scraper is still running — fetch live progress.json ──
+                try {
+                    const prog = await fetch(`${PROGRESS_URL}?t=${Date.now()}`);
+                    if (prog.ok) {
+                        const p = await prog.json();
+                        // Expected shape: { total: 110, done: 20, phase: "ingesting" }
+                        const total   = p.total || 0;
+                        const done    = p.done  || 0;
+                        const phase   = p.phase || 'processing';
+                        const pct     = total > 0 ? Math.round((done / total) * 100) : null;
+
+                        // ETA calculation
+                        let etaStr = '';
+                        if (_scrapeStartTime && done > 0 && total > 0) {
+                            const elapsed   = (Date.now() - _scrapeStartTime) / 1000; // seconds
+                            const rate      = done / elapsed;                          // stocks/sec
+                            const remaining = (total - done) / rate;                  // seconds left
+                            if (remaining < 60)       etaStr = ` · ETA ~${Math.ceil(remaining)}s`;
+                            else if (remaining < 3600) etaStr = ` · ETA ~${Math.ceil(remaining / 60)} min`;
+                        }
+
+                        const phaseLabel = phase === 'scanning'   ? '🔍 Universe scan in progress' :
+                                           phase === 'ingesting'  ? '📥 Ingesting equity data'      :
+                                           phase === 'writing'    ? '💾 Committing to data store'   :
+                                                                    '⚙️ Processing';
+                        if (total > 0) {
+                            setTelemetry(
+                                `<span class="spinner"></span> ${phaseLabel}`,
+                                `${total} equities identified · ${done} / ${total} ingested${etaStr}`,
+                                pct,
+                                'running'
+                            );
+                        } else {
+                            setTelemetry(
+                                `<span class="spinner"></span> ${phaseLabel}`,
+                                'Cataloguing universe — stand by',
+                                null,
+                                'running'
+                            );
+                        }
+                    } else {
+                        // progress.json not yet available — generic running state
+                        const elapsedMin = _scrapeStartTime ? Math.floor((Date.now() - _scrapeStartTime) / 60000) : 0;
+                        setTelemetry(
+                            '<span class="spinner"></span> Acquisition pipeline active',
+                            `Elapsed: ${elapsedMin}m — awaiting first telemetry pulse`,
+                            null,
+                            'running'
+                        );
+                    }
+                } catch (_) {
+                    setTelemetry('<span class="spinner"></span> Acquisition pipeline active', 'Awaiting telemetry…', null, 'running');
+                }
             }
         } catch (e) {}
-        setTimeout(() => pollWorkflowStatus(token), 10000);
+        setTimeout(() => pollWorkflowStatus(token), 8000);
     }
 
     function toggleGlobalOverride(ruleKey, mainFilterId, checkboxElem) {
@@ -729,17 +827,11 @@
             if (rawData && rawData.length > 0) {
                 allColumns = Object.keys(rawData[0]).filter(col => col !== "Name" && col !== "NSE Code Exact" && col !== "Screener Name Exact" && col !== "Investing Name Exact");
                 quarterlyColumns = detectQuarterlyColumns(allColumns);
-
-                // Build YoY virtual column IDs and append to columnOrder (off by default)
                 const yoyDescs = buildYoYDescriptors();
                 const yoyIds = yoyDescs.map(d => d.id);
-
                 columnOrder = [...allColumns, ...yoyIds];
-
                 const defaultCols = ["Sr no","date","Company (Page)","Industry","Industry Group","Promoter Holding","Pledged %","WC Days"];
                 visibleColumns = new Set(defaultCols.filter(c => allColumns.includes(c)));
-                // YoY columns are NOT added to visibleColumns → off by default
-
                 renderColumnToggles(); applyFiltersAndRender();
             } else {
                 document.getElementById('table-body').innerHTML = `<tr><td class="loading" style="color:#e53e3e; font-weight:bold;" colspan="100%">⚠️ DATA SYNC ERROR: JSON is empty. Click 'Run Backend Scraper' to rebuild.</td></tr>`;
@@ -782,115 +874,4 @@
                 if (!(isVip && globalOverrides.bypassCurrentQtr) && !hasYoYSurge(row, 70)) return false;
             }
             if (filterPeakQtr)    { if (!(isVip && globalOverrides.bypassPeakQtr)    && !isLatestQtrHighest(row)) return false; }
-            if (filterPromoter)   { if (!(isVip && globalOverrides.bypassPromoter)   && (parseFloat(row["Promoter Holding"]) || 0) < threshPromoter) return false; }
-            if (filterPledged)    { if (!(isVip && globalOverrides.bypassPledged)    && (parseFloat(row["Pledged %"]) || 0) > threshPledged) return false; }
-            if (filterWc)         { if (!(isVip && globalOverrides.bypassWc)         && (parseFloat(row["WC Days"]) || 999) > threshWc) return false; }
-            if (filterMsi)        { if (!(isVip && globalOverrides.bypassMsi)        && (parseFloat(row["MSI Price Strength"]) || 0) <= threshMsi) return false; }
-            return true;
-        });
-
-        // Sort — handle YoY virtual columns
-        if (sortColumn && sortColumn !== "Sr no") {
-            const yoyDescs = buildYoYDescriptors();
-            const sortYoY = yoyDescs.find(d => d.id === sortColumn);
-            filteredData.sort((a, b) => {
-                let valA, valB;
-                if (sortYoY) {
-                    valA = calcYoY(a, sortYoY) ?? -999999;
-                    valB = calcYoY(b, sortYoY) ?? -999999;
-                } else {
-                    valA = a[sortColumn] ?? -999999; valB = b[sortColumn] ?? -999999;
-                    if (valA === "") valA = -999999; if (valB === "") valB = -999999;
-                }
-                const numA = parseFloat(valA), numB = parseFloat(valB);
-                if (!isNaN(numA) && !isNaN(numB)) return sortAscending ? numA - numB : numB - numA;
-                const strA = String(valA).toLowerCase(), strB = String(valB).toLowerCase();
-                if (strA < strB) return sortAscending ? -1 : 1; if (strA > strB) return sortAscending ? 1 : -1;
-                return 0;
-            });
-        } else if (sortColumn === "Sr no" && !sortAscending) { filteredData.reverse(); }
-
-        currentFilteredData = filteredData;
-        renderTable(filteredData); syncBypassLabels();
-        if (currentView === 'charts') renderChartsGrid();
-    }
-
-    function handleSort(col) { if (sortColumn === col) sortAscending = !sortAscending; else { sortColumn = col; sortAscending = true; } applyFiltersAndRender(); }
-
-    function renderTable(data) {
-        const thead = document.getElementById('table-head'); const tbody = document.getElementById('table-body');
-        document.getElementById('row-count').innerText = `Showing ${data.length} of ${rawData.length} stocks`;
-        const orderedVisibleCols = columnOrder.filter(col => visibleColumns.has(col));
-        const yoyDescs = buildYoYDescriptors();
-        const yoyMap = Object.fromEntries(yoyDescs.map(d => [d.id, d]));
-
-        thead.innerHTML = '<tr>' + orderedVisibleCols.map(col => {
-            const isYoY = col.startsWith(YOY_PREFIX);
-            let sortIcon = '';
-            if (sortColumn === col) sortIcon = sortAscending ? '<span class="sort-icon">🔼</span>' : '<span class="sort-icon">🔽</span>';
-            const thClass = isYoY ? 'class="yoy-th"' : '';
-            const label = isYoY ? ('📊 ' + getDisplayName(col)) : getDisplayName(col);
-            return `<th ${thClass} onclick="handleSort('${col}')" title="${isYoY ? 'YoY % Growth — click to sort' : 'Click to sort'}">${label}${sortIcon}</th>`;
-        }).join('') + '</tr>';
-
-        if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="${orderedVisibleCols.length}" class="loading">No stocks match the criteria.</td></tr>`; return; }
-
-        tbody.innerHTML = data.map((row, index) => {
-            const qtrVals = quarterlyColumns.map(c => parseFloat(row[c])).filter(v => !isNaN(v));
-            const rowPeak = qtrVals.length > 0 ? Math.max(...qtrVals) : null;
-
-            return '<tr>' + orderedVisibleCols.map(col => {
-                // ── YoY virtual column rendering ──
-                if (col.startsWith(YOY_PREFIX)) {
-                    const desc = yoyMap[col];
-                    if (!desc) return '<td><span class="yoy-na">—</span></td>';
-                    const ratio = calcYoY(row, desc);
-                    if (ratio === null) return '<td><span class="yoy-na">n/a</span></td>';
-                    const formatted = formatYoY(ratio);
-                    const cls = ratio >= 0 ? 'yoy-pos' : 'yoy-neg';
-                    return `<td><span class="${cls}">${formatted}</span></td>`;
-                }
-                // ── Regular column rendering ──
-                if (col === "Sr no") { const displayIndex = sortAscending ? (index + 1) : (data.length - index); return `<td>${displayIndex}</td>`; }
-                if (col === "Company (Page)") {
-                    const fullName = (row["Company (Page)"] || "").toString();
-                    const rawTicker = (row["Name"] || "").toString(); const nseCode = (row["NSE Code Exact"] || "").toString().trim();
-                    const screenerSlug = (row["Screener Name Exact"] || rawTicker).toString().trim(); const investingSlug = (row["Investing Name Exact"] || "").toString().trim();
-                    const safeTicker = rawTicker.replace(/'/g, "\\'").replace(/"/g, '&quot;'); const safeFullName = fullName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                    const scrLink  = screenerSlug ? `<a href="https://www.screener.in/company/${screenerSlug}/" target="_blank" title="Open in Screener">SCR</a>` : '';
-                    const tvLink   = nseCode ? `<a href="https://in.tradingview.com/chart/?symbol=NSE%3A${encodeURIComponent(nseCode)}" target="_blank" title="Open TradingView in new tab">TV ↗</a>` : `<a style="opacity:0.4; cursor:not-allowed; pointer-events:none;" title="BSE-only stock">TV</a>`;
-                    const chartBtn = nseCode ? `<a href="javascript:void(0)" class="chart-btn" onclick="jumpToChart('${nseCode}','${safeFullName}')" title="See chart below">📊 Chart</a>` : '';
-                    const invLink  = investingSlug ? `<a href="https://in.investing.com/equities/${investingSlug}" target="_blank" title="Open in Investing.com" style="background:#e6fffa; color:#276749; border-color:#9ae6b4;">INV</a>` : '';
-                    return `<td><div style="font-weight:700; color:#2d3748; margin-bottom:5px;">${fullName}</div><div class="action-links">${scrLink}${tvLink}${chartBtn}${invLink}<a href="javascript:void(0)" class="note-btn" onclick="openChat('${safeTicker}', '${safeFullName}')">💬 Notes</a></div></td>`;
-                }
-                if (QTR_COL_REGEX.test(col.trim()) && rowPeak !== null) {
-                    const cellVal = parseFloat(row[col]); if (!isNaN(cellVal) && cellVal === rowPeak) return `<td><span class="badge-peak" title="Peak Quarter">${cellVal}</span></td>`;
-                }
-                let val = row[col];
-                if (col === "date" && val && typeof val === 'string' && val.includes('-')) { const parts = val.split('-'); if (parts.length === 3 && parts[0].length === 4) val = `${parts[2]}-${parts[1]}-${parts[0].substring(2)}`; }
-                if (val === "Yes") return `<td><span class="badge-yes">Yes</span></td>`;
-                if (val === null || val === 0 || val === "") val = "-";
-                if (col === "Promoter Holding") return `<td style="text-align:right;">${val}</td>`;
-                return `<td>${val}</td>`;
-            }).join('') + '</tr>';
-        }).join('');
-    }
-
-    function jumpToChart(nseCode, name) { switchView('charts'); setTimeout(() => { const el = document.getElementById(`tv_${nseCode}`); if (el) el.closest('.chart-card').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 300); }
-
-    function exportToCSV() {
-        if (!currentFilteredData || currentFilteredData.length === 0) { alert("No data to export."); return; }
-        const orderedVisibleCols = columnOrder.filter(col => visibleColumns.has(col));
-        const yoyDescs = buildYoYDescriptors();
-        const yoyMap = Object.fromEntries(yoyDescs.map(d => [d.id, d]));
-        let csvLines = [orderedVisibleCols.map(c => `"${c.startsWith(YOY_PREFIX) ? getDisplayName(c) : getDisplayName(c)}"`).join(',')];
-        currentFilteredData.forEach((row, index) => {
-            let rowArray = orderedVisibleCols.map(col => {
-                if (col.startsWith(YOY_PREFIX)) {
-                    const desc = yoyMap[col];
-                    const ratio = desc ? calcYoY(row, desc) : null;
-                    return `"${ratio !== null ? formatYoY(ratio) : ''}"`;
-                }
-                let val = row[col];
-                if (col === "Sr no") val = sortAscending ? (index + 1) : (currentFilteredData.length - index);
-                if (col === "
+            if (filterPromoter)   { if (!(
