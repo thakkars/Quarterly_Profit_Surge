@@ -82,6 +82,7 @@
         tr:hover { background-color: #ebf8ff; }
         .badge-yes { background-color: #48bb78; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
         .badge-peak { background-color: #d69e2e; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        .badge-bse { background-color: #ed8936; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 3px; vertical-align: middle; }
         .yoy-pos { color: #276749; font-weight: 700; }
         .yoy-neg { color: #c53030; font-weight: 700; }
         .yoy-na  { color: #a0aec0; font-size: 12px; }
@@ -755,7 +756,6 @@
             if (!response.ok) throw new Error("Data not found");
             rawData = await response.json();
             if (rawData && rawData.length > 0) {
-                // Include NSE Code Exact in allColumns (only hide internal-only fields)
                 allColumns = Object.keys(rawData[0]).filter(col => col !== "Name" && col !== "Screener Name Exact" && col !== "Investing Name Exact");
                 quarterlyColumns = detectQuarterlyColumns(allColumns);
                 const yoyDescs = buildYoYDescriptors();
@@ -775,7 +775,7 @@
         if (col === "date") return "Date";
         if (col === "Company (Page)") return "Company";
         if (col === "Promoter Holding") return "Promoter %";
-        if (col === "NSE Code Exact") return "NSE Code";
+        if (col === "NSE Code Exact") return "NSE/BSE Code";
         if (col.startsWith(YOY_PREFIX)) return col.slice(YOY_PREFIX.length);
         return col;
     }
@@ -891,19 +891,24 @@
                     const name = row["Company (Page)"] || row["Name"] || "";
                     const screener = (row["Screener Name Exact"] || row["Name"] || "").toString().trim();
                     const nse = (row["NSE Code Exact"] || "").toString().trim();
+                    const bse = (row["BSE Code"] || "").toString().trim();
                     const investing = (row["Investing Name Exact"] || "").toString().trim();
-                    const ticker = nse || screener || name;
+                    const ticker = nse || bse || screener || name;
                     let links = '';
                     if (screener) links += `<a href="https://www.screener.in/company/${screener}/" target="_blank">SCR</a>`;
                     if (nse)      links += `<a href="https://in.tradingview.com/chart/?symbol=NSE:${nse}" target="_blank">TV</a>`;
+                    else if (bse) links += `<a href="https://in.tradingview.com/chart/?symbol=BSE:${bse}" target="_blank">TV</a>`;
                     if (investing) links += `<a href="https://www.investing.com/equities/${investing}" target="_blank">INV</a>`;
                     links += `<a href="#" class="note-btn" onclick="event.preventDefault(); openChat('${ticker.replace(/'/g,"\\'")}', '${name.replace(/'/g,"\\'")}')">📝 Notes</a>`;
                     if (nse) links += `<a href="#" class="chart-btn" onclick="event.preventDefault(); switchView('charts'); setTimeout(()=>{ const el=document.getElementById('card_${nse}'); if(el) el.scrollIntoView({behavior:'smooth'}); },400);">📊 Chart</a>`;
                     td.innerHTML = `<strong>${name}</strong><div class="action-links">${links}</div>`;
                 } else if (col === "NSE Code Exact") {
                     const nse = (row["NSE Code Exact"] || "").toString().trim();
+                    const bse = (row["BSE Code"] || "").toString().trim();
                     if (nse) {
                         td.innerHTML = `<a href="https://in.tradingview.com/chart/?symbol=NSE:${nse}" target="_blank" style="font-weight:600; color:#2b6cb0; text-decoration:none;">${nse}</a>`;
+                    } else if (bse) {
+                        td.innerHTML = `<a href="https://in.tradingview.com/chart/?symbol=BSE:${bse}" target="_blank" style="font-weight:600; color:#c05621; text-decoration:none;">${bse}</a><span class="badge-bse">BSE</span>`;
                     } else {
                         td.textContent = '';
                     }
