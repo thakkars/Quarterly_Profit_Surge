@@ -24,7 +24,6 @@
             .mobile-only-btn { display: inline-block; background-color: #ed8936; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
             .mobile-only-btn:hover { background-color: #dd6b20; }
         }
-        /* ── Scraper Telemetry Widget ── */
         #scraper-telemetry { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; min-width: 220px; }
         #telemetry-headline { font-size: 12px; font-weight: 700; color: #4a5568; letter-spacing: 0.03em; }
         #telemetry-headline.running { color: #2b6cb0; }
@@ -34,7 +33,6 @@
         #telemetry-bar-wrap { width: 100%; height: 6px; background: #e2e8f0; border-radius: 999px; overflow: hidden; display: none; }
         #telemetry-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #3182ce, #63b3ed); border-radius: 999px; transition: width 0.6s ease; }
         #telemetry-bar-wrap.active { display: block; }
-        /* ─────────────────────────────── */
         .spinner { display: inline-block; width: 11px; height: 11px; border: 2px solid rgba(0,0,0,0.1); border-radius: 50%; border-top-color: #2b6cb0; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 4px; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .view-toggle-wrapper { display: flex; justify-content: flex-end; margin-bottom: 12px; }
@@ -164,7 +162,6 @@
             <button id="exceptions-btn" onclick="openExceptionsModal()">⚙️ VIP Exceptions</button>
             <button id="export-btn" onclick="exportToCSV()">📥 Export CSV</button>
             <button id="landscape-btn" class="mobile-only-btn" onclick="toggleLandscape()">📱 Flip Table</button>
-            <!-- Live Scraper Telemetry -->
             <div id="scraper-telemetry">
                 <span id="telemetry-headline">Status: Idle</span>
                 <span id="telemetry-detail"></span>
@@ -260,7 +257,6 @@
     </div>
 </div>
 
-<!-- VIP Exceptions modal -->
 <div id="exceptions-modal" class="modal-overlay">
     <div class="modal-content">
         <div class="modal-header">
@@ -313,7 +309,6 @@
     let currentView = 'list';
     let _scrapeStartTime = null;
 
-    // ── Telemetry helpers ────────────────────────────────────────────────────
     function setTelemetry(headline, detail, pct, state) {
         const h = document.getElementById('telemetry-headline');
         const d = document.getElementById('telemetry-detail');
@@ -330,9 +325,7 @@
             bar.style.width = '0%';
         }
     }
-    // ─────────────────────────────────────────────────────────────────────────
 
-    // ── YoY virtual columns ──────────────────────────────────────────────────
     const YOY_PREFIX = "__yoy__";
     const QTR_COL_REGEX = /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{2,4}$/;
     const MONTH_LETTER = { Jan:'J', Feb:'F', Mar:'M', Apr:'A', May:'My', Jun:'J', Jul:'Jl', Aug:'Au', Sep:'S', Oct:'O', Nov:'N', Dec:'D' };
@@ -372,9 +365,7 @@
         const sign = ratio >= 0 ? '+' : '';
         return sign + (ratio * 100).toFixed(1) + '%';
     }
-    // ─────────────────────────────────────────────────────────────────────────
 
-    /* ── Drag-to-scroll on table container ── */
     (function() {
         let isDown = false, startX, scrollLeft, dragMoved = false;
         document.addEventListener('DOMContentLoaded', function() {
@@ -503,9 +494,6 @@
         });
     }
 
-    /* ═══════════════════════════════════════════
-       COLUMN SETTINGS — Select All / Drag reorder
-    ═══════════════════════════════════════════ */
     let dragSrcIndex = null;
 
     function renderColumnToggles() {
@@ -524,30 +512,16 @@
                 `<span class="col-drag-handle" title="Drag to reorder">⋮⋮</span>` +
                 `<input type="checkbox" id="chk-col-${idx}" ${visibleColumns.has(col) ? 'checked' : ''} onchange="handleColumnToggle(this, '${col}')" onclick="event.stopPropagation()">` +
                 `<label class="${labelClass}" for="chk-col-${idx}">${displayLbl}</label>`;
-
-            item.addEventListener('dragstart', e => {
-                dragSrcIndex = idx;
-                item.classList.add('dragging-item');
-                e.dataTransfer.effectAllowed = 'move';
-            });
-            item.addEventListener('dragend', () => {
-                item.classList.remove('dragging-item');
-                document.querySelectorAll('.col-item').forEach(el => el.classList.remove('drag-over'));
-            });
-            item.addEventListener('dragover', e => {
-                e.preventDefault(); e.dataTransfer.dropEffect = 'move';
-                document.querySelectorAll('.col-item').forEach(el => el.classList.remove('drag-over'));
-                item.classList.add('drag-over');
-            });
+            item.addEventListener('dragstart', e => { dragSrcIndex = idx; item.classList.add('dragging-item'); e.dataTransfer.effectAllowed = 'move'; });
+            item.addEventListener('dragend', () => { item.classList.remove('dragging-item'); document.querySelectorAll('.col-item').forEach(el => el.classList.remove('drag-over')); });
+            item.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; document.querySelectorAll('.col-item').forEach(el => el.classList.remove('drag-over')); item.classList.add('drag-over'); });
             item.addEventListener('drop', e => {
                 e.preventDefault();
                 if (dragSrcIndex === null || dragSrcIndex === idx) return;
                 const moved = columnOrder.splice(dragSrcIndex, 1)[0];
                 columnOrder.splice(idx, 0, moved);
                 dragSrcIndex = null;
-                renderColumnToggles();
-                updateDropdownText();
-                renderTable(currentFilteredData);
+                renderColumnToggles(); updateDropdownText(); renderTable(currentFilteredData);
             });
             list.appendChild(item);
         });
@@ -556,32 +530,25 @@
 
     function handleColumnToggle(checkbox, col) {
         if (checkbox.checked) visibleColumns.add(col); else visibleColumns.delete(col);
-        updateDropdownText();
-        renderTable(currentFilteredData);
+        updateDropdownText(); renderTable(currentFilteredData);
     }
 
     function selectAllColumns(e) {
         e.stopPropagation();
         columnOrder.forEach(col => visibleColumns.add(col));
-        renderColumnToggles();
-        updateDropdownText();
-        renderTable(currentFilteredData);
+        renderColumnToggles(); updateDropdownText(); renderTable(currentFilteredData);
     }
 
     function selectNoneColumns(e) {
         e.stopPropagation();
         visibleColumns.clear();
         visibleColumns.add('Company (Page)');
-        renderColumnToggles();
-        updateDropdownText();
-        renderTable(currentFilteredData);
+        renderColumnToggles(); updateDropdownText(); renderTable(currentFilteredData);
     }
 
     function updateDropdownText() {
         document.getElementById('dropdown-btn-text').innerHTML = `👁️ ${visibleColumns.size} Columns Selected <span>▼</span>`;
     }
-
-    /* ══════════════════════════════ */
 
     function switchView(mode) {
         currentView = mode;
@@ -689,81 +656,44 @@
 
     async function pollWorkflowStatus(token) {
         try {
-            // ── 1. Check GitHub Actions run status ──────────────────────────
             const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/runs?per_page=1`, { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' } });
             const data = await res.json();
-
             if (data.workflow_runs && data.workflow_runs.length > 0) {
                 const latestRun = data.workflow_runs[0];
-
                 if (latestRun.status === "completed") {
                     if (latestRun.conclusion === "success") {
                         setTelemetry('✅ Ingestion complete — synchronising data feed…', 'All equities processed · refreshing terminal', 100, 'success');
-                        setTimeout(() => {
-                            fetchData();
-                            document.getElementById('run-btn').disabled = false;
-                            setTelemetry('✅ Data feed synchronised', 'Terminal loaded with fresh intelligence', null, 'success');
-                        }, 3000);
+                        setTimeout(() => { fetchData(); document.getElementById('run-btn').disabled = false; setTelemetry('✅ Data feed synchronised', 'Terminal loaded with fresh intelligence', null, 'success'); }, 3000);
                     } else {
                         setTelemetry('❌ Acquisition pipeline failed', latestRun.conclusion || 'Unknown error', null, 'error');
                         document.getElementById('run-btn').disabled = false;
                     }
                     return;
                 }
-
-                // ── 2. Scraper is still running — fetch live progress.json ──
                 try {
                     const prog = await fetch(`${PROGRESS_URL}?t=${Date.now()}`);
                     if (prog.ok) {
                         const p = await prog.json();
-                        // Expected shape: { total: 110, done: 20, phase: "ingesting" }
-                        const total   = p.total || 0;
-                        const done    = p.done  || 0;
-                        const phase   = p.phase || 'processing';
-                        const pct     = total > 0 ? Math.round((done / total) * 100) : null;
-
-                        // ETA calculation
+                        const total = p.total || 0; const done = p.done || 0; const phase = p.phase || 'processing';
+                        const pct = total > 0 ? Math.round((done / total) * 100) : null;
                         let etaStr = '';
                         if (_scrapeStartTime && done > 0 && total > 0) {
-                            const elapsed   = (Date.now() - _scrapeStartTime) / 1000; // seconds
-                            const rate      = done / elapsed;                          // stocks/sec
-                            const remaining = (total - done) / rate;                  // seconds left
-                            if (remaining < 60)       etaStr = ` · ETA ~${Math.ceil(remaining)}s`;
+                            const elapsed = (Date.now() - _scrapeStartTime) / 1000;
+                            const rate = done / elapsed; const remaining = (total - done) / rate;
+                            if (remaining < 60) etaStr = ` · ETA ~${Math.ceil(remaining)}s`;
                             else if (remaining < 3600) etaStr = ` · ETA ~${Math.ceil(remaining / 60)} min`;
                         }
-
-                        const phaseLabel = phase === 'scanning'   ? '🔍 Universe scan in progress' :
-                                           phase === 'ingesting'  ? '📥 Ingesting equity data'      :
-                                           phase === 'writing'    ? '💾 Committing to data store'   :
-                                                                    '⚙️ Processing';
+                        const phaseLabel = phase === 'scanning' ? '🔍 Universe scan in progress' : phase === 'ingesting' ? '📥 Ingesting equity data' : phase === 'writing' ? '💾 Committing to data store' : '⚙️ Processing';
                         if (total > 0) {
-                            setTelemetry(
-                                `<span class="spinner"></span> ${phaseLabel}`,
-                                `${total} equities identified · ${done} / ${total} ingested${etaStr}`,
-                                pct,
-                                'running'
-                            );
+                            setTelemetry(`<span class="spinner"></span> ${phaseLabel}`, `${total} equities identified · ${done} / ${total} ingested${etaStr}`, pct, 'running');
                         } else {
-                            setTelemetry(
-                                `<span class="spinner"></span> ${phaseLabel}`,
-                                'Cataloguing universe — stand by',
-                                null,
-                                'running'
-                            );
+                            setTelemetry(`<span class="spinner"></span> ${phaseLabel}`, 'Cataloguing universe — stand by', null, 'running');
                         }
                     } else {
-                        // progress.json not yet available — generic running state
                         const elapsedMin = _scrapeStartTime ? Math.floor((Date.now() - _scrapeStartTime) / 60000) : 0;
-                        setTelemetry(
-                            '<span class="spinner"></span> Acquisition pipeline active',
-                            `Elapsed: ${elapsedMin}m — awaiting first telemetry pulse`,
-                            null,
-                            'running'
-                        );
+                        setTelemetry('<span class="spinner"></span> Acquisition pipeline active', `Elapsed: ${elapsedMin}m — awaiting first telemetry pulse`, null, 'running');
                     }
-                } catch (_) {
-                    setTelemetry('<span class="spinner"></span> Acquisition pipeline active', 'Awaiting telemetry…', null, 'running');
-                }
+                } catch (_) { setTelemetry('<span class="spinner"></span> Acquisition pipeline active', 'Awaiting telemetry…', null, 'running'); }
             }
         } catch (e) {}
         setTimeout(() => pollWorkflowStatus(token), 8000);
@@ -786,7 +716,7 @@
         Object.keys(MASTER_INDUSTRY_MAP).forEach(group => {
             const subs = MASTER_INDUSTRY_MAP[group]; const safeId = group.replace(/\W/g, '');
             const item = document.createElement("div"); item.className = "accordion-item";
-            item.innerHTML = `<div class="accordion-header" onclick="toggleAccordion(event, '${safeId}')"><input type="checkbox" id="chk-grp-${safeId}" onchange="toggleGroup(event, '${group}')"><span class="accordion-title" id="title-${safeId}">${group}</span><span class="accordion-toggle" id="arrow-${safeId}">▼</span></div><div class="accordion-body" id="body-${safeId}">${subs.map(sub => `<label onclick="event.stopPropagation()"><input type="checkbox" onchange="toggleSub('${sub}')" id="chk-sub-${sub.replace(/\W/g,'')}'">${sub}</label>`).join('')}</div>`;
+            item.innerHTML = `<div class="accordion-header" onclick="toggleAccordion(event, '${safeId}')"><input type="checkbox" id="chk-grp-${safeId}" onchange="toggleGroup(event, '${group}')"><span class="accordion-title" id="title-${safeId}">${group}</span><span class="accordion-toggle" id="arrow-${safeId}">▼</span></div><div class="accordion-body" id="body-${safeId}">${subs.map(sub => `<label onclick="event.stopPropagation()"><input type="checkbox" onchange="toggleSub('${sub}')" id="chk-sub-${sub.replace(/\W/g,'')}">${sub}</label>`).join('')}</div>`;
             container.appendChild(item);
         }); updateTreeVisuals();
     }
@@ -873,5 +803,152 @@
                 if (!(isVip && globalOverrides.bypassCurrentQtr) && latestCode !== currentQtr) return false;
                 if (!(isVip && globalOverrides.bypassCurrentQtr) && !hasYoYSurge(row, 70)) return false;
             }
-            if (filterPeakQtr)    { if (!(isVip && globalOverrides.bypassPeakQtr)    && !isLatestQtrHighest(row)) return false; }
-            if (filterPromoter)   { if (!(
+            if (filterPeakQtr)  { if (!(isVip && globalOverrides.bypassPeakQtr)    && !isLatestQtrHighest(row)) return false; }
+            if (filterPromoter) { if (!(isVip && globalOverrides.bypassPromoter)    && (isNaN(parseFloat(row["Promoter Holding"])) || parseFloat(row["Promoter Holding"]) < threshPromoter)) return false; }
+            if (filterPledged)  { if (!(isVip && globalOverrides.bypassPledged)     && (isNaN(parseFloat(row["Pledged %"]))        || parseFloat(row["Pledged %"])        > threshPledged))  return false; }
+            if (filterWc)       { if (!(isVip && globalOverrides.bypassWc)          && (isNaN(parseFloat(row["WC Days"]))           || parseFloat(row["WC Days"])           > threshWc))       return false; }
+            if (filterMsi)      { if (!(isVip && globalOverrides.bypassMsi)         && (isNaN(parseFloat(row["MSI"]))               || parseFloat(row["MSI"])               <= threshMsi))     return false; }
+            return true;
+        });
+
+        filteredData.sort((a, b) => {
+            let aVal = a[sortColumn]; let bVal = b[sortColumn];
+            if (sortColumn.startsWith(YOY_PREFIX)) {
+                const desc = buildYoYDescriptors().find(d => d.id === sortColumn);
+                aVal = desc ? calcYoY(a, desc) : null; bVal = desc ? calcYoY(b, desc) : null;
+                if (aVal === null && bVal === null) return 0;
+                if (aVal === null) return 1; if (bVal === null) return -1;
+                return sortAscending ? aVal - bVal : bVal - aVal;
+            }
+            const aNum = parseFloat(aVal); const bNum = parseFloat(bVal);
+            if (!isNaN(aNum) && !isNaN(bNum)) return sortAscending ? aNum - bNum : bNum - aNum;
+            const aStr = String(aVal || '').toLowerCase(); const bStr = String(bVal || '').toLowerCase();
+            if (aStr < bStr) return sortAscending ? -1 : 1;
+            if (aStr > bStr) return sortAscending ? 1 : -1;
+            return 0;
+        });
+
+        currentFilteredData = filteredData;
+        renderTable(filteredData);
+        if (currentView === 'charts') renderChartsGrid();
+    }
+
+    function renderTable(data) {
+        const thead = document.getElementById('table-head');
+        const tbody = document.getElementById('table-body');
+        const rowCountEl = document.getElementById('row-count');
+        const yoyDescs = buildYoYDescriptors();
+        const yoyDescMap = {};
+        yoyDescs.forEach(d => { yoyDescMap[d.id] = d; });
+
+        const cols = columnOrder.filter(c => visibleColumns.has(c));
+
+        thead.innerHTML = '';
+        const headerRow = document.createElement('tr');
+        cols.forEach(col => {
+            const th = document.createElement('th');
+            const isYoY = col.startsWith(YOY_PREFIX);
+            if (isYoY) th.className = 'yoy-th';
+            const displayName = getDisplayName(col);
+            const isSorted = sortColumn === col;
+            const icon = isSorted ? (sortAscending ? ' ▲' : ' ▼') : ' ↕';
+            th.innerHTML = `${displayName}<span class="sort-icon">${icon}</span>`;
+            th.onclick = () => {
+                if (sortColumn === col) sortAscending = !sortAscending;
+                else { sortColumn = col; sortAscending = true; }
+                applyFiltersAndRender();
+            };
+            headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = `<tr><td class="loading" style="color:#718096;" colspan="${cols.length || 1}">No stocks match the current filter criteria.</td></tr>`;
+            rowCountEl.innerText = "Showing 0 of " + rawData.length + " stocks";
+            return;
+        }
+
+        rowCountEl.innerText = `Showing ${data.length} of ${rawData.length} stocks`;
+        const fragment = document.createDocumentFragment();
+
+        data.forEach(row => {
+            const tr = document.createElement('tr');
+            cols.forEach(col => {
+                const td = document.createElement('td');
+                const isYoY = col.startsWith(YOY_PREFIX);
+
+                if (isYoY) {
+                    const desc = yoyDescMap[col];
+                    if (desc) {
+                        const ratio = calcYoY(row, desc);
+                        const formatted = formatYoY(ratio);
+                        if (formatted === null) { td.innerHTML = '<span class="yoy-na">N/A</span>'; }
+                        else { td.innerHTML = `<span class="${ratio >= 0 ? 'yoy-pos' : 'yoy-neg'}">${formatted}</span>`; }
+                    }
+                } else if (col === "Company (Page)") {
+                    const name = row["Company (Page)"] || row["Name"] || "";
+                    const screener = (row["Screener Name Exact"] || row["Name"] || "").toString().trim();
+                    const nse = (row["NSE Code Exact"] || "").toString().trim();
+                    const investing = (row["Investing Name Exact"] || "").toString().trim();
+                    const ticker = nse || screener || name;
+                    let links = '';
+                    if (screener) links += `<a href="https://www.screener.in/company/${screener}/" target="_blank">SCR</a>`;
+                    if (nse)      links += `<a href="https://in.tradingview.com/chart/?symbol=NSE:${nse}" target="_blank">TV</a>`;
+                    if (investing) links += `<a href="https://www.investing.com/equities/${investing}" target="_blank">INV</a>`;
+                    links += `<a href="#" class="note-btn" onclick="event.preventDefault(); openChat('${ticker.replace(/'/g,"\\'")}', '${name.replace(/'/g,"\\'")}')">📝 Notes</a>`;
+                    if (nse) links += `<a href="#" class="chart-btn" onclick="event.preventDefault(); switchView('charts'); setTimeout(()=>{ const el=document.getElementById('card_${nse}'); if(el) el.scrollIntoView({behavior:'smooth'}); },400);">📊 Chart</a>`;
+                    td.innerHTML = `<strong>${name}</strong><div class="action-links">${links}</div>`;
+                } else {
+                    const val = row[col];
+                    const numVal = parseFloat(val);
+                    if (col === "Surge Quarter") {
+                        td.innerHTML = val ? `<span class="badge-yes">${val}</span>` : '';
+                    } else if (col === "Peak Quarter") {
+                        td.innerHTML = val ? `<span class="badge-peak">${val}</span>` : '';
+                    } else {
+                        td.textContent = (val === null || val === undefined || val === '') ? '' : val;
+                    }
+                }
+                tr.appendChild(td);
+            });
+            fragment.appendChild(tr);
+        });
+        tbody.innerHTML = '';
+        tbody.appendChild(fragment);
+    }
+
+    function exportToCSV() {
+        if (!currentFilteredData || currentFilteredData.length === 0) { alert("No data to export."); return; }
+        const yoyDescs = buildYoYDescriptors();
+        const yoyDescMap = {};
+        yoyDescs.forEach(d => { yoyDescMap[d.id] = d; });
+        const cols = columnOrder.filter(c => visibleColumns.has(c));
+        const headers = cols.map(c => c.startsWith(YOY_PREFIX) ? c.slice(YOY_PREFIX.length) : getDisplayName(c));
+        const rows = currentFilteredData.map(row => cols.map(col => {
+            if (col.startsWith(YOY_PREFIX)) {
+                const desc = yoyDescMap[col];
+                if (!desc) return '';
+                const ratio = calcYoY(row, desc);
+                return formatYoY(ratio) || 'N/A';
+            }
+            const val = row[col];
+            if (val === null || val === undefined) return '';
+            const str = String(val);
+            return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str.replace(/"/g, '""')}"` : str;
+        }));
+        const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url;
+        a.download = `equity_research_${new Date().toISOString().slice(0,10)}.csv`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        updateCurrentQtrBadge();
+        syncBypassLabels();
+        fetchData();
+    });
+</script>
+</body>
+</html>
