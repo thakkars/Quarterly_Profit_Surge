@@ -23,8 +23,9 @@ os.makedirs(FOLDER_PATH, exist_ok=True)
 
 CSV_LOCAL_PATH = os.path.join(FOLDER_PATH, "exchange_codes.csv")
 
-# R2 CONFIG — fallback to known bucket name if secret not set
-R2_BUCKET     = os.environ.get("R2_BUCKET_NAME",       "quarterly-profit-surge")
+# R2 CONFIG
+# Use 'or' so that an empty-string secret also falls back to the hardcoded default
+R2_BUCKET     = os.environ.get("R2_BUCKET_NAME",       "") or "quarterly-profit-surge"
 R2_ACCESS_KEY = os.environ.get("R2_ACCESS_KEY_ID",     "")
 R2_SECRET_KEY = os.environ.get("R2_SECRET_ACCESS_KEY", "")
 R2_ENDPOINT   = os.environ.get("R2_ENDPOINT_URL",      "")
@@ -119,7 +120,6 @@ def get_table_and_headers(driver, wait):
         try:
             table = driver.find_element(By.CSS_SELECTOR, selector)
 
-            # Strategy 1: th inside tbody first row (Screener default)
             header_els = table.find_elements(By.CSS_SELECTOR, "tbody tr:first-child th")
             if not header_els:
                 header_els = table.find_elements(By.CSS_SELECTOR, "thead th")
@@ -136,7 +136,6 @@ def get_table_and_headers(driver, wait):
         except Exception:
             continue
 
-    # Debug dump
     print("  ⚠️  No headers found. Page source snippet:")
     try:
         src = driver.page_source
@@ -179,7 +178,6 @@ def scrape_all_pages(driver, wait):
             print("  ⚠️  'Name' column not found.")
             break
 
-        # Skip header row (tr that contains th)
         all_tr    = table.find_elements(By.CSS_SELECTOR, "tbody tr")
         data_rows = [tr for tr in all_tr if not tr.find_elements(By.TAG_NAME, "th")]
 
