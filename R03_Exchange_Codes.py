@@ -23,7 +23,7 @@ os.makedirs(FOLDER_PATH, exist_ok=True)
 
 CSV_LOCAL_PATH = os.path.join(FOLDER_PATH, "exchange_codes.csv")
 
-# R2 CONFIG
+# R2 CONFIG — fallback to known bucket name if secret not set
 R2_BUCKET     = os.environ.get("R2_BUCKET_NAME",       "quarterly-profit-surge")
 R2_ACCESS_KEY = os.environ.get("R2_ACCESS_KEY_ID",     "")
 R2_SECRET_KEY = os.environ.get("R2_SECRET_ACCESS_KEY", "")
@@ -31,7 +31,7 @@ R2_ENDPOINT   = os.environ.get("R2_ENDPOINT_URL",      "")
 R2_CSV_KEY    = "exchange_codes.csv"
 
 HEADLESS   = IS_GITHUB_ACTIONS
-PAGE_DELAY = 3.0   # slightly longer for JS render
+PAGE_DELAY  = 3.0
 
 # ═══════════════════════════════════════════════════════════
 # R2 HELPERS
@@ -58,6 +58,7 @@ def r2_download_existing():
 
 def r2_upload(local_path, r2_key):
     try:
+        print(f"ℹ️  R2 upload → bucket='{R2_BUCKET}'  key='{r2_key}'  endpoint='{R2_ENDPOINT}'")
         client = get_r2_client()
         client.upload_file(
             local_path, R2_BUCKET, r2_key,
@@ -102,49 +103,41 @@ def login(driver, wait):
         print(f"⚠️  Login issue: {e}")
 
 # ═══════════════════════════════════════════════════════════
-# FIND TABLE — Screener puts <th> inside <tbody> row 1
+# FIND TABLE HEADERS
+# Screener puts <th> inside <tbody> first row, not in <thead>
 # ═══════════════════════════════════════════════════════════
 def get_table_and_headers(driver, wait):
-    """
-    Screener.in screen tables do NOT use <thead>.
-    The first <tr> inside <tbody> contains <th> elements as headers.
-    Returns (table_element, headers_list, col_map_dict) or (None,[],{})
-    """
-    # Wait for ANY table row with th to appear
     try:
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "table tbody tr")))
     except Exception as e:
         print(f"  ⚠️  Timed out waiting for table rows: {e}")
         return None, [], {}
 
-    time.sleep(1)  # extra settle time
+    time.sleep(1)
 
-    # Try data-table first, fallback to first table
     for selector in ["table.data-table", "table"]:
         try:
             table = driver.find_element(By.CSS_SELECTOR, selector)
 
-            # --- Strategy 1: th inside tbody (Screener default) ---
+            # Strategy 1: th inside tbody first row (Screener default)
             header_els = table.find_elements(By.CSS_SELECTOR, "tbody tr:first-child th")
             if not header_els:
-                # --- Strategy 2: th inside thead ---
                 header_els = table.find_elements(By.CSS_SELECTOR, "thead th")
             if not header_els:
-                # --- Strategy 3: any th anywhere in table ---
                 header_els = table.find_elements(By.TAG_NAME, "th")
 
             headers = [el.text.strip() for el in header_els]
-            headers = [h for h in headers if h]   # drop blanks
+            headers = [h for h in headers if h]
 
             if headers:
                 col_map = {h.lower(): i for i, h in enumerate(headers)}
-                print(f"  Headers detected ({len(headers)}): {headers}")
+                print(f"  Headers ({len(headers)}): {headers}")
                 return table, headers, col_map
         except Exception:
             continue
 
-    # Last resort: dump page source snippet for debugging
-    print("  ⚠️  No headers found. Dumping page source snippet for debug:")
+    # Debug dump
+    print("  ⚠️  No headers found. Page source snippet:")
     try:
         src = driver.page_source
         start = src.find("<table")
@@ -154,53 +147,50 @@ def get_table_and_headers(driver, wait):
     return None, [], {}
 
 # ═══════════════════════════════════════════════════════════
-# SCRAPE SCREEN TABLE (all pages)
+# SCRAPE ALL PAGES
 # ═══════════════════════════════════════════════════════════
 def scrape_all_pages(driver, wait):
     driver.get(SCREEN_URL)
-    print(f"  Waiting for page JS to render...")
+    print(f"  Waiting for JS render...")
     time.sleep(PAGE_DELAY)
-
-    # Scroll down to trigger lazy-load
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
     time.sleep(1.5)
     driver.execute_script("window.scrollTo(0, 0);")
     time.sleep(1)
 
     all_rows = []
-    page_num = 1
+    page_num  = 1
 
     while True:
         print(f"\n  📄 Scraping page {page_num}...")
 
         table, headers, col_map = get_table_and_headers(driver, wait)
-
         if not headers or table is None:
-            print("  ❌ Could not read headers — aborting pagination.")
+            print("  ❌ Could not read headers — stopping.")
             break
 
-        # Locate column indices
         name_idx = next((col_map[k] for k in col_map if "name" in k), None)
         bse_idx  = next((col_map[k] for k in col_map if "bse" in k), None)
         nse_idx  = next((col_map[k] for k in col_map if "nse" in k), None)
 
-        print(f"  Column indices → name:{name_idx}  bse:{bse_idx}  nse:{nse_idx}")
+        print(f"  Col idx → name:{name_idx}  bse:{bse_idx}  nse:{nse_idx}")
 
         if name_idx is None:
-            print("  ⚠️  'Name' column not found in headers.")
+            print("  ⚠️  'Name' column not found.")
             break
 
-        # Data rows: skip the first tr if it contains th (header row inside tbody)
-        all_tr = table.find_elements(By.CSS_SELECTOR, "tbody tr")
-        data_rows = []
-        for tr in all_tr:
-            if tr.find_elements(By.TAG_NAME, "th"):
-                continue   # skip header row
-            data_rows.append(tr)
+        # Skip header row (tr that contains th)
+        all_tr    = table.find_elements(By.CSS_SELECTOR, "tbody tr")
+        data_rows = [tr for tr in all_tr if not tr.find_elements(By.TAG_NAME, "th")]
 
         if not data_rows:
-            print("  ℹ️  No data rows found on this page.")
+            print("  ℹ️  No data rows on this page.")
             break
+
+        # Debug: print first row raw cell values
+        if page_num == 1 and data_rows:
+            sample_cells = data_rows[0].find_elements(By.TAG_NAME, "td")
+            print(f"  DEBUG first row cells ({len(sample_cells)}): {[c.text.strip() for c in sample_cells]}")
 
         page_count = 0
         for tr in data_rows:
@@ -208,25 +198,23 @@ def scrape_all_pages(driver, wait):
             if not cells or len(cells) <= name_idx:
                 continue
 
-            # Full company name from anchor if present
             name_cell = cells[name_idx]
             anchors   = name_cell.find_elements(By.TAG_NAME, "a")
             company   = anchors[0].text.strip() if anchors else name_cell.text.strip()
 
-            bse_code = cells[bse_idx].text.strip() if bse_idx is not None and len(cells) > bse_idx else ""
-            nse_code = cells[nse_idx].text.strip() if nse_idx is not None and len(cells) > nse_idx else ""
+            def get_cell(idx):
+                if idx is None or len(cells) <= idx:
+                    return ""
+                return cells[idx].text.strip()
 
-            # Normalise dash/empty codes
             def clean(v):
                 v = v.strip()
                 if v in ("-", "—", "–", "N/A", "NA", ""):
                     return ""
-                if v.endswith(".0"):
-                    v = v[:-2]
-                return v
+                return v[:-2] if v.endswith(".0") else v
 
-            bse_code = clean(bse_code)
-            nse_code = clean(nse_code)
+            bse_code = clean(get_cell(bse_idx))
+            nse_code = clean(get_cell(nse_idx))
 
             if not company:
                 continue
@@ -238,11 +226,10 @@ def scrape_all_pages(driver, wait):
             })
             page_count += 1
 
-        print(f"  ✅ Page {page_num}: {page_count} rows  (running total: {len(all_rows)})")
+        print(f"  ✅ Page {page_num}: {page_count} rows  (total: {len(all_rows)})")
 
-        # ── Next page ──
+        # Next page
         try:
-            # Screener uses li.next > a  OR  a.next
             next_btn = None
             for xpath in [
                 "//li[contains(@class,'next')]/a",
@@ -256,15 +243,14 @@ def scrape_all_pages(driver, wait):
                     break
 
             if next_btn is None:
-                print("  ⏹️  No 'Next' button found — done.")
+                print("  ⏹️  No Next button — done.")
                 break
 
-            classes  = (next_btn.get_attribute("class") or "").lower()
-            parent   = next_btn.find_element(By.XPATH, "..") if next_btn else None
-            p_class  = (parent.get_attribute("class") or "").lower() if parent else ""
-
-            if "disabled" in classes or "disabled" in p_class:
-                print("  ⏹️  Last page reached.")
+            parent  = next_btn.find_element(By.XPATH, "..")
+            classes = (next_btn.get_attribute("class") or "").lower()
+            p_cls   = (parent.get_attribute("class") or "").lower()
+            if "disabled" in classes or "disabled" in p_cls:
+                print("  ⏹️  Last page.")
                 break
 
             driver.execute_script("arguments[0].click();", next_btn)
@@ -278,7 +264,7 @@ def scrape_all_pages(driver, wait):
     return all_rows
 
 # ═══════════════════════════════════════════════════════════
-# MERGE WITH EXISTING CSV (preserve manual edits)
+# MERGE (preserve manual edits in existing CSV)
 # ═══════════════════════════════════════════════════════════
 def merge_with_existing(new_rows):
     df_new = pd.DataFrame(new_rows, columns=["Company", "NSE_Code", "BSE_Code"])
@@ -287,28 +273,21 @@ def merge_with_existing(new_rows):
         try:
             df_old = pd.read_csv(CSV_LOCAL_PATH, dtype=str).fillna("")
             df_old.columns = [c.strip() for c in df_old.columns]
-
-            old_lookup = {str(r.get("Company", "")).strip().lower(): dict(r)
-                          for _, r in df_old.iterrows()}
-            new_lookup = {str(r["Company"]).strip().lower(): dict(r)
-                          for _, r in df_new.iterrows()}
-
+            old_lookup = {str(r.get("Company","")).strip().lower(): dict(r) for _, r in df_old.iterrows()}
+            new_lookup = {str(r["Company"]).strip().lower(): dict(r)          for _, r in df_new.iterrows()}
             merged, seen = [], set()
-            for key, row in new_lookup.items():
-                merged.append(row)
-                seen.add(key)
-            for key, row in old_lookup.items():
-                if key not in seen:
-                    merged.append(row)   # keep manual-only rows
-
+            for k, v in new_lookup.items():
+                merged.append(v); seen.add(k)
+            for k, v in old_lookup.items():
+                if k not in seen:
+                    merged.append(v)
             df_final = pd.DataFrame(merged)
-            for col in ["Company", "NSE_Code", "BSE_Code"]:
-                if col not in df_final.columns:
-                    df_final[col] = ""
+            for col in ["Company","NSE_Code","BSE_Code"]:
+                if col not in df_final.columns: df_final[col] = ""
             print(f"✅ Merged: {len(df_final)} rows total")
             return df_final
         except Exception as e:
-            print(f"⚠️  Merge failed, using fresh data: {e}")
+            print(f"⚠️  Merge failed, using fresh: {e}")
 
     print(f"✅ Fresh CSV: {len(df_new)} rows")
     return df_new
@@ -318,7 +297,8 @@ def merge_with_existing(new_rows):
 # ═══════════════════════════════════════════════════════════
 print("\n🚀 R03_Exchange_Codes.py starting...")
 print(f"   Screen URL : {SCREEN_URL}")
-print(f"   Target R2  : {R2_BUCKET}/{R2_CSV_KEY}")
+print(f"   R2 Bucket  : '{R2_BUCKET}'")
+print(f"   R2 Endpoint: '{R2_ENDPOINT}'")
 print(f"   Timestamp  : {datetime.utcnow().isoformat()}Z")
 
 try:
@@ -337,7 +317,7 @@ try:
     driver.quit()
 
     if not scraped_rows:
-        print("❌ No rows scraped — aborting upload.")
+        print("❌ No rows scraped — aborting.")
         exit(1)
 
     df_final = merge_with_existing(scraped_rows)
@@ -350,6 +330,8 @@ try:
 
     if IS_GITHUB_ACTIONS:
         r2_upload(CSV_LOCAL_PATH, R2_CSV_KEY)
+    else:
+        print("ℹ️  Not in GitHub Actions — skipping R2 upload.")
 
     print("\n✅ R03_Exchange_Codes.py completed successfully.")
 
