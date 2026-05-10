@@ -310,6 +310,15 @@
     let currentView = 'list';
     let _scrapeStartTime = null;
 
+    // ── Helper: given the raw value in "NSE Code Exact", decide if it is
+    //    an NSE alphabetic symbol or a numeric BSE code.
+    function parseExchangeCode(raw) {
+        const code = (raw || "").toString().trim();
+        if (!code) return { nse: "", bse: "" };
+        if (/^\d+$/.test(code)) return { nse: "", bse: code };   // all digits → BSE
+        return { nse: code, bse: "" };
+    }
+
     function setTelemetry(headline, detail, pct, state) {
         const h = document.getElementById('telemetry-headline');
         const d = document.getElementById('telemetry-detail');
@@ -567,12 +576,13 @@
     function renderChartsGrid() {
         const grid = document.getElementById('charts-grid'); const countEl = document.getElementById('charts-count');
         if (!currentFilteredData || currentFilteredData.length === 0) { grid.innerHTML = '<div class="charts-loading">No stocks match the current filters.</div>'; countEl.textContent = '0 stocks'; return; }
-        const nseStocks = currentFilteredData.filter(r => (r["NSE Code Exact"] || "").toString().trim() !== "");
-        const bseOnly   = currentFilteredData.filter(r => (r["NSE Code Exact"] || "").toString().trim() === "");
+        const nseStocks = currentFilteredData.filter(r => parseExchangeCode(r["NSE Code Exact"]).nse !== "");
+        const bseOnly   = currentFilteredData.filter(r => parseExchangeCode(r["NSE Code Exact"]).nse === "");
         countEl.textContent = currentFilteredData.length + " stocks (" + nseStocks.length + " with charts)";
         grid.innerHTML = "";
         nseStocks.forEach(function(row) {
-            const nse = (row["NSE Code Exact"] || "").toString().trim(); const symbol = "NSE:" + nse;
+            const { nse } = parseExchangeCode(row["NSE Code Exact"]);
+            const symbol = "NSE:" + nse;
             const name = (row["Company (Page)"] || row["Name"] || nse).toString();
             const screener = (row["Screener Name Exact"] || row["Name"] || "").toString().trim();
             const industry = (row["Industry"] || "").toString();
@@ -890,8 +900,7 @@
                 } else if (col === "Company (Page)") {
                     const name = row["Company (Page)"] || row["Name"] || "";
                     const screener = (row["Screener Name Exact"] || row["Name"] || "").toString().trim();
-                    const nse = (row["NSE Code Exact"] || "").toString().trim();
-                    const bse = (row["BSE Code"] || "").toString().trim();
+                    const { nse, bse } = parseExchangeCode(row["NSE Code Exact"]);
                     const investing = (row["Investing Name Exact"] || "").toString().trim();
                     const ticker = nse || bse || screener || name;
                     let links = '';
@@ -903,18 +912,16 @@
                     if (nse) links += `<a href="#" class="chart-btn" onclick="event.preventDefault(); switchView('charts'); setTimeout(()=>{ const el=document.getElementById('card_${nse}'); if(el) el.scrollIntoView({behavior:'smooth'}); },400);">📊 Chart</a>`;
                     td.innerHTML = `<strong>${name}</strong><div class="action-links">${links}</div>`;
                 } else if (col === "NSE Code Exact") {
-                    const nse = (row["NSE Code Exact"] || "").toString().trim();
-                    const bse = (row["BSE Code"] || "").toString().trim();
+                    const { nse, bse } = parseExchangeCode(row["NSE Code Exact"]);
                     if (nse) {
                         td.innerHTML = `<a href="https://in.tradingview.com/chart/?symbol=NSE:${nse}" target="_blank" style="font-weight:600; color:#2b6cb0; text-decoration:none;">${nse}</a>`;
                     } else if (bse) {
                         td.innerHTML = `<a href="https://in.tradingview.com/chart/?symbol=BSE:${bse}" target="_blank" style="font-weight:600; color:#c05621; text-decoration:none;">${bse}</a><span class="badge-bse">BSE</span>`;
                     } else {
-                        td.textContent = '';
+                        td.innerHTML = `<span style="color:#a0aec0; font-size:12px;">—</span>`;
                     }
                 } else {
                     const val = row[col];
-                    const numVal = parseFloat(val);
                     if (col === "Surge Quarter") {
                         td.innerHTML = val ? `<span class="badge-yes">${val}</span>` : '';
                     } else if (col === "Peak Quarter") {
