@@ -755,12 +755,13 @@
             if (!response.ok) throw new Error("Data not found");
             rawData = await response.json();
             if (rawData && rawData.length > 0) {
-                allColumns = Object.keys(rawData[0]).filter(col => col !== "Name" && col !== "NSE Code Exact" && col !== "Screener Name Exact" && col !== "Investing Name Exact");
+                // Include NSE Code Exact in allColumns (only hide internal-only fields)
+                allColumns = Object.keys(rawData[0]).filter(col => col !== "Name" && col !== "Screener Name Exact" && col !== "Investing Name Exact");
                 quarterlyColumns = detectQuarterlyColumns(allColumns);
                 const yoyDescs = buildYoYDescriptors();
                 const yoyIds = yoyDescs.map(d => d.id);
                 columnOrder = [...allColumns, ...yoyIds];
-                const defaultCols = ["Sr no","date","Company (Page)","Industry","Industry Group","Promoter Holding","Pledged %","WC Days"];
+                const defaultCols = ["Sr no","date","Company (Page)","NSE Code Exact","Industry","Industry Group","Promoter Holding","Pledged %","WC Days"];
                 visibleColumns = new Set(defaultCols.filter(c => allColumns.includes(c)));
                 renderColumnToggles(); applyFiltersAndRender();
             } else {
@@ -774,6 +775,7 @@
         if (col === "date") return "Date";
         if (col === "Company (Page)") return "Company";
         if (col === "Promoter Holding") return "Promoter %";
+        if (col === "NSE Code Exact") return "NSE Code";
         if (col.startsWith(YOY_PREFIX)) return col.slice(YOY_PREFIX.length);
         return col;
     }
@@ -898,6 +900,13 @@
                     links += `<a href="#" class="note-btn" onclick="event.preventDefault(); openChat('${ticker.replace(/'/g,"\\'")}', '${name.replace(/'/g,"\\'")}')">📝 Notes</a>`;
                     if (nse) links += `<a href="#" class="chart-btn" onclick="event.preventDefault(); switchView('charts'); setTimeout(()=>{ const el=document.getElementById('card_${nse}'); if(el) el.scrollIntoView({behavior:'smooth'}); },400);">📊 Chart</a>`;
                     td.innerHTML = `<strong>${name}</strong><div class="action-links">${links}</div>`;
+                } else if (col === "NSE Code Exact") {
+                    const nse = (row["NSE Code Exact"] || "").toString().trim();
+                    if (nse) {
+                        td.innerHTML = `<a href="https://in.tradingview.com/chart/?symbol=NSE:${nse}" target="_blank" style="font-weight:600; color:#2b6cb0; text-decoration:none;">${nse}</a>`;
+                    } else {
+                        td.textContent = '';
+                    }
                 } else {
                     const val = row[col];
                     const numVal = parseFloat(val);
