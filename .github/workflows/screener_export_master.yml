@@ -1,0 +1,40 @@
+name: Daily Screener Export Master
+
+on:
+  schedule:
+    # 6:00 PM IST = 12:30 UTC
+    - cron: '30 12 * * *'
+  workflow_dispatch:   # Manual trigger from GitHub Actions tab
+
+jobs:
+  screener-export-master:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install selenium pandas boto3 openpyxl
+
+      - name: Set up Chrome + ChromeDriver
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: Run Screener Export Master
+        env:
+          SCREENER_USERNAME:    ${{ secrets.SCREENER_USERNAME }}
+          SCREENER_PASSWORD:    ${{ secrets.SCREENER_PASSWORD }}
+          R2_BUCKET_NAME:       ${{ secrets.R2_BUCKET_NAME }}
+          R2_ACCESS_KEY_ID:     ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT_URL:      ${{ secrets.R2_ENDPOINT_URL }}
+        run: python R04_Screener_Export_Master.py
