@@ -17,9 +17,13 @@ IS_GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS", "false").lower() == "true"
 
 USERNAME   = os.environ.get("SCREENER_USERNAME", "")
 PASSWORD   = os.environ.get("SCREENER_PASSWORD", "")
-SCREEN_URL = "https://www.screener.in/screens/3650931/all-nse-bse-stocks/"
 
-TMP_DIR    = "/tmp/screener_export" if IS_GITHUB_ACTIONS else "."
+SCREEN_ID  = "3650931"
+SCREEN_URL = f"https://www.screener.in/screens/{SCREEN_ID}/all-nse-bse-stocks/"
+# Direct export URL — most reliable; works after login cookie is set
+EXPORT_URL = f"https://www.screener.in/screens/{SCREEN_ID}/export/"
+
+TMP_DIR      = "/tmp/screener_export" if IS_GITHUB_ACTIONS else "."
 os.makedirs(TMP_DIR, exist_ok=True)
 
 DOWNLOAD_DIR = os.path.join(TMP_DIR, "downloads")
@@ -40,8 +44,8 @@ R2_SECRET_KEY = os.environ.get("R2_SECRET_ACCESS_KEY", "")
 R2_ENDPOINT   = os.environ.get("R2_ENDPOINT_URL",      "")
 
 HEADLESS   = IS_GITHUB_ACTIONS
-PAGE_DELAY  = 4.0
-NAME_DELAY  = 1.2   # delay between company page visits
+PAGE_DELAY = 5.0
+NAME_DELAY = 1.2
 
 # ═══════════════════════════════════════════════════════════
 # R2 HELPERS
@@ -111,60 +115,118 @@ def login(driver, wait):
     wait.until(EC.presence_of_element_located((By.NAME, "username"))).send_keys(USERNAME)
     driver.find_element(By.NAME, "password").send_keys(PASSWORD)
     driver.find_element(By.NAME, "password").submit()
-    time.sleep(4)
+    time.sleep(PAGE_DELAY)
+    if "login" in driver.current_url.lower():
+        raise RuntimeError("❌ Login failed — check SCREENER_USERNAME / SCREENER_PASSWORD secrets.")
     print("✅ Logged in to Screener.in")
 
 # ═══════════════════════════════════════════════════════════
-# EXPORT CSV VIA EXPORT BUTTON
+# EXPORT CSV — METHOD 1: DIRECT URL (most reliable)
 # ═══════════════════════════════════════════════════════════
-def export_csv(driver, wait):
+def export_via_direct_url(driver):
     """
-    Navigate to the screen, click the Export button,
-    wait for the CSV to land in DOWNLOAD_DIR, and return its path.
+    Navigate directly to the export endpoint.
+    Screener serves the CSV as a file download when the user is logged in.
     """
+    print(f"  📥 Method 1: Direct export URL → {EXPORT_URL}")
+    driver.get(EXPORT_URL)
+    time.sleep(6)   # give browser time to trigger the download
+
+    files = [f for f in os.listdir(DOWNLOAD_DIR)
+             if f.endswith(".csv") and not f.endswith(".crdownload")]
+    if files:
+        path = os.path.join(DOWNLOAD_DIR, sorted(files)[-1])
+        print(f"  ✅ Downloaded via direct URL: {path}")
+        return path
+    return None
+
+# ═══════════════════════════════════════════════════════════
+# EXPORT CSV — METHOD 2: CLICK EXPORT BUTTON ON PAGE
+# ═══════════════════════════════════════════════════════════
+def export_via_button(driver, wait):
+    """
+    Navigate to the screen page, wait for results table,
+    then click the Export / Export CSV button.
+    """
+    print(f"  🖱️  Method 2: Click Export button on screen page → {SCREEN_URL}")
     driver.get(SCREEN_URL)
-    print(f"  Waiting for screen to load...")
     time.sleep(PAGE_DELAY)
 
+    # Scroll down then back up to trigger lazy-render
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-    time.sleep(1)
+    time.sleep(1.5)
     driver.execute_script("window.scrollTo(0, 0);")
-    time.sleep(1)
+    time.sleep(1.5)
 
-    exported = False
-    for selector in [
-        "a.export-button",
-        "a[href*='export']",
-        "button.export-button",
-        "//*[contains(text(),'Export')]",
-        "//*[contains(text(),'export')]",
-    ]:
+    # Screener.in known selectors (ordered by specificity)
+    SELECTORS = [
+        # Screener's <p class="export"><a ...>Export</a></p> pattern
+        (By.CSS_SELECTOR,  "p.export a"),
+        (By.CSS_SELECTOR,  ".export a"),
+        (By.CSS_SELECTOR,  "a.button-green"),
+        # Generic text-match fallbacks
+        (By.XPATH,         "//a[normalize-space(text())='Export']"),
+        (By.XPATH,         "//a[normalize-space(text())='Export CSV']"),
+        (By.XPATH,         "//button[normalize-space(text())='Export']"),
+        (By.XPATH,         "//*[contains(@class,'export')]//a"),
+        (By.XPATH,         "//*[contains(text(),'Export') and (self::a or self::button)]"),
+    ]
+
+    for by, selector in SELECTORS:
         try:
-            if selector.startswith("/"):
-                btn = wait.until(EC.element_to_be_clickable((By.XPATH, selector)))
-            else:
-                btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, selector)))
+            btn = WebDriverWait(driver, 8).until(EC.element_to_be_clickable((by, selector)))
+            driver.execute_script("arguments[0].scrollIntoView(true);", btn)
+            time.sleep(0.4)
             driver.execute_script("arguments[0].click();", btn)
-            print(f"  ✅ Clicked Export button via selector: {selector}")
-            exported = True
-            break
+            print(f"  ✅ Clicked Export via: {selector}")
+
+            # Wait up to 30s for download
+            for _ in range(30):
+                files = [f for f in os.listdir(DOWNLOAD_DIR)
+                         if f.endswith(".csv") and not f.endswith(".crdownload")]
+                if files:
+                    path = os.path.join(DOWNLOAD_DIR, sorted(files)[-1])
+                    print(f"  ✅ Downloaded via button click: {path}")
+                    return path
+                time.sleep(1)
+            print("  ⚠️  Button clicked but download timed out — trying next selector.")
         except Exception:
             continue
 
-    if not exported:
-        raise RuntimeError("❌ Could not find/click the Export button. Check selector.")
+    return None
 
-    print(f"  ⏳ Waiting for CSV download in {DOWNLOAD_DIR}...")
-    for _ in range(30):
-        files = [f for f in os.listdir(DOWNLOAD_DIR)
-                 if f.endswith(".csv") and not f.endswith(".crdownload")]
-        if files:
-            downloaded = os.path.join(DOWNLOAD_DIR, sorted(files)[-1])
-            print(f"  ✅ Downloaded: {downloaded}")
-            return downloaded
-        time.sleep(1)
+# ═══════════════════════════════════════════════════════════
+# EXPORT CSV — ORCHESTRATOR (tries both methods)
+# ═══════════════════════════════════════════════════════════
+def export_csv(driver, wait):
+    # Clear any stale CSV files from a previous run
+    for f in os.listdir(DOWNLOAD_DIR):
+        if f.endswith(".csv"):
+            os.remove(os.path.join(DOWNLOAD_DIR, f))
 
-    raise RuntimeError("❌ CSV download timed out after 30 seconds.")
+    # Try Method 1: direct URL first (fastest, no DOM dependency)
+    path = export_via_direct_url(driver)
+    if path:
+        return path
+
+    # Try Method 2: button click
+    path = export_via_button(driver, wait)
+    if path:
+        return path
+
+    # Debug: dump page source excerpt to help diagnose
+    try:
+        src = driver.page_source[:3000]
+        print("  🔍 Page source excerpt for debugging:")
+        print(src)
+    except Exception:
+        pass
+
+    raise RuntimeError(
+        "❌ Could not export CSV via direct URL or button click.\n"
+        "   Check: (1) Login succeeded, (2) Screen ID is correct, "
+        "(3) Your Screener plan allows exports."
+    )
 
 # ═══════════════════════════════════════════════════════════
 # FETCH FULL COMPANY NAME FROM SCREENER PAGE
@@ -174,12 +236,6 @@ def screener_slug(nse_code, bse_code):
     return code if code else None
 
 def fetch_full_name(driver, wait, nse_code, bse_code):
-    """
-    Visit https://www.screener.in/company/<NSE_CODE>/
-    and extract the h1 company name.
-    Falls back to BSE code if NSE code is blank.
-    Returns empty string if unable to fetch.
-    """
     slug = screener_slug(nse_code, bse_code)
     if not slug:
         return ""
@@ -287,6 +343,7 @@ def save_master(df):
 # ═══════════════════════════════════════════════════════════
 print("\n🚀 R04_Screener_Export_Master.py starting...")
 print(f"   Screen URL : {SCREEN_URL}")
+print(f"   Export URL : {EXPORT_URL}")
 print(f"   R2 Bucket  : '{R2_BUCKET}'")
 print(f"   Date (UTC) : {TODAY}")
 print(f"   Download   : {DOWNLOAD_DIR}")
@@ -312,7 +369,7 @@ try:
     wait   = WebDriverWait(driver, 25)
     login(driver, wait)
 
-    print(f"\n🌐 Navigating to screen for export: {SCREEN_URL}")
+    print(f"\n📥 Exporting CSV from screen...")
     downloaded_csv = export_csv(driver, wait)
 
     # 3. Load + standardise today's export
