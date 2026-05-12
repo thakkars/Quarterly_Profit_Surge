@@ -78,8 +78,6 @@
         th:hover { background-color: #1a365d; }
         th.yoy-th { background-color: #553c9a; }
         th.yoy-th:hover { background-color: #44337a; }
-        th.bse-th { background-color: #c05621; }
-        th.bse-th:hover { background-color: #9c4221; }
         .sort-icon { font-size: 12px; margin-left: 5px; opacity: 0.7; }
         tr:hover { background-color: #ebf8ff; }
         .badge-yes { background-color: #48bb78; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
@@ -298,10 +296,6 @@
     const PROGRESS_URL   = "https://pub-9afc232687c44eebbb8cae359c7ac460.r2.dev/progress.json";
     const CHAT_API_URL   = "https://terminal-api.deepakkhatwani.workers.dev/api/comments";
 
-    // ── Virtual column IDs for the two exchange code columns ──
-    const COL_NSE = "__col_nse__";
-    const COL_BSE = "__col_bse__";
-
     let rawData = [];
     let currentFilteredData = [];
     let allColumns = [];
@@ -323,18 +317,7 @@
         if (!code) return { nse: "", bse: "" };
         if (/^\d+$/.test(code)) return { nse: "", bse: code };   // all digits → BSE
         return { nse: code, bse: "" };
-    // ── Derive NSE and BSE codes from a single raw data row ──
-    // NSE Code Exact  → alphabetic ticker  (e.g. TARACHAND)  = NSE
-    // Screener Name Exact → alphabetic    = same NSE ticker (no BSE available)
-    //                     → all-digit     = BSE code        (e.g. 523309)
-    function getExchangeCodes(row) {
-        const nseRaw      = (row["NSE Code Exact"]      || "").toString().trim();
-        const screenerRaw = (row["Screener Name Exact"] || "").toString().trim();
-        const nse = (/^\d+$/.test(nseRaw) || nseRaw === "") ? "" : nseRaw;
-        const bse = /^\d+$/.test(screenerRaw) ? screenerRaw : "";
-        return { nse, bse };
     }
-
     function setTelemetry(headline, detail, pct, state) {
         const h = document.getElementById('telemetry-headline');
         const d = document.getElementById('telemetry-detail');
@@ -592,23 +575,21 @@
     function renderChartsGrid() {
         const grid = document.getElementById('charts-grid'); const countEl = document.getElementById('charts-count');
         if (!currentFilteredData || currentFilteredData.length === 0) { grid.innerHTML = '<div class="charts-loading">No stocks match the current filters.</div>'; countEl.textContent = '0 stocks'; return; }
+        const nseStocks = currentFilteredData.filter(r => (r["NSE Code Exact"] || "").toString().trim() !== "");
+        const bseOnly   = currentFilteredData.filter(r => (r["NSE Code Exact"] || "").toString().trim() === "");
         const nseStocks = currentFilteredData.filter(r => parseExchangeCode(r["NSE Code Exact"]).nse !== "");
         const bseOnly   = currentFilteredData.filter(r => parseExchangeCode(r["NSE Code Exact"]).nse === "");
-        const nseStocks = currentFilteredData.filter(r => getExchangeCodes(r).nse !== "");
-        const bseOnly   = currentFilteredData.filter(r => getExchangeCodes(r).nse === "");
         countEl.textContent = currentFilteredData.length + " stocks (" + nseStocks.length + " with charts)";
         grid.innerHTML = "";
         nseStocks.forEach(function(row) {
+            const nse = (row["NSE Code Exact"] || "").toString().trim(); const symbol = "NSE:" + nse;
             const { nse } = parseExchangeCode(row["NSE Code Exact"]);
-            const { nse } = getExchangeCodes(row);
             const symbol = "NSE:" + nse;
             const name = (row["Company (Page)"] || row["Name"] || nse).toString();
             const screener = (row["Screener Name Exact"] || row["Name"] || "").toString().trim();
             const industry = (row["Industry"] || "").toString();
             const scrLink = screener ? '<a href="https://www.screener.in/company/' + screener + '/" target="_blank">SCR</a>' : "";
-            const scrLink = (/^\d+$/.test(screener) ? "" : (screener ? '<a href="https://www.screener.in/company/' + screener + '/" target="_blank">SCR</a>' : ""));
             const tvLink = '<a href="https://in.tradingview.com/chart/?symbol=' + encodeURIComponent(symbol) + '" target="_blank">📈 Open Full Chart</a>';
-            const industry = (row["Industry"] || "").toString();
             const cfg = encodeURIComponent(JSON.stringify({ "symbols": [[name, symbol + "|1D"]], "chartOnly": false, "width": "100%", "height": 400, "locale": "in", "colorTheme": "light", "autosize": true, "showVolume": true, "showMA": true, "hideDateRanges": false, "hideMarketStatus": false, "scalePosition": "right", "scaleMode": "Normal", "fontFamily": "Trebuchet MS", "fontSize": "10", "noTimeScale": false, "valuesTracking": "1", "changeMode": "price-and-percent", "chartType": "candlesticks", "upColor": "#26a69a", "downColor": "#ef5350", "borderUpColor": "#26a69a", "borderDownColor": "#ef5350", "wickUpColor": "#26a69a", "wickDownColor": "#ef5350" }));
             const iframeSrc = "https://s.tradingview.com/embed-widget/symbol-overview/?locale=in#" + cfg;
             const card = document.createElement("div"); card.className = "chart-card"; card.id = "card_" + nse;
@@ -788,25 +769,12 @@
             rawData = await response.json();
             if (rawData && rawData.length > 0) {
                 allColumns = Object.keys(rawData[0]).filter(col => col !== "Name" && col !== "Screener Name Exact" && col !== "Investing Name Exact");
-                // Exclude raw source columns from visible column list; we inject virtual NSE/BSE columns instead
-                allColumns = Object.keys(rawData[0]).filter(col =>
-                    col !== "Name" &&
-                    col !== "Screener Name Exact" &&
-                    col !== "Investing Name Exact" &&
-                    col !== "NSE Code Exact"
-                );
                 quarterlyColumns = detectQuarterlyColumns(allColumns);
                 const yoyDescs = buildYoYDescriptors();
                 const yoyIds = yoyDescs.map(d => d.id);
-                // Insert NSE and BSE virtual columns right after Company (Page)
-                const companyIdx = allColumns.indexOf("Company (Page)");
-                const insertAt = companyIdx >= 0 ? companyIdx + 1 : 1;
-                allColumns.splice(insertAt, 0, COL_NSE, COL_BSE);
                 columnOrder = [...allColumns, ...yoyIds];
                 const defaultCols = ["Sr no","date","Company (Page)","NSE Code Exact","Industry","Industry Group","Promoter Holding","Pledged %","WC Days"];
                 visibleColumns = new Set(defaultCols.filter(c => allColumns.includes(c)));
-                const defaultCols = ["Sr no","date","Company (Page)",COL_NSE,COL_BSE,"Industry","Industry Group","Promoter Holding","Pledged %","WC Days"];
-                visibleColumns = new Set(defaultCols.filter(c => columnOrder.includes(c)));
                 renderColumnToggles(); applyFiltersAndRender();
             } else {
                 document.getElementById('table-body').innerHTML = `<tr><td class="loading" style="color:#e53e3e; font-weight:bold;" colspan="100%">⚠️ DATA SYNC ERROR: JSON is empty. Click 'Run Backend Scraper' to rebuild.</td></tr>`;
@@ -820,8 +788,6 @@
         if (col === "Company (Page)") return "Company";
         if (col === "Promoter Holding") return "Promoter %";
         if (col === "NSE Code Exact") return "NSE/BSE Code";
-        if (col === COL_NSE) return "NSE Code";
-        if (col === COL_BSE) return "BSE Code";
         if (col.startsWith(YOY_PREFIX)) return col.slice(YOY_PREFIX.length);
         return col;
     }
@@ -862,17 +828,12 @@
         filteredData.sort((a, b) => {
             let aVal = a[sortColumn]; let bVal = b[sortColumn];
             if (sortColumn.startsWith(YOY_PREFIX)) {
-            let aVal, bVal;
-            if (sortColumn === COL_NSE) { aVal = getExchangeCodes(a).nse; bVal = getExchangeCodes(b).nse; }
-            else if (sortColumn === COL_BSE) { aVal = getExchangeCodes(a).bse; bVal = getExchangeCodes(b).bse; }
-            else if (sortColumn.startsWith(YOY_PREFIX)) {
                 const desc = buildYoYDescriptors().find(d => d.id === sortColumn);
                 aVal = desc ? calcYoY(a, desc) : null; bVal = desc ? calcYoY(b, desc) : null;
                 if (aVal === null && bVal === null) return 0;
                 if (aVal === null) return 1; if (bVal === null) return -1;
                 return sortAscending ? aVal - bVal : bVal - aVal;
             }
-            } else { aVal = a[sortColumn]; bVal = b[sortColumn]; }
             const aNum = parseFloat(aVal); const bNum = parseFloat(bVal);
             if (!isNaN(aNum) && !isNaN(bNum)) return sortAscending ? aNum - bNum : bNum - aNum;
             const aStr = String(aVal || '').toLowerCase(); const bStr = String(bVal || '').toLowerCase();
@@ -902,8 +863,6 @@
             const th = document.createElement('th');
             const isYoY = col.startsWith(YOY_PREFIX);
             if (isYoY) th.className = 'yoy-th';
-            if (col.startsWith(YOY_PREFIX)) th.className = 'yoy-th';
-            else if (col === COL_BSE) th.className = 'bse-th';
             const displayName = getDisplayName(col);
             const isSorted = sortColumn === col;
             const icon = isSorted ? (sortAscending ? ' ▲' : ' ▼') : ' ↕';
@@ -928,16 +887,11 @@
 
         data.forEach(row => {
             const tr = document.createElement('tr');
-            const { nse, bse } = getExchangeCodes(row);
-            const screener = (row["Screener Name Exact"] || "").toString().trim();
-            const investing = (row["Investing Name Exact"] || "").toString().trim();
-
             cols.forEach(col => {
                 const td = document.createElement('td');
                 const isYoY = col.startsWith(YOY_PREFIX);
 
                 if (isYoY) {
-                if (col.startsWith(YOY_PREFIX)) {
                     const desc = yoyDescMap[col];
                     if (desc) {
                         const ratio = calcYoY(row, desc);
@@ -948,13 +902,13 @@
                 } else if (col === "Company (Page)") {
                     const name = row["Company (Page)"] || row["Name"] || "";
                     const screener = (row["Screener Name Exact"] || row["Name"] || "").toString().trim();
+                    const nse = (row["NSE Code Exact"] || "").toString().trim();
+                    const bse = (row["BSE Code"] || "").toString().trim();
                     const { nse, bse } = parseExchangeCode(row["NSE Code Exact"]);
                     const investing = (row["Investing Name Exact"] || "").toString().trim();
                     const ticker = nse || bse || screener || name;
                     let links = '';
                     if (screener) links += `<a href="https://www.screener.in/company/${screener}/" target="_blank">SCR</a>`;
-                    // SCR link: only when screener name is alphabetic (not a BSE code)
-                    if (screener && !/^\d+$/.test(screener)) links += `<a href="https://www.screener.in/company/${screener}/" target="_blank">SCR</a>`;
                     if (nse)      links += `<a href="https://in.tradingview.com/chart/?symbol=NSE:${nse}" target="_blank">TV</a>`;
                     else if (bse) links += `<a href="https://in.tradingview.com/chart/?symbol=BSE:${bse}" target="_blank">TV</a>`;
                     if (investing) links += `<a href="https://www.investing.com/equities/${investing}" target="_blank">INV</a>`;
@@ -962,27 +916,20 @@
                     if (nse) links += `<a href="#" class="chart-btn" onclick="event.preventDefault(); switchView('charts'); setTimeout(()=>{ const el=document.getElementById('card_${nse}'); if(el) el.scrollIntoView({behavior:'smooth'}); },400);">📊 Chart</a>`;
                     td.innerHTML = `<strong>${name}</strong><div class="action-links">${links}</div>`;
                 } else if (col === "NSE Code Exact") {
+                    const nse = (row["NSE Code Exact"] || "").toString().trim();
+                    const bse = (row["BSE Code"] || "").toString().trim();
                     const { nse, bse } = parseExchangeCode(row["NSE Code Exact"]);
-
-                } else if (col === COL_NSE) {
                     if (nse) {
                         td.innerHTML = `<a href="https://in.tradingview.com/chart/?symbol=NSE:${nse}" target="_blank" style="font-weight:600; color:#2b6cb0; text-decoration:none;">${nse}</a>`;
                     } else if (bse) {
                         td.innerHTML = `<a href="https://in.tradingview.com/chart/?symbol=BSE:${bse}" target="_blank" style="font-weight:600; color:#c05621; text-decoration:none;">${bse}</a><span class="badge-bse">BSE</span>`;
                     } else {
+                        td.textContent = '';
                         td.innerHTML = `<span style="color:#a0aec0; font-size:12px;">—</span>`;
-                        td.innerHTML = `<span style="color:#cbd5e0; font-size:12px;">—</span>`;
                     }
-
-                } else if (col === COL_BSE) {
-                    if (bse) {
-                        td.innerHTML = `<a href="https://in.tradingview.com/chart/?symbol=BSE:${bse}" target="_blank" style="font-weight:600; color:#c05621; text-decoration:none;">${bse}</a>`;
-                    } else {
-                        td.innerHTML = `<span style="color:#cbd5e0; font-size:12px;">—</span>`;
-                    }
-
                 } else {
                     const val = row[col];
+                    const numVal = parseFloat(val);
                     if (col === "Surge Quarter") {
                         td.innerHTML = val ? `<span class="badge-yes">${val}</span>` : '';
                     } else if (col === "Peak Quarter") {
@@ -1018,23 +965,6 @@
             const str = String(val);
             return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str.replace(/"/g, '""')}"` : str;
         }));
-        const headers = cols.map(c => getDisplayName(c));
-        const rows = currentFilteredData.map(row => {
-            const { nse, bse } = getExchangeCodes(row);
-            return cols.map(col => {
-                if (col.startsWith(YOY_PREFIX)) {
-                    const desc = yoyDescMap[col];
-                    if (!desc) return '';
-                    return formatYoY(calcYoY(row, desc)) || 'N/A';
-                }
-                if (col === COL_NSE) return nse;
-                if (col === COL_BSE) return bse;
-                const val = row[col];
-                if (val === null || val === undefined) return '';
-                const str = String(val);
-                return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str.replace(/"/g, '""')}"` : str;
-            });
-        });
         const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -1051,3 +981,11 @@
 </script>
 </body>
 </html>
+0 commit comments
+Comments
+0
+ (0)
+Comment
+You're not receiving notifications from this thread.
+
+Copied!
