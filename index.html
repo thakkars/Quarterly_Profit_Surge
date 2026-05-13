@@ -24,6 +24,7 @@
             .mobile-only-btn { display: inline-block; background-color: #ed8936; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
             .mobile-only-btn:hover { background-color: #dd6b20; }
         }
+        /* ── Scraper Telemetry Widget ── */
         #scraper-telemetry { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; min-width: 220px; }
         #telemetry-headline { font-size: 12px; font-weight: 700; color: #4a5568; letter-spacing: 0.03em; }
         #telemetry-headline.running { color: #2b6cb0; }
@@ -33,6 +34,7 @@
         #telemetry-bar-wrap { width: 100%; height: 6px; background: #e2e8f0; border-radius: 999px; overflow: hidden; display: none; }
         #telemetry-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #3182ce, #63b3ed); border-radius: 999px; transition: width 0.6s ease; }
         #telemetry-bar-wrap.active { display: block; }
+        /* ─────────────────────────────── */
         .spinner { display: inline-block; width: 11px; height: 11px; border: 2px solid rgba(0,0,0,0.1); border-radius: 50%; border-top-color: #2b6cb0; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 4px; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .view-toggle-wrapper { display: flex; justify-content: flex-end; margin-bottom: 12px; }
@@ -78,13 +80,10 @@
         th:hover { background-color: #1a365d; }
         th.yoy-th { background-color: #553c9a; }
         th.yoy-th:hover { background-color: #44337a; }
-        th.bse-th { background-color: #c05621; }
-        th.bse-th:hover { background-color: #9c4221; }
         .sort-icon { font-size: 12px; margin-left: 5px; opacity: 0.7; }
         tr:hover { background-color: #ebf8ff; }
         .badge-yes { background-color: #48bb78; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
         .badge-peak { background-color: #d69e2e; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
-        .badge-bse { background-color: #ed8936; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 3px; vertical-align: middle; }
         .yoy-pos { color: #276749; font-weight: 700; }
         .yoy-neg { color: #c53030; font-weight: 700; }
         .yoy-na  { color: #a0aec0; font-size: 12px; }
@@ -165,6 +164,7 @@
             <button id="exceptions-btn" onclick="openExceptionsModal()">⚙️ VIP Exceptions</button>
             <button id="export-btn" onclick="exportToCSV()">📥 Export CSV</button>
             <button id="landscape-btn" class="mobile-only-btn" onclick="toggleLandscape()">📱 Flip Table</button>
+            <!-- Live Scraper Telemetry -->
             <div id="scraper-telemetry">
                 <span id="telemetry-headline">Status: Idle</span>
                 <span id="telemetry-detail"></span>
@@ -260,6 +260,7 @@
     </div>
 </div>
 
+<!-- VIP Exceptions modal -->
 <div id="exceptions-modal" class="modal-overlay">
     <div class="modal-content">
         <div class="modal-header">
@@ -298,10 +299,6 @@
     const PROGRESS_URL   = "https://pub-9afc232687c44eebbb8cae359c7ac460.r2.dev/progress.json";
     const CHAT_API_URL   = "https://terminal-api.deepakkhatwani.workers.dev/api/comments";
 
-    // ── Virtual column IDs for the two exchange code columns ──
-    const COL_NSE = "__col_nse__";
-    const COL_BSE = "__col_bse__";
-
     let rawData = [];
     let currentFilteredData = [];
     let allColumns = [];
@@ -316,25 +313,7 @@
     let currentView = 'list';
     let _scrapeStartTime = null;
 
-    // ── Helper: given the raw value in "NSE Code Exact", decide if it is
-    //    an NSE alphabetic symbol or a numeric BSE code.
-    function parseExchangeCode(raw) {
-        const code = (raw || "").toString().trim();
-        if (!code) return { nse: "", bse: "" };
-        if (/^\d+$/.test(code)) return { nse: "", bse: code };   // all digits → BSE
-        return { nse: code, bse: "" };
-    // ── Derive NSE and BSE codes from a single raw data row ──
-    // NSE Code Exact  → alphabetic ticker  (e.g. TARACHAND)  = NSE
-    // Screener Name Exact → alphabetic    = same NSE ticker (no BSE available)
-    //                     → all-digit     = BSE code        (e.g. 523309)
-    function getExchangeCodes(row) {
-        const nseRaw      = (row["NSE Code Exact"]      || "").toString().trim();
-        const screenerRaw = (row["Screener Name Exact"] || "").toString().trim();
-        const nse = (/^\d+$/.test(nseRaw) || nseRaw === "") ? "" : nseRaw;
-        const bse = /^\d+$/.test(screenerRaw) ? screenerRaw : "";
-        return { nse, bse };
-    }
-
+    // ── Telemetry helpers ────────────────────────────────────────────────────
     function setTelemetry(headline, detail, pct, state) {
         const h = document.getElementById('telemetry-headline');
         const d = document.getElementById('telemetry-detail');
@@ -351,10 +330,22 @@
             bar.style.width = '0%';
         }
     }
+    // ─────────────────────────────────────────────────────────────────────────
 
+    // ── YoY virtual columns ──────────────────────────────────────────────────
+    const COL_NSE = "__col_nse__";
+    const COL_BSE = "__col_bse__";
     const YOY_PREFIX = "__yoy__";
     const QTR_COL_REGEX = /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{2,4}$/;
     const MONTH_LETTER = { Jan:'J', Feb:'F', Mar:'M', Apr:'A', May:'My', Jun:'J', Jul:'Jl', Aug:'Au', Sep:'S', Oct:'O', Nov:'N', Dec:'D' };
+
+    function getExchangeCodes(row) {
+        const nseRaw      = (row["NSE Code Exact"]      || "").toString().trim();
+        const screenerRaw = (row["Screener Name Exact"] || "").toString().trim();
+        const nse = (/^\d+$/.test(nseRaw) || nseRaw === "") ? "" : nseRaw;
+        const bse = /^\d+$/.test(screenerRaw) ? screenerRaw : "";
+        return { nse, bse };
+    }
 
     function toQtrCode(colName) {
         const parts = colName.trim().split(/\s+/);
@@ -391,7 +382,9 @@
         const sign = ratio >= 0 ? '+' : '';
         return sign + (ratio * 100).toFixed(1) + '%';
     }
+    // ─────────────────────────────────────────────────────────────────────────
 
+    /* ── Drag-to-scroll on table container ── */
     (function() {
         let isDown = false, startX, scrollLeft, dragMoved = false;
         document.addEventListener('DOMContentLoaded', function() {
@@ -520,6 +513,9 @@
         });
     }
 
+    /* ═══════════════════════════════════════════
+       COLUMN SETTINGS — Select All / Drag reorder
+    ═══════════════════════════════════════════ */
     let dragSrcIndex = null;
 
     function renderColumnToggles() {
@@ -538,16 +534,30 @@
                 `<span class="col-drag-handle" title="Drag to reorder">⋮⋮</span>` +
                 `<input type="checkbox" id="chk-col-${idx}" ${visibleColumns.has(col) ? 'checked' : ''} onchange="handleColumnToggle(this, '${col}')" onclick="event.stopPropagation()">` +
                 `<label class="${labelClass}" for="chk-col-${idx}">${displayLbl}</label>`;
-            item.addEventListener('dragstart', e => { dragSrcIndex = idx; item.classList.add('dragging-item'); e.dataTransfer.effectAllowed = 'move'; });
-            item.addEventListener('dragend', () => { item.classList.remove('dragging-item'); document.querySelectorAll('.col-item').forEach(el => el.classList.remove('drag-over')); });
-            item.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; document.querySelectorAll('.col-item').forEach(el => el.classList.remove('drag-over')); item.classList.add('drag-over'); });
+
+            item.addEventListener('dragstart', e => {
+                dragSrcIndex = idx;
+                item.classList.add('dragging-item');
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            item.addEventListener('dragend', () => {
+                item.classList.remove('dragging-item');
+                document.querySelectorAll('.col-item').forEach(el => el.classList.remove('drag-over'));
+            });
+            item.addEventListener('dragover', e => {
+                e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+                document.querySelectorAll('.col-item').forEach(el => el.classList.remove('drag-over'));
+                item.classList.add('drag-over');
+            });
             item.addEventListener('drop', e => {
                 e.preventDefault();
                 if (dragSrcIndex === null || dragSrcIndex === idx) return;
                 const moved = columnOrder.splice(dragSrcIndex, 1)[0];
                 columnOrder.splice(idx, 0, moved);
                 dragSrcIndex = null;
-                renderColumnToggles(); updateDropdownText(); renderTable(currentFilteredData);
+                renderColumnToggles();
+                updateDropdownText();
+                renderTable(currentFilteredData);
             });
             list.appendChild(item);
         });
@@ -556,25 +566,32 @@
 
     function handleColumnToggle(checkbox, col) {
         if (checkbox.checked) visibleColumns.add(col); else visibleColumns.delete(col);
-        updateDropdownText(); renderTable(currentFilteredData);
+        updateDropdownText();
+        renderTable(currentFilteredData);
     }
 
     function selectAllColumns(e) {
         e.stopPropagation();
         columnOrder.forEach(col => visibleColumns.add(col));
-        renderColumnToggles(); updateDropdownText(); renderTable(currentFilteredData);
+        renderColumnToggles();
+        updateDropdownText();
+        renderTable(currentFilteredData);
     }
 
     function selectNoneColumns(e) {
         e.stopPropagation();
         visibleColumns.clear();
         visibleColumns.add('Company (Page)');
-        renderColumnToggles(); updateDropdownText(); renderTable(currentFilteredData);
+        renderColumnToggles();
+        updateDropdownText();
+        renderTable(currentFilteredData);
     }
 
     function updateDropdownText() {
         document.getElementById('dropdown-btn-text').innerHTML = `👁️ ${visibleColumns.size} Columns Selected <span>▼</span>`;
     }
+
+    /* ══════════════════════════════ */
 
     function switchView(mode) {
         currentView = mode;
@@ -592,23 +609,17 @@
     function renderChartsGrid() {
         const grid = document.getElementById('charts-grid'); const countEl = document.getElementById('charts-count');
         if (!currentFilteredData || currentFilteredData.length === 0) { grid.innerHTML = '<div class="charts-loading">No stocks match the current filters.</div>'; countEl.textContent = '0 stocks'; return; }
-        const nseStocks = currentFilteredData.filter(r => parseExchangeCode(r["NSE Code Exact"]).nse !== "");
-        const bseOnly   = currentFilteredData.filter(r => parseExchangeCode(r["NSE Code Exact"]).nse === "");
-        const nseStocks = currentFilteredData.filter(r => getExchangeCodes(r).nse !== "");
-        const bseOnly   = currentFilteredData.filter(r => getExchangeCodes(r).nse === "");
+        const nseStocks = currentFilteredData.filter(r => (r["NSE Code Exact"] || "").toString().trim() !== "");
+        const bseOnly   = currentFilteredData.filter(r => (r["NSE Code Exact"] || "").toString().trim() === "");
         countEl.textContent = currentFilteredData.length + " stocks (" + nseStocks.length + " with charts)";
         grid.innerHTML = "";
         nseStocks.forEach(function(row) {
-            const { nse } = parseExchangeCode(row["NSE Code Exact"]);
-            const { nse } = getExchangeCodes(row);
-            const symbol = "NSE:" + nse;
+            const nse = (row["NSE Code Exact"] || "").toString().trim(); const symbol = "NSE:" + nse;
             const name = (row["Company (Page)"] || row["Name"] || nse).toString();
             const screener = (row["Screener Name Exact"] || row["Name"] || "").toString().trim();
             const industry = (row["Industry"] || "").toString();
             const scrLink = screener ? '<a href="https://www.screener.in/company/' + screener + '/" target="_blank">SCR</a>' : "";
-            const scrLink = (/^\d+$/.test(screener) ? "" : (screener ? '<a href="https://www.screener.in/company/' + screener + '/" target="_blank">SCR</a>' : ""));
             const tvLink = '<a href="https://in.tradingview.com/chart/?symbol=' + encodeURIComponent(symbol) + '" target="_blank">📈 Open Full Chart</a>';
-            const industry = (row["Industry"] || "").toString();
             const cfg = encodeURIComponent(JSON.stringify({ "symbols": [[name, symbol + "|1D"]], "chartOnly": false, "width": "100%", "height": 400, "locale": "in", "colorTheme": "light", "autosize": true, "showVolume": true, "showMA": true, "hideDateRanges": false, "hideMarketStatus": false, "scalePosition": "right", "scaleMode": "Normal", "fontFamily": "Trebuchet MS", "fontSize": "10", "noTimeScale": false, "valuesTracking": "1", "changeMode": "price-and-percent", "chartType": "candlesticks", "upColor": "#26a69a", "downColor": "#ef5350", "borderUpColor": "#26a69a", "borderDownColor": "#ef5350", "wickUpColor": "#26a69a", "wickDownColor": "#ef5350" }));
             const iframeSrc = "https://s.tradingview.com/embed-widget/symbol-overview/?locale=in#" + cfg;
             const card = document.createElement("div"); card.className = "chart-card"; card.id = "card_" + nse;
@@ -688,44 +699,81 @@
 
     async function pollWorkflowStatus(token) {
         try {
+            // ── 1. Check GitHub Actions run status ──────────────────────────
             const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/runs?per_page=1`, { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' } });
             const data = await res.json();
+
             if (data.workflow_runs && data.workflow_runs.length > 0) {
                 const latestRun = data.workflow_runs[0];
+
                 if (latestRun.status === "completed") {
                     if (latestRun.conclusion === "success") {
                         setTelemetry('✅ Ingestion complete — synchronising data feed…', 'All equities processed · refreshing terminal', 100, 'success');
-                        setTimeout(() => { fetchData(); document.getElementById('run-btn').disabled = false; setTelemetry('✅ Data feed synchronised', 'Terminal loaded with fresh intelligence', null, 'success'); }, 3000);
+                        setTimeout(() => {
+                            fetchData();
+                            document.getElementById('run-btn').disabled = false;
+                            setTelemetry('✅ Data feed synchronised', 'Terminal loaded with fresh intelligence', null, 'success');
+                        }, 3000);
                     } else {
                         setTelemetry('❌ Acquisition pipeline failed', latestRun.conclusion || 'Unknown error', null, 'error');
                         document.getElementById('run-btn').disabled = false;
                     }
                     return;
                 }
+
+                // ── 2. Scraper is still running — fetch live progress.json ──
                 try {
                     const prog = await fetch(`${PROGRESS_URL}?t=${Date.now()}`);
                     if (prog.ok) {
                         const p = await prog.json();
-                        const total = p.total || 0; const done = p.done || 0; const phase = p.phase || 'processing';
-                        const pct = total > 0 ? Math.round((done / total) * 100) : null;
+                        // Expected shape: { total: 110, done: 20, phase: "ingesting" }
+                        const total   = p.total || 0;
+                        const done    = p.done  || 0;
+                        const phase   = p.phase || 'processing';
+                        const pct     = total > 0 ? Math.round((done / total) * 100) : null;
+
+                        // ETA calculation
                         let etaStr = '';
                         if (_scrapeStartTime && done > 0 && total > 0) {
-                            const elapsed = (Date.now() - _scrapeStartTime) / 1000;
-                            const rate = done / elapsed; const remaining = (total - done) / rate;
-                            if (remaining < 60) etaStr = ` · ETA ~${Math.ceil(remaining)}s`;
+                            const elapsed   = (Date.now() - _scrapeStartTime) / 1000; // seconds
+                            const rate      = done / elapsed;                          // stocks/sec
+                            const remaining = (total - done) / rate;                  // seconds left
+                            if (remaining < 60)       etaStr = ` · ETA ~${Math.ceil(remaining)}s`;
                             else if (remaining < 3600) etaStr = ` · ETA ~${Math.ceil(remaining / 60)} min`;
                         }
-                        const phaseLabel = phase === 'scanning' ? '🔍 Universe scan in progress' : phase === 'ingesting' ? '📥 Ingesting equity data' : phase === 'writing' ? '💾 Committing to data store' : '⚙️ Processing';
+
+                        const phaseLabel = phase === 'scanning'   ? '🔍 Universe scan in progress' :
+                                           phase === 'ingesting'  ? '📥 Ingesting equity data'      :
+                                           phase === 'writing'    ? '💾 Committing to data store'   :
+                                                                    '⚙️ Processing';
                         if (total > 0) {
-                            setTelemetry(`<span class="spinner"></span> ${phaseLabel}`, `${total} equities identified · ${done} / ${total} ingested${etaStr}`, pct, 'running');
+                            setTelemetry(
+                                `<span class="spinner"></span> ${phaseLabel}`,
+                                `${total} equities identified · ${done} / ${total} ingested${etaStr}`,
+                                pct,
+                                'running'
+                            );
                         } else {
-                            setTelemetry(`<span class="spinner"></span> ${phaseLabel}`, 'Cataloguing universe — stand by', null, 'running');
+                            setTelemetry(
+                                `<span class="spinner"></span> ${phaseLabel}`,
+                                'Cataloguing universe — stand by',
+                                null,
+                                'running'
+                            );
                         }
                     } else {
+                        // progress.json not yet available — generic running state
                         const elapsedMin = _scrapeStartTime ? Math.floor((Date.now() - _scrapeStartTime) / 60000) : 0;
-                        setTelemetry('<span class="spinner"></span> Acquisition pipeline active', `Elapsed: ${elapsedMin}m — awaiting first telemetry pulse`, null, 'running');
+                        setTelemetry(
+                            '<span class="spinner"></span> Acquisition pipeline active',
+                            `Elapsed: ${elapsedMin}m — awaiting first telemetry pulse`,
+                            null,
+                            'running'
+                        );
                     }
-                } catch (_) { setTelemetry('<span class="spinner"></span> Acquisition pipeline active', 'Awaiting telemetry…', null, 'running'); }
+                } catch (_) {
+                    setTelemetry('<span class="spinner"></span> Acquisition pipeline active', 'Awaiting telemetry…', null, 'running');
+                }
             }
         } catch (e) {}
         setTimeout(() => pollWorkflowStatus(token), 8000);
@@ -748,7 +796,7 @@
         Object.keys(MASTER_INDUSTRY_MAP).forEach(group => {
             const subs = MASTER_INDUSTRY_MAP[group]; const safeId = group.replace(/\W/g, '');
             const item = document.createElement("div"); item.className = "accordion-item";
-            item.innerHTML = `<div class="accordion-header" onclick="toggleAccordion(event, '${safeId}')"><input type="checkbox" id="chk-grp-${safeId}" onchange="toggleGroup(event, '${group}')"><span class="accordion-title" id="title-${safeId}">${group}</span><span class="accordion-toggle" id="arrow-${safeId}">▼</span></div><div class="accordion-body" id="body-${safeId}">${subs.map(sub => `<label onclick="event.stopPropagation()"><input type="checkbox" onchange="toggleSub('${sub}')" id="chk-sub-${sub.replace(/\W/g,'')}">${sub}</label>`).join('')}</div>`;
+            item.innerHTML = `<div class="accordion-header" onclick="toggleAccordion(event, '${safeId}')"><input type="checkbox" id="chk-grp-${safeId}" onchange="toggleGroup(event, '${group}')"><span class="accordion-title" id="title-${safeId}">${group}</span><span class="accordion-toggle" id="arrow-${safeId}">▼</span></div><div class="accordion-body" id="body-${safeId}">${subs.map(sub => `<label onclick="event.stopPropagation()"><input type="checkbox" onchange="toggleSub('${sub}')" id="chk-sub-${sub.replace(/\W/g,'')}'">${sub}</label>`).join('')}</div>`;
             container.appendChild(item);
         }); updateTreeVisuals();
     }
@@ -787,26 +835,13 @@
             if (!response.ok) throw new Error("Data not found");
             rawData = await response.json();
             if (rawData && rawData.length > 0) {
-                allColumns = Object.keys(rawData[0]).filter(col => col !== "Name" && col !== "Screener Name Exact" && col !== "Investing Name Exact");
-                // Exclude raw source columns from visible column list; we inject virtual NSE/BSE columns instead
-                allColumns = Object.keys(rawData[0]).filter(col =>
-                    col !== "Name" &&
-                    col !== "Screener Name Exact" &&
-                    col !== "Investing Name Exact" &&
-                    col !== "NSE Code Exact"
-                );
+                allColumns = Object.keys(rawData[0]).filter(col => col !== "Name" && col !== "NSE Code Exact" && col !== "Screener Name Exact" && col !== "Investing Name Exact");
                 quarterlyColumns = detectQuarterlyColumns(allColumns);
                 const yoyDescs = buildYoYDescriptors();
                 const yoyIds = yoyDescs.map(d => d.id);
-                // Insert NSE and BSE virtual columns right after Company (Page)
-                const companyIdx = allColumns.indexOf("Company (Page)");
-                const insertAt = companyIdx >= 0 ? companyIdx + 1 : 1;
-                allColumns.splice(insertAt, 0, COL_NSE, COL_BSE);
-                columnOrder = [...allColumns, ...yoyIds];
-                const defaultCols = ["Sr no","date","Company (Page)","NSE Code Exact","Industry","Industry Group","Promoter Holding","Pledged %","WC Days"];
-                visibleColumns = new Set(defaultCols.filter(c => allColumns.includes(c)));
-                const defaultCols = ["Sr no","date","Company (Page)",COL_NSE,COL_BSE,"Industry","Industry Group","Promoter Holding","Pledged %","WC Days"];
-                visibleColumns = new Set(defaultCols.filter(c => columnOrder.includes(c)));
+                columnOrder = [COL_NSE, COL_BSE, ...allColumns, ...yoyIds];
+                const defaultCols = ["Sr no","date","Company (Page)","Industry","Industry Group",COL_NSE,COL_BSE,"Promoter Holding","Pledged %","WC Days"];
+                visibleColumns = new Set(defaultCols.filter(c => allColumns.includes(c) || c===COL_NSE || c===COL_BSE));
                 renderColumnToggles(); applyFiltersAndRender();
             } else {
                 document.getElementById('table-body').innerHTML = `<tr><td class="loading" style="color:#e53e3e; font-weight:bold;" colspan="100%">⚠️ DATA SYNC ERROR: JSON is empty. Click 'Run Backend Scraper' to rebuild.</td></tr>`;
@@ -819,12 +854,140 @@
         if (col === "date") return "Date";
         if (col === "Company (Page)") return "Company";
         if (col === "Promoter Holding") return "Promoter %";
-        if (col === "NSE Code Exact") return "NSE/BSE Code";
-        if (col === COL_NSE) return "NSE Code";
-        if (col === COL_BSE) return "BSE Code";
         if (col.startsWith(YOY_PREFIX)) return col.slice(YOY_PREFIX.length);
         return col;
     }
+
+    function handleSort(col) {
+        if (sortColumn === col) { sortAscending = !sortAscending; }
+        else { sortColumn = col; sortAscending = true; }
+        renderTable(currentFilteredData);
+    }
+
+    function jumpToChart(nse) {
+        switchView('charts');
+        setTimeout(() => {
+            const card = document.getElementById('card_' + nse);
+            if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 300);
+    }
+
+    function renderTable(data) {
+        const thead = document.getElementById('table-head');
+        const tbody = document.getElementById('table-body');
+        document.getElementById('row-count').innerText = `Showing ${data.length} of ${rawData.length} stocks`;
+
+        const orderedVisibleCols = columnOrder.filter(col => visibleColumns.has(col));
+
+        // Build header
+        thead.innerHTML = '<tr>' + orderedVisibleCols.map(col => {
+            const isYoY = col.startsWith(YOY_PREFIX);
+            const thClass = isYoY ? ' class="yoy-th"' : '';
+            let label = getDisplayName(col);
+            if (col === COL_NSE) label = 'NSE Code';
+            if (col === COL_BSE) label = 'BSE Code';
+            let sortIcon = '';
+            if (sortColumn === col) sortIcon = `<span class="sort-icon">${sortAscending ? '▲' : '▼'}</span>`;
+            return `<th${thClass} onclick="handleSort('${col}')">${label}${sortIcon}</th>`;
+        }).join('') + '</tr>';
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = `<tr><td class="loading" colspan="100%">No stocks match the current filters.</td></tr>`;
+            return;
+        }
+
+        // Sort
+        const sorted = [...data].sort((a, b) => {
+            let aVal, bVal;
+            if (sortColumn === COL_NSE) { aVal = (getExchangeCodes(a).nse||'').toLowerCase(); bVal = (getExchangeCodes(b).nse||'').toLowerCase(); }
+            else if (sortColumn === COL_BSE) { aVal = (getExchangeCodes(a).bse||'').toLowerCase(); bVal = (getExchangeCodes(b).bse||'').toLowerCase(); }
+            else if (sortColumn && sortColumn.startsWith(YOY_PREFIX)) {
+                const yoyDescs = buildYoYDescriptors();
+                const desc = yoyDescs.find(d => d.id === sortColumn);
+                aVal = desc ? calcYoY(a, desc.newCol, desc.oldCol) : null;
+                bVal = desc ? calcYoY(b, desc.newCol, desc.oldCol) : null;
+                aVal = (aVal === null || aVal === undefined) ? -Infinity : aVal;
+                bVal = (bVal === null || bVal === undefined) ? -Infinity : bVal;
+            } else {
+                aVal = a[sortColumn]; bVal = b[sortColumn];
+                const aNum = parseFloat(String(aVal).replace(/,/g, ''));
+                const bNum = parseFloat(String(bVal).replace(/,/g, ''));
+                if (!isNaN(aNum) && !isNaN(bNum)) { aVal = aNum; bVal = bNum; }
+                else { aVal = String(aVal||'').toLowerCase(); bVal = String(bVal||'').toLowerCase(); }
+            }
+            if (aVal < bVal) return sortAscending ? -1 : 1;
+            if (aVal > bVal) return sortAscending ? 1 : -1;
+            return 0;
+        });
+
+        tbody.innerHTML = sorted.map(row => {
+            const { nse, bse } = getExchangeCodes(row);
+            const screener = (row["Screener Name Exact"] || "").toString().trim();
+            const companyName = (row["Company (Page)"] || row["Name"] || "").toString();
+            const yoyDescs = buildYoYDescriptors();
+
+            const cells = orderedVisibleCols.map(col => {
+                if (col === COL_NSE) {
+                    if (!nse) return `<td><span style="font-size:11px;color:#a0aec0;">BSE Only</span></td>`;
+                    const tvUrl = `https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(nse)}`;
+                    return `<td><a href="${tvUrl}" target="_blank" style="font-weight:700;color:#2b6cb0;text-decoration:none;">${nse}</a></td>`;
+                }
+                if (col === COL_BSE) {
+                    if (!bse) return `<td><span style="font-size:11px;color:#a0aec0;">-</span></td>`;
+                    const bseUrl = `https://www.bseindia.com/stock-share-price/x/x/${bse}/`;
+                    return `<td><a href="${bseUrl}" target="_blank" style="font-weight:700;color:#276749;text-decoration:none;">${bse}</a></td>`;
+                }
+                if (col.startsWith(YOY_PREFIX)) {
+                    const desc = yoyDescs.find(d => d.id === col);
+                    if (!desc) return `<td>-</td>`;
+                    const yoy = calcYoY(row, desc.newCol, desc.oldCol);
+                    return `<td>${formatYoY(yoy)}</td>`;
+                }
+                if (col === 'Company (Page)') {
+                    const scrLink = screener ? `<a href="https://www.screener.in/company/${screener}/" target="_blank" class="action-links" style="font-size:11px;padding:3px 7px;border-radius:4px;background:#e2e8f0;color:#2b6cb0;font-weight:bold;border:1px solid #cbd5e0;text-decoration:none;">SCR</a>` : '';
+                    const tvLink = nse ? `<a href="https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(nse)}" target="_blank" style="font-size:11px;padding:3px 7px;border-radius:4px;background:#e2e8f0;color:#2b6cb0;font-weight:bold;border:1px solid #cbd5e0;text-decoration:none;">TV</a>` : '';
+                    const noteLink = `<a href="#" onclick="openChat('${(nse||bse||companyName).replace(/'/g,\')}','${companyName.replace(/'/g,\')}');return false;" style="font-size:11px;padding:3px 7px;border-radius:4px;background:#bee3f8;color:#2b6cb0;font-weight:bold;border:1px solid #90cdf4;text-decoration:none;">Notes</a>`;
+                    return `<td><div style="font-weight:600;">${companyName}</div><div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;">${scrLink}${tvLink}${noteLink}</div></td>`;
+                }
+                const val = row[col];
+                if (col === 'Current Quarter Surge') return `<td>${val === 'Yes' ? '<span class="badge-yes">Yes</span>' : (val||'-')}</td>`;
+                if (col === 'Peak Quarter') return `<td>${val === 'Yes' ? '<span class="badge-peak">🏆 Peak</span>' : (val||'-')}</td>`;
+                return `<td>${val !== undefined && val !== null && val !== '' ? val : '-'}</td>`;
+            }).join('');
+            return `<tr>${cells}</tr>`;
+        }).join('');
+    }
+
+    function exportToCSV() {
+        if (!currentFilteredData || currentFilteredData.length === 0) { alert('No data to export.'); return; }
+        const orderedVisibleCols = columnOrder.filter(col => visibleColumns.has(col));
+        const headers = orderedVisibleCols.map(col => {
+            if (col === COL_NSE) return 'NSE Code';
+            if (col === COL_BSE) return 'BSE Code';
+            return getDisplayName(col);
+        });
+        const rows = currentFilteredData.map(row => {
+            const { nse, bse } = getExchangeCodes(row);
+            return orderedVisibleCols.map(col => {
+                if (col === COL_NSE) return nse || '';
+                if (col === COL_BSE) return bse || '';
+                if (col.startsWith(YOY_PREFIX)) {
+                    const yoyDescs = buildYoYDescriptors();
+                    const desc = yoyDescs.find(d => d.id === col);
+                    if (!desc) return '';
+                    const yoy = calcYoY(row, desc.newCol, desc.oldCol);
+                    return yoy !== null ? yoy.toFixed(1) + '%' : 'N/A';
+                }
+                const v = row[col]; return `"${String(v !== undefined && v !== null ? v : '').replace(/"/g, '""')}"`;
+            }).join(',');
+        });
+        const csv = [headers.join(','), ...rows].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'equity_research_export.csv';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    }
+
 
     function applyFiltersAndRender() {
         const filterGrowth     = document.getElementById('filter-growth').checked;
@@ -851,203 +1014,5 @@
                 if (!(isVip && globalOverrides.bypassCurrentQtr) && latestCode !== currentQtr) return false;
                 if (!(isVip && globalOverrides.bypassCurrentQtr) && !hasYoYSurge(row, 70)) return false;
             }
-            if (filterPeakQtr)  { if (!(isVip && globalOverrides.bypassPeakQtr)    && !isLatestQtrHighest(row)) return false; }
-            if (filterPromoter) { if (!(isVip && globalOverrides.bypassPromoter)    && (isNaN(parseFloat(row["Promoter Holding"])) || parseFloat(row["Promoter Holding"]) < threshPromoter)) return false; }
-            if (filterPledged)  { if (!(isVip && globalOverrides.bypassPledged)     && (isNaN(parseFloat(row["Pledged %"]))        || parseFloat(row["Pledged %"])        > threshPledged))  return false; }
-            if (filterWc)       { if (!(isVip && globalOverrides.bypassWc)          && (isNaN(parseFloat(row["WC Days"]))           || parseFloat(row["WC Days"])           > threshWc))       return false; }
-            if (filterMsi)      { if (!(isVip && globalOverrides.bypassMsi)         && (isNaN(parseFloat(row["MSI"]))               || parseFloat(row["MSI"])               <= threshMsi))     return false; }
-            return true;
-        });
-
-        filteredData.sort((a, b) => {
-            let aVal = a[sortColumn]; let bVal = b[sortColumn];
-            if (sortColumn.startsWith(YOY_PREFIX)) {
-            let aVal, bVal;
-            if (sortColumn === COL_NSE) { aVal = getExchangeCodes(a).nse; bVal = getExchangeCodes(b).nse; }
-            else if (sortColumn === COL_BSE) { aVal = getExchangeCodes(a).bse; bVal = getExchangeCodes(b).bse; }
-            else if (sortColumn.startsWith(YOY_PREFIX)) {
-                const desc = buildYoYDescriptors().find(d => d.id === sortColumn);
-                aVal = desc ? calcYoY(a, desc) : null; bVal = desc ? calcYoY(b, desc) : null;
-                if (aVal === null && bVal === null) return 0;
-                if (aVal === null) return 1; if (bVal === null) return -1;
-                return sortAscending ? aVal - bVal : bVal - aVal;
-            }
-            } else { aVal = a[sortColumn]; bVal = b[sortColumn]; }
-            const aNum = parseFloat(aVal); const bNum = parseFloat(bVal);
-            if (!isNaN(aNum) && !isNaN(bNum)) return sortAscending ? aNum - bNum : bNum - aNum;
-            const aStr = String(aVal || '').toLowerCase(); const bStr = String(bVal || '').toLowerCase();
-            if (aStr < bStr) return sortAscending ? -1 : 1;
-            if (aStr > bStr) return sortAscending ? 1 : -1;
-            return 0;
-        });
-
-        currentFilteredData = filteredData;
-        renderTable(filteredData);
-        if (currentView === 'charts') renderChartsGrid();
-    }
-
-    function renderTable(data) {
-        const thead = document.getElementById('table-head');
-        const tbody = document.getElementById('table-body');
-        const rowCountEl = document.getElementById('row-count');
-        const yoyDescs = buildYoYDescriptors();
-        const yoyDescMap = {};
-        yoyDescs.forEach(d => { yoyDescMap[d.id] = d; });
-
-        const cols = columnOrder.filter(c => visibleColumns.has(c));
-
-        thead.innerHTML = '';
-        const headerRow = document.createElement('tr');
-        cols.forEach(col => {
-            const th = document.createElement('th');
-            const isYoY = col.startsWith(YOY_PREFIX);
-            if (isYoY) th.className = 'yoy-th';
-            if (col.startsWith(YOY_PREFIX)) th.className = 'yoy-th';
-            else if (col === COL_BSE) th.className = 'bse-th';
-            const displayName = getDisplayName(col);
-            const isSorted = sortColumn === col;
-            const icon = isSorted ? (sortAscending ? ' ▲' : ' ▼') : ' ↕';
-            th.innerHTML = `${displayName}<span class="sort-icon">${icon}</span>`;
-            th.onclick = () => {
-                if (sortColumn === col) sortAscending = !sortAscending;
-                else { sortColumn = col; sortAscending = true; }
-                applyFiltersAndRender();
-            };
-            headerRow.appendChild(th);
-        });
-        thead.appendChild(headerRow);
-
-        if (!data || data.length === 0) {
-            tbody.innerHTML = `<tr><td class="loading" style="color:#718096;" colspan="${cols.length || 1}">No stocks match the current filter criteria.</td></tr>`;
-            rowCountEl.innerText = "Showing 0 of " + rawData.length + " stocks";
-            return;
-        }
-
-        rowCountEl.innerText = `Showing ${data.length} of ${rawData.length} stocks`;
-        const fragment = document.createDocumentFragment();
-
-        data.forEach(row => {
-            const tr = document.createElement('tr');
-            const { nse, bse } = getExchangeCodes(row);
-            const screener = (row["Screener Name Exact"] || "").toString().trim();
-            const investing = (row["Investing Name Exact"] || "").toString().trim();
-
-            cols.forEach(col => {
-                const td = document.createElement('td');
-                const isYoY = col.startsWith(YOY_PREFIX);
-
-                if (isYoY) {
-                if (col.startsWith(YOY_PREFIX)) {
-                    const desc = yoyDescMap[col];
-                    if (desc) {
-                        const ratio = calcYoY(row, desc);
-                        const formatted = formatYoY(ratio);
-                        if (formatted === null) { td.innerHTML = '<span class="yoy-na">N/A</span>'; }
-                        else { td.innerHTML = `<span class="${ratio >= 0 ? 'yoy-pos' : 'yoy-neg'}">${formatted}</span>`; }
-                    }
-                } else if (col === "Company (Page)") {
-                    const name = row["Company (Page)"] || row["Name"] || "";
-                    const screener = (row["Screener Name Exact"] || row["Name"] || "").toString().trim();
-                    const { nse, bse } = parseExchangeCode(row["NSE Code Exact"]);
-                    const investing = (row["Investing Name Exact"] || "").toString().trim();
-                    const ticker = nse || bse || screener || name;
-                    let links = '';
-                    if (screener) links += `<a href="https://www.screener.in/company/${screener}/" target="_blank">SCR</a>`;
-                    // SCR link: only when screener name is alphabetic (not a BSE code)
-                    if (screener && !/^\d+$/.test(screener)) links += `<a href="https://www.screener.in/company/${screener}/" target="_blank">SCR</a>`;
-                    if (nse)      links += `<a href="https://in.tradingview.com/chart/?symbol=NSE:${nse}" target="_blank">TV</a>`;
-                    else if (bse) links += `<a href="https://in.tradingview.com/chart/?symbol=BSE:${bse}" target="_blank">TV</a>`;
-                    if (investing) links += `<a href="https://www.investing.com/equities/${investing}" target="_blank">INV</a>`;
-                    links += `<a href="#" class="note-btn" onclick="event.preventDefault(); openChat('${ticker.replace(/'/g,"\\'")}', '${name.replace(/'/g,"\\'")}')">📝 Notes</a>`;
-                    if (nse) links += `<a href="#" class="chart-btn" onclick="event.preventDefault(); switchView('charts'); setTimeout(()=>{ const el=document.getElementById('card_${nse}'); if(el) el.scrollIntoView({behavior:'smooth'}); },400);">📊 Chart</a>`;
-                    td.innerHTML = `<strong>${name}</strong><div class="action-links">${links}</div>`;
-                } else if (col === "NSE Code Exact") {
-                    const { nse, bse } = parseExchangeCode(row["NSE Code Exact"]);
-
-                } else if (col === COL_NSE) {
-                    if (nse) {
-                        td.innerHTML = `<a href="https://in.tradingview.com/chart/?symbol=NSE:${nse}" target="_blank" style="font-weight:600; color:#2b6cb0; text-decoration:none;">${nse}</a>`;
-                    } else if (bse) {
-                        td.innerHTML = `<a href="https://in.tradingview.com/chart/?symbol=BSE:${bse}" target="_blank" style="font-weight:600; color:#c05621; text-decoration:none;">${bse}</a><span class="badge-bse">BSE</span>`;
-                    } else {
-                        td.innerHTML = `<span style="color:#a0aec0; font-size:12px;">—</span>`;
-                        td.innerHTML = `<span style="color:#cbd5e0; font-size:12px;">—</span>`;
-                    }
-
-                } else if (col === COL_BSE) {
-                    if (bse) {
-                        td.innerHTML = `<a href="https://in.tradingview.com/chart/?symbol=BSE:${bse}" target="_blank" style="font-weight:600; color:#c05621; text-decoration:none;">${bse}</a>`;
-                    } else {
-                        td.innerHTML = `<span style="color:#cbd5e0; font-size:12px;">—</span>`;
-                    }
-
-                } else {
-                    const val = row[col];
-                    if (col === "Surge Quarter") {
-                        td.innerHTML = val ? `<span class="badge-yes">${val}</span>` : '';
-                    } else if (col === "Peak Quarter") {
-                        td.innerHTML = val ? `<span class="badge-peak">${val}</span>` : '';
-                    } else {
-                        td.textContent = (val === null || val === undefined || val === '') ? '' : val;
-                    }
-                }
-                tr.appendChild(td);
-            });
-            fragment.appendChild(tr);
-        });
-        tbody.innerHTML = '';
-        tbody.appendChild(fragment);
-    }
-
-    function exportToCSV() {
-        if (!currentFilteredData || currentFilteredData.length === 0) { alert("No data to export."); return; }
-        const yoyDescs = buildYoYDescriptors();
-        const yoyDescMap = {};
-        yoyDescs.forEach(d => { yoyDescMap[d.id] = d; });
-        const cols = columnOrder.filter(c => visibleColumns.has(c));
-        const headers = cols.map(c => c.startsWith(YOY_PREFIX) ? c.slice(YOY_PREFIX.length) : getDisplayName(c));
-        const rows = currentFilteredData.map(row => cols.map(col => {
-            if (col.startsWith(YOY_PREFIX)) {
-                const desc = yoyDescMap[col];
-                if (!desc) return '';
-                const ratio = calcYoY(row, desc);
-                return formatYoY(ratio) || 'N/A';
-            }
-            const val = row[col];
-            if (val === null || val === undefined) return '';
-            const str = String(val);
-            return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str.replace(/"/g, '""')}"` : str;
-        }));
-        const headers = cols.map(c => getDisplayName(c));
-        const rows = currentFilteredData.map(row => {
-            const { nse, bse } = getExchangeCodes(row);
-            return cols.map(col => {
-                if (col.startsWith(YOY_PREFIX)) {
-                    const desc = yoyDescMap[col];
-                    if (!desc) return '';
-                    return formatYoY(calcYoY(row, desc)) || 'N/A';
-                }
-                if (col === COL_NSE) return nse;
-                if (col === COL_BSE) return bse;
-                const val = row[col];
-                if (val === null || val === undefined) return '';
-                const str = String(val);
-                return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str.replace(/"/g, '""')}"` : str;
-            });
-        });
-        const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url;
-        a.download = `equity_research_${new Date().toISOString().slice(0,10)}.csv`;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        updateCurrentQtrBadge();
-        syncBypassLabels();
-        fetchData();
-    });
-</script>
-</body>
-</html>
+            if (filterPeakQtr)    { if (!(isVip && globalOverrides.bypassPeakQtr)    && !isLatestQtrHighest(row)) return false; }
+            if (filterPromoter)   { if (!(
