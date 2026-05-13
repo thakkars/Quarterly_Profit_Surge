@@ -24,7 +24,6 @@
             .mobile-only-btn { display: inline-block; background-color: #ed8936; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
             .mobile-only-btn:hover { background-color: #dd6b20; }
         }
-        /* ── Scraper Telemetry Widget ── */
         #scraper-telemetry { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; min-width: 220px; }
         #telemetry-headline { font-size: 12px; font-weight: 700; color: #4a5568; letter-spacing: 0.03em; }
         #telemetry-headline.running { color: #2b6cb0; }
@@ -34,7 +33,6 @@
         #telemetry-bar-wrap { width: 100%; height: 6px; background: #e2e8f0; border-radius: 999px; overflow: hidden; display: none; }
         #telemetry-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #3182ce, #63b3ed); border-radius: 999px; transition: width 0.6s ease; }
         #telemetry-bar-wrap.active { display: block; }
-        /* ─────────────────────────────── */
         .spinner { display: inline-block; width: 11px; height: 11px; border: 2px solid rgba(0,0,0,0.1); border-radius: 50%; border-top-color: #2b6cb0; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 4px; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .view-toggle-wrapper { display: flex; justify-content: flex-end; margin-bottom: 12px; }
@@ -54,9 +52,9 @@
         .dropdown-content { display: none; background-color: #fff; border: 1px solid #cbd5e0; border-top: none; border-radius: 0 0 6px 6px; max-height: 300px; overflow-y: auto; }
         .dropdown-content.show { display: flex; flex-direction: column; }
         .col-toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #f7fafc; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 5; }
-        .col-select-all-btn { background: #2b6cb0; color: white; border: none; padding: 4px 11px; border-radius: 4px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .col-select-all-btn { background: #2b6cb0; color: white; border: none; padding: 4px 11px; border-radius: 4px; font-size: 12px; font-weight: 700; cursor: pointer; }
         .col-select-all-btn:hover { background: #2c5282; }
-        .col-select-none-btn { background: #e2e8f0; color: #4a5568; border: none; padding: 4px 11px; border-radius: 4px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .col-select-none-btn { background: #e2e8f0; color: #4a5568; border: none; padding: 4px 11px; border-radius: 4px; font-size: 12px; font-weight: 700; cursor: pointer; }
         .col-select-none-btn:hover { background: #cbd5e0; color: #2d3748; }
         .col-toolbar-hint { font-size: 11px; color: #a0aec0; margin-left: auto; }
         .col-items-list { display: flex; flex-direction: column; padding: 6px 0; }
@@ -164,7 +162,6 @@
             <button id="exceptions-btn" onclick="openExceptionsModal()">⚙️ VIP Exceptions</button>
             <button id="export-btn" onclick="exportToCSV()">📥 Export CSV</button>
             <button id="landscape-btn" class="mobile-only-btn" onclick="toggleLandscape()">📱 Flip Table</button>
-            <!-- Live Scraper Telemetry -->
             <div id="scraper-telemetry">
                 <span id="telemetry-headline">Status: Idle</span>
                 <span id="telemetry-detail"></span>
@@ -172,61 +169,43 @@
             </div>
         </div>
     </div>
-
     <div class="view-toggle-wrapper">
         <div class="view-toggle">
             <button id="btn-view-list" class="view-btn active" onclick="switchView('list')">📋 List</button>
             <button id="btn-view-charts" class="view-btn" onclick="switchView('charts')">📊 Charts</button>
         </div>
     </div>
-
-    <div class="controls">
-        <div class="filter-group">
-            <h3>🎯 Strict Filters (Baseline Rules)</h3>
-            <label class="checkbox-label"><input type="checkbox" id="filter-current-qtr" onchange="handleMainFilterChange('filter-current-qtr', 'global-current-qtr', 'bypassCurrentQtr')"> Current Quarter Surge Only <span id="current-qtr-badge" style="margin-left:6px; background:#2b6cb0; color:white; padding:2px 7px; border-radius:10px; font-size:11px; font-weight:bold;"></span></label>
-            <label class="checkbox-label"><input type="checkbox" id="filter-peak-qtr" onchange="handleMainFilterChange('filter-peak-qtr', 'global-peak-qtr', 'bypassPeakQtr')"> 🏆 Highest Ever Quarterly Result</label>
-            <hr class="filter-divider">
-            <label class="checkbox-label">
-                <input type="checkbox" id="filter-growth" onchange="handleMainFilterChange('filter-growth', 'global-growth', 'bypassGrowth')">
-                Latest Qtr. YoY Operating Profit ≥ <input type="number" id="val-growth" value="70" min="1" max="9999" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">%
-            </label>
-            <label class="checkbox-label">
-                <input type="checkbox" id="filter-promoter" onchange="handleMainFilterChange('filter-promoter', 'global-promoter', 'bypassPromoter')">
-                Promoter Holding ≥ <input type="number" id="val-promoter" value="50" min="0" max="100" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">%
-            </label>
-            <label class="checkbox-label">
-                <input type="checkbox" id="filter-pledged" onchange="handleMainFilterChange('filter-pledged', 'global-pledged', 'bypassPledged')">
-                Pledged Shares ≤ <input type="number" id="val-pledged" value="10" min="0" max="100" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">%
-            </label>
-            <label class="checkbox-label">
-                <input type="checkbox" id="filter-wc" onchange="handleMainFilterChange('filter-wc', 'global-wc', 'bypassWc')">
-                Working Capital Days ≤ <input type="number" id="val-wc" value="150" min="0" max="9999" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">
-            </label>
-            <label class="checkbox-label">
-                <input type="checkbox" id="filter-msi" onchange="handleMainFilterChange('filter-msi', 'global-msi', 'bypassMsi')">
-                MSI Price Strength &gt; <input type="number" id="val-msi" value="80" min="0" max="100" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">
-            </label>
-        </div>
-        <div class="filter-group" style="flex: 2;">
-            <h3>👁️ Column Settings</h3>
-            <div class="dropdown">
-                <button onclick="toggleDropdown()" class="dropdown-btn" id="dropdown-btn-text">Select Columns ▼</button>
-                <div id="column-dropdown" class="dropdown-content">
-                    <div class="col-toolbar">
-                        <button class="col-select-all-btn" onclick="selectAllColumns(event)">Select All</button>
-                        <button class="col-select-none-btn" onclick="selectNoneColumns(event)">Deselect All</button>
-                        <span class="col-toolbar-hint">☰ Drag to reorder</span>
+    <div id="list-section">
+        <div class="controls">
+            <div class="filter-group">
+                <h3>🎯 Strict Filters (Baseline Rules)</h3>
+                <label class="checkbox-label"><input type="checkbox" id="filter-current-qtr" onchange="handleMainFilterChange('filter-current-qtr','global-current-qtr','bypassCurrentQtr')"> Current Quarter Surge Only <span id="current-qtr-badge" style="margin-left:6px;background:#2b6cb0;color:white;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:bold;"></span></label>
+                <label class="checkbox-label"><input type="checkbox" id="filter-peak-qtr" onchange="handleMainFilterChange('filter-peak-qtr','global-peak-qtr','bypassPeakQtr')"> 🏆 Highest Ever Quarterly Result</label>
+                <hr class="filter-divider">
+                <label class="checkbox-label"><input type="checkbox" id="filter-growth" onchange="handleMainFilterChange('filter-growth','global-growth','bypassGrowth')"> Latest Qtr. YoY Operating Profit ≥ <input type="number" id="val-growth" value="70" min="1" max="9999" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">%</label>
+                <label class="checkbox-label"><input type="checkbox" id="filter-promoter" onchange="handleMainFilterChange('filter-promoter','global-promoter','bypassPromoter')"> Promoter Holding ≥ <input type="number" id="val-promoter" value="50" min="0" max="100" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">%</label>
+                <label class="checkbox-label"><input type="checkbox" id="filter-pledged" onchange="handleMainFilterChange('filter-pledged','global-pledged','bypassPledged')"> Pledged Shares ≤ <input type="number" id="val-pledged" value="10" min="0" max="100" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">%</label>
+                <label class="checkbox-label"><input type="checkbox" id="filter-wc" onchange="handleMainFilterChange('filter-wc','global-wc','bypassWc')"> Working Capital Days ≤ <input type="number" id="val-wc" value="150" min="0" max="9999" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()"></label>
+                <label class="checkbox-label"><input type="checkbox" id="filter-msi" onchange="handleMainFilterChange('filter-msi','global-msi','bypassMsi')"> MSI Price Strength &gt; <input type="number" id="val-msi" value="80" min="0" max="100" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()"></label>
+            </div>
+            <div class="filter-group" style="flex: 2;">
+                <h3>👁️ Column Settings</h3>
+                <div class="dropdown">
+                    <button onclick="toggleDropdown()" class="dropdown-btn" id="dropdown-btn-text">Select Columns ▼</button>
+                    <div id="column-dropdown" class="dropdown-content">
+                        <div class="col-toolbar">
+                            <button class="col-select-all-btn" onclick="selectAllColumns(event)">Select All</button>
+                            <button class="col-select-none-btn" onclick="selectNoneColumns(event)">Deselect All</button>
+                            <span class="col-toolbar-hint">☰ Drag to reorder</span>
+                        </div>
+                        <div class="col-items-list" id="col-items-list"></div>
                     </div>
-                    <div class="col-items-list" id="col-items-list"></div>
                 </div>
             </div>
         </div>
-    </div>
-
-    <div id="list-section">
-        <div class="stats" id="row-count">Loading data...</div>
+        <div class="stats" id="row-count">Loading...</div>
         <div class="table-container" id="main-table-container">
-            <table id="data-table">
+            <table>
                 <thead id="table-head"></thead>
                 <tbody id="table-body">
                     <tr><td class="loading" colspan="100%">Fetching live market data...</td></tr>
@@ -234,58 +213,54 @@
             </table>
         </div>
     </div>
-
     <div id="charts-view">
         <div class="charts-header">
-            <h2>📊 TradingView Charts — All Filtered Stocks</h2>
+            <h2>📊 TradingView Charts</h2>
             <span class="charts-count" id="charts-count">0 stocks</span>
         </div>
-        <div class="charts-grid" id="charts-grid">
-            <div class="charts-loading">Switch to Charts view to load charts…</div>
-        </div>
+        <div class="charts-grid" id="charts-grid"></div>
     </div>
 </div>
 
-<div id="chat-overlay" class="chat-overlay" onclick="closeChat()"></div>
-<div id="chat-drawer" class="chat-drawer">
+<div class="chat-overlay" id="chat-overlay" onclick="closeChat()"></div>
+<div class="chat-drawer" id="chat-drawer">
     <div class="chat-header">
         <h3 id="chat-title">📝 Notes</h3>
-        <button onclick="closeChat()">&times;</button>
+        <button onclick="closeChat()">×</button>
     </div>
     <div class="chat-messages" id="chat-messages"></div>
     <div class="chat-input-area">
-        <input type="text" id="chat-author" placeholder="Your Name (e.g. Deepak)">
-        <textarea id="chat-input" placeholder="Write your research note here..." rows="3"></textarea>
+        <input type="text" id="chat-author" placeholder="Your name..." maxlength="50">
+        <textarea id="chat-input" rows="3" placeholder="Write a note..."></textarea>
         <button onclick="submitComment()">Post Note</button>
     </div>
 </div>
 
-<!-- VIP Exceptions modal -->
-<div id="exceptions-modal" class="modal-overlay">
+<div class="modal-overlay" id="exceptions-modal">
     <div class="modal-content">
         <div class="modal-header">
-            <span>⚙️ VIP Exceptions Rules</span>
-            <button class="modal-close" onclick="closeExceptionsModal()">&times;</button>
+            <span>⚙️ VIP Exceptions Manager</span>
+            <button class="modal-close" onclick="closeExceptionsModal()">×</button>
         </div>
         <div class="modal-body">
             <div class="global-overrides-panel">
-                <h4>Global Exception Overrides</h4>
-                <p>Select which rules the VIP Industries (checked below) are allowed to ignore. Only active Strict Filters can be bypassed.</p>
-                <label class="global-override-label" id="lbl-row-current-qtr"><input type="checkbox" id="global-current-qtr" onchange="toggleGlobalOverride('bypassCurrentQtr', 'filter-current-qtr', this)"> <span id="lbl-bypass-current-qtr">🔓 Bypass Current Quarter Surge Only</span></label>
-                <label class="global-override-label" id="lbl-row-peak-qtr"><input type="checkbox" id="global-peak-qtr" onchange="toggleGlobalOverride('bypassPeakQtr', 'filter-peak-qtr', this)"> <span id="lbl-bypass-peak-qtr">🔓 Bypass Highest Ever Quarterly Result</span></label>
+                <h4>🔓 Global Exception Overrides</h4>
+                <p>Select which rules the VIP Industries (checked below) are allowed to ignore.</p>
+                <label class="global-override-label" id="lbl-row-current-qtr"><input type="checkbox" id="global-current-qtr" onchange="toggleGlobalOverride('bypassCurrentQtr','filter-current-qtr',this)"> <span id="lbl-bypass-current-qtr">🔓 Bypass Current Quarter Surge Only</span></label>
+                <label class="global-override-label" id="lbl-row-peak-qtr"><input type="checkbox" id="global-peak-qtr" onchange="toggleGlobalOverride('bypassPeakQtr','filter-peak-qtr',this)"> <span id="lbl-bypass-peak-qtr">🔓 Bypass Highest Ever Quarterly Result</span></label>
                 <hr class="modal-filter-divider">
-                <label class="global-override-label" id="lbl-row-growth"><input type="checkbox" id="global-growth" onchange="toggleGlobalOverride('bypassGrowth', 'filter-growth', this)"> <span id="lbl-bypass-growth">🔓 Bypass Latest Qtr. YoY Operating Profit ≥ 70%</span></label>
-                <label class="global-override-label" id="lbl-row-promoter"><input type="checkbox" id="global-promoter" onchange="toggleGlobalOverride('bypassPromoter', 'filter-promoter', this)"> <span id="lbl-bypass-promoter">🔓 Bypass Promoter Holding ≥ 50%</span></label>
-                <label class="global-override-label" id="lbl-row-pledged"><input type="checkbox" id="global-pledged" onchange="toggleGlobalOverride('bypassPledged', 'filter-pledged', this)"> <span id="lbl-bypass-pledged">🔓 Bypass Pledged Shares ≤ 10%</span></label>
-                <label class="global-override-label" id="lbl-row-wc"><input type="checkbox" id="global-wc" onchange="toggleGlobalOverride('bypassWc', 'filter-wc', this)"> <span id="lbl-bypass-wc">🔓 Bypass Working Capital Days ≤ 150</span></label>
-                <label class="global-override-label" id="lbl-row-msi"><input type="checkbox" id="global-msi" onchange="toggleGlobalOverride('bypassMsi', 'filter-msi', this)"> <span id="lbl-bypass-msi">🔓 Bypass MSI Price Strength > 80</span></label>
+                <label class="global-override-label" id="lbl-row-growth"><input type="checkbox" id="global-growth" onchange="toggleGlobalOverride('bypassGrowth','filter-growth',this)"> <span id="lbl-bypass-growth">🔓 Bypass Latest Qtr. YoY Operating Profit ≥ 70%</span></label>
+                <label class="global-override-label" id="lbl-row-promoter"><input type="checkbox" id="global-promoter" onchange="toggleGlobalOverride('bypassPromoter','filter-promoter',this)"> <span id="lbl-bypass-promoter">🔓 Bypass Promoter Holding ≥ 50%</span></label>
+                <label class="global-override-label" id="lbl-row-pledged"><input type="checkbox" id="global-pledged" onchange="toggleGlobalOverride('bypassPledged','filter-pledged',this)"> <span id="lbl-bypass-pledged">🔓 Bypass Pledged Shares ≤ 10%</span></label>
+                <label class="global-override-label" id="lbl-row-wc"><input type="checkbox" id="global-wc" onchange="toggleGlobalOverride('bypassWc','filter-wc',this)"> <span id="lbl-bypass-wc">🔓 Bypass Working Capital Days ≤ 150</span></label>
+                <label class="global-override-label" id="lbl-row-msi"><input type="checkbox" id="global-msi" onchange="toggleGlobalOverride('bypassMsi','filter-msi',this)"> <span id="lbl-bypass-msi">🔓 Bypass MSI Price Strength > 80</span></label>
             </div>
-            <div class="tree-header-text">Select VIP Industries:</div>
-            <div id="exceptions-tree-container"></div>
+            <div class="tree-header-text">🏭 Select VIP Industries / Companies</div>
+            <div id="exceptions-tree"></div>
         </div>
         <div class="modal-footer">
-            <span id="exception-count" style="font-size: 13px; font-weight: bold; color: #4a5568;">0 VIP Industries Selected</span>
-            <button style="background:#2b6cb0; color:white; border:none; padding:10px 15px; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="closeExceptionsModal()">Apply Rules & Close</button>
+            <span style="font-size:12px;color:#718096;" id="vip-count-label">0 industries selected</span>
+            <button onclick="closeExceptionsModal()" style="background:#2b6cb0;color:white;border:none;padding:10px 20px;border-radius:6px;font-weight:bold;cursor:pointer;">Done</button>
         </div>
     </div>
 </div>
@@ -296,8 +271,13 @@
     const WORKFLOW_FILE  = "run_screener.yml";
     const BRANCH         = "main";
     const DATA_URL       = "https://pub-9afc232687c44eebbb8cae359c7ac460.r2.dev/rawdata.json";
-    const PROGRESS_URL   = "https://pub-9afc232687c44eebbb8cae359c7ac460.r2.dev/progress.json";
     const CHAT_API_URL   = "https://terminal-api.deepakkhatwani.workers.dev/api/comments";
+
+    const COL_NSE = "__col_nse__";
+    const COL_BSE = "__col_bse__";
+    const YOY_PREFIX = "__yoy__";
+    const QTR_COL_REGEX = /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{2,4}$/;
+    const MONTH_LETTER = {Jan:'J',Feb:'F',Mar:'M',Apr:'A',May:'My',Jun:'J',Jul:'Jl',Aug:'Au',Sep:'S',Oct:'O',Nov:'N',Dec:'D'};
 
     let rawData = [];
     let currentFilteredData = [];
@@ -307,13 +287,29 @@
     let visibleColumns = new Set();
     let sortColumn = "Sr no";
     let sortAscending = true;
-    let currentChatTicker = "";
-    let globalOverrides = { bypassPromoter: false, bypassPledged: false, bypassWc: false, bypassGrowth: false, bypassCurrentQtr: false, bypassPeakQtr: false, bypassMsi: false };
-    let vipIndustries = new Set();
     let currentView = 'list';
-    let _scrapeStartTime = null;
+    let currentChatTicker = '';
+    let _scrapeStartTime = 0;
+    let vipIndustries = new Set();
+    let vipCompanies = new Set();
+    let globalOverrides = { bypassGrowth:false, bypassPromoter:false, bypassPledged:false, bypassWc:false, bypassCurrentQtr:false, bypassPeakQtr:false, bypassMsi:false };
+    let isDragging = false, dragMoved = false, startX = 0, startScrollLeft = 0;
 
-    // ── Telemetry helpers ────────────────────────────────────────────────────
+    function getExchangeCodes(row) {
+        const nseRaw      = (row["NSE Code Exact"]      || "").toString().trim();
+        const screenerRaw = (row["Screener Name Exact"] || "").toString().trim();
+        const nse = (/^\d+$/.test(nseRaw) || nseRaw === "") ? "" : nseRaw;
+        const bse = /^\d+$/.test(screenerRaw) ? screenerRaw : "";
+        return { nse, bse };
+    }
+
+    function toQtrCode(colName) {
+        const parts = colName.trim().split(/\s+/);
+        const mon = parts[0]; const yr = parts[1] || '';
+        const yy = yr.length === 4 ? yr.slice(2) : yr;
+        return (MONTH_LETTER[mon] || mon[0]) + yy;
+    }
+
     function setTelemetry(headline, detail, pct, state) {
         const h = document.getElementById('telemetry-headline');
         const d = document.getElementById('telemetry-detail');
@@ -330,153 +326,54 @@
             bar.style.width = '0%';
         }
     }
-    // ─────────────────────────────────────────────────────────────────────────
 
-    // ── YoY virtual columns ──────────────────────────────────────────────────
-    const COL_NSE = "__col_nse__";
-    const COL_BSE = "__col_bse__";
-    const YOY_PREFIX = "__yoy__";
-    const QTR_COL_REGEX = /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{2,4}$/;
-    const MONTH_LETTER = { Jan:'J', Feb:'F', Mar:'M', Apr:'A', May:'My', Jun:'J', Jul:'Jl', Aug:'Au', Sep:'S', Oct:'O', Nov:'N', Dec:'D' };
-
-    function getExchangeCodes(row) {
-        const nseRaw      = (row["NSE Code Exact"]      || "").toString().trim();
-        const screenerRaw = (row["Screener Name Exact"] || "").toString().trim();
-        const nse = (/^\d+$/.test(nseRaw) || nseRaw === "") ? "" : nseRaw;
-        const bse = /^\d+$/.test(screenerRaw) ? screenerRaw : "";
-        return { nse, bse };
+    function detectQuarterlyColumns(cols) {
+        return cols.filter(c => QTR_COL_REGEX.test(c.trim()));
     }
-
-    function toQtrCode(colName) {
-        const parts = colName.trim().split(/\s+/);
-        const mon = parts[0];
-        const yr  = parts[1] || '';
-        const letter = MONTH_LETTER[mon] || mon[0].toUpperCase();
-        const yearShort = yr.length === 4 ? yr.slice(-2) : yr;
-        return letter + yearShort;
-    }
-
-    function detectQuarterlyColumns(cols) { return cols.filter(c => QTR_COL_REGEX.test(c.trim())); }
 
     function buildYoYDescriptors() {
-        if (!quarterlyColumns || quarterlyColumns.length < 5) return [];
         const descs = [];
-        for (let i = 0; i < quarterlyColumns.length - 4 && descs.length < 9; i++) {
+        for (let i = 0; i < quarterlyColumns.length - 4; i++) {
             const newCol = quarterlyColumns[i];
             const oldCol = quarterlyColumns[i + 4];
-            const label = `${toQtrCode(newCol)} - ${toQtrCode(oldCol)}`;
-            descs.push({ id: YOY_PREFIX + label, label, newCol, oldCol });
+            const newCode = toQtrCode(newCol);
+            const oldCode = toQtrCode(oldCol);
+            descs.push({ id: YOY_PREFIX + newCode + '_vs_' + oldCode, label: newCode + ' vs ' + oldCode, newCol, oldCol });
         }
         return descs;
     }
 
-    function calcYoY(row, desc) {
-        const newVal = parseFloat(row[desc.newCol]);
-        const oldVal = parseFloat(row[desc.oldCol]);
-        if (isNaN(newVal) || isNaN(oldVal) || oldVal === 0) return null;
-        return (newVal - oldVal) / Math.abs(oldVal);
+    function calcYoY(row, newCol, oldCol) {
+        const nv = parseFloat(String(row[newCol] || '').replace(/,/g, ''));
+        const ov = parseFloat(String(row[oldCol] || '').replace(/,/g, ''));
+        if (isNaN(nv) || isNaN(ov) || ov === 0) return null;
+        return ((nv - ov) / Math.abs(ov)) * 100;
     }
 
-    function formatYoY(ratio) {
-        if (ratio === null) return null;
-        const sign = ratio >= 0 ? '+' : '';
-        return sign + (ratio * 100).toFixed(1) + '%';
+    function formatYoY(val) {
+        if (val === null || val === undefined) return '<span class="yoy-na">N/A</span>';
+        const cls = val >= 0 ? 'yoy-pos' : 'yoy-neg';
+        const sign = val >= 0 ? '+' : '';
+        return `<span class="${cls}">${sign}${val.toFixed(1)}%</span>`;
     }
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /* ── Drag-to-scroll on table container ── */
-    (function() {
-        let isDown = false, startX, scrollLeft, dragMoved = false;
-        document.addEventListener('DOMContentLoaded', function() {
-            const el = document.getElementById('main-table-container');
-            el.addEventListener('mousedown', function(e) {
-                if (e.button !== 0) return;
-                if (e.target.closest('a, button, input, label')) return;
-                isDown = true; dragMoved = false;
-                startX = e.pageX - el.offsetLeft;
-                scrollLeft = el.scrollLeft;
-                el.classList.add('dragging');
-            });
-            el.addEventListener('mouseleave', function() { isDown = false; el.classList.remove('dragging'); });
-            el.addEventListener('mouseup', function() { isDown = false; el.classList.remove('dragging'); });
-            el.addEventListener('mousemove', function(e) {
-                if (!isDown) return;
-                e.preventDefault();
-                const x = e.pageX - el.offsetLeft;
-                const walk = (x - startX) * 1.5;
-                if (Math.abs(walk) > 3) dragMoved = true;
-                el.scrollLeft = scrollLeft - walk;
-            });
-            el.addEventListener('click', function(e) {
-                if (dragMoved) { e.stopPropagation(); e.preventDefault(); dragMoved = false; }
-            }, true);
-        });
-    })();
 
     function isLatestQtrHighest(row) {
-        if (!quarterlyColumns || quarterlyColumns.length === 0) return false;
-        const vals = quarterlyColumns.map(c => { const v = parseFloat(row[c]); return isNaN(v) ? null : v; });
-        const latestVal = vals[0];
-        if (latestVal === null) return false;
-        const historicalVals = vals.slice(1).filter(v => v !== null);
-        if (historicalVals.length === 0) return false;
-        return latestVal > Math.max(...historicalVals);
+        if (!quarterlyColumns || quarterlyColumns.length < 2) return false;
+        const latestCol = quarterlyColumns[0];
+        const latestVal = parseFloat(String(row[latestCol] || '').replace(/,/g, ''));
+        if (isNaN(latestVal)) return false;
+        for (let i = 1; i < quarterlyColumns.length; i++) {
+            const v = parseFloat(String(row[quarterlyColumns[i]] || '').replace(/,/g, ''));
+            if (!isNaN(v) && v >= latestVal) return false;
+        }
+        return true;
     }
 
-    function hasYoYSurge(row, thresholdPct) {
+    function hasYoYSurge(row, threshold) {
         if (!quarterlyColumns || quarterlyColumns.length < 5) return false;
-        const latestCol   = quarterlyColumns[0];
-        const sameQtrPrev = quarterlyColumns[4];
-        const latest  = parseFloat(row[latestCol]);
-        const prevYr  = parseFloat(row[sameQtrPrev]);
-        if (isNaN(latest) || isNaN(prevYr) || prevYr <= 0) return false;
-        return latest >= prevYr * (1 + thresholdPct / 100);
+        const yoy = calcYoY(row, quarterlyColumns[0], quarterlyColumns[4]);
+        return yoy !== null && yoy >= threshold;
     }
-
-    const MASTER_INDUSTRY_MAP = {
-        "Aerospace & Defense": ["Aerospace & Defense"],
-        "Agricultural Food & other Products": ["Edible Oil","Other Agricultural Products","Sugar","Tea & Coffee"],
-        "Agricultural, Commercial & Construction Vehicles": ["Commercial Vehicles","Construction Vehicles","Dealers-Commercial Vehicles, Tractors, Construction Vehicles","Tractors"],
-        "Auto Components": ["Auto Components & Equipments","Trading - Auto components","Tyres & Rubber Products"],
-        "Automobiles": ["2/3 Wheelers","Auto Dealer","Passenger Cars & Utility Vehicles"],
-        "Banks": ["Other Bank","Private Sector Bank","Public Sector Bank"],
-        "Beverages": ["Breweries & Distilleries","Other Beverages"],
-        "Capital Markets": ["Asset Management Company","Depositories, Clearing Houses and Other Intermediaries","Exchange and Data Platform","Financial Products Distributor","Other Capital Market related Services","Ratings","Stockbroking & Allied"],
-        "Cement & Cement Products": ["Cement & Cement Products"],
-        "Chemicals & Petrochemicals": ["Carbon Black","Commodity Chemicals","Dyes And Pigments","Explosives","Industrial Gases","Petrochemicals","Printing Inks","Specialty Chemicals","Trading - Chemicals"],
-        "Cigarettes & Tobacco Products": ["Cigarettes & Tobacco Products"],
-        "Commercial Services & Supplies": ["Business Process Outsourcing (BPO)/ Knowledge Process Outsourcing (KPO)","Consulting Services","Data Processing Services","Diversified Commercial Services","Trading & Distributors"],
-        "Construction": ["Civil Construction"],
-        "Consumable Fuels": ["Coal","Trading - Coal"],
-        "Consumer Durables": ["Ceramics","Consumer Electronics","Cycles","Diversified consumer products","Footwear","Furniture, Home Furnishing","Gems, Jewellery And Watches","Glass - Consumer","Granites & Marbles","Household Appliances","Houseware","Leather And Leather Products","Locks","Mattresses","Optical Products","Pipes","Sanitaryware","Stationary","Water Purifiers","Wood & Wood Products"],
-        "Consumer Services": ["Catering & Canteen Services","Dry Cells","Hotels & Resorts","Other Consumer Services","Restaurants & Food Service","Tourism"],
-        "Diversified": ["Diversified"],
-        "Electronic Equipment & Products": ["Electronic Components","Electronic Equipment","Surveillance System"],
-        "Entertainment": ["Digital Entertainment","Film Production, Distribution & Exhibition","Media & Entertainment","TV Broadcasting & Software Production"],
-        "Fertilizers & Agrochemicals": ["Agrochemicals","Fertilizers"],
-        "Finance": ["Housing Finance","Micro Finance","Non Banking Financial Company (NBFC)","Other Financial Services"],
-        "Food & Beverages": ["Bakery Products","Dairy Products","Diversified FMCG","Edible Oil","Fruit Processing","Miscellaneous Food Processing","Other Agri Products","Packaged Food","Poultry","Seafood Processing","Sugar","Tea & Coffee"],
-        "Forest Materials": ["Paper & Paper Products","Plywood Boards / Laminates"],
-        "Gas": ["Gas Distribution","Gas Exploration & Production","LPG/CNG/PNG/LNG Supplier"],
-        "Healthcare": ["Diagnostics","Healthcare Facilities","Healthcare Technology"],
-        "Household & Personal Products": ["Household Products","Personal Care"],
-        "Industrial Machinery": ["Agricultural Machinery","Construction Machinery & Equipments","Industrial Machinery"],
-        "Insurance": ["General Insurance","Life Insurance"],
-        "IT - Hardware": ["Computers","IT Hardware - Peripherals & Accessories","Storage Media"],
-        "IT - Software": ["IT Consulting & Software","IT Infrastructure & Software","Software Products","Trading - Computers"],
-        "Logistics": ["Courier Services","Freight - Sea","Logistics Solution Provider","Ports","Shipping","Warehousing"],
-        "Media & Publishing": ["Advertising","Education","Print Media"],
-        "Metals & Mining": ["Aluminium","Copper","Iron & Steel","Iron & Steel Products","Metal Intermediaries","Mining & Minerals","Other Metals","Zinc"],
-        "Oil & Gas": ["Crude Oil & Natural Gas","Oil Exploration & Production","Oil Marketing Companies (OMC)","Petroleum Products","Refineries & Petro-Products"],
-        "Pharmaceuticals & Biotechnology": ["Biotechnology","Bulk Drugs & Intermediaries","Pharmaceutical Products - Indian","Pharmaceutical Products - MNC"],
-        "Power": ["Electric Utilities","Power Generation","Power Infrastructure","Solar Energy","Transmission"],
-        "Real Estate": ["Real Estate"],
-        "Retailing": ["Department Stores","E-Commerce/App based Aggregator","Hypermarkets","Specialty Retail"],
-        "Telecom": ["Telecom - Equipment & Accessories","Telecom Services"],
-        "Textiles": ["Braids, Laces, Ribbons etc.","Composite Mills","Cotton & Blended Yarn","Denim","Home Textiles","Man-made Filament Yarn & Fibre","Technical Textiles","Trading - Textiles","Woven & Other Readymade Garments"],
-        "Transportation": ["Air Transport Service","Bus Transportation","Rail","Road Transport"],
-        "Water": ["Water Infrastructure","Water Treatment"]
-    };
 
     function getCurrentQuarterCode() {
         const now = new Date(); const month = now.getMonth() + 1;
@@ -487,77 +384,58 @@
         return `D${yr}`;
     }
 
-    function updateCurrentQtrBadge() { const badge = document.getElementById('current-qtr-badge'); if (badge) badge.textContent = getCurrentQuarterCode(); }
-
-    function syncBypassLabels() {
-        const gVal   = document.getElementById('val-growth')?.value   || 70;
-        const pVal   = document.getElementById('val-promoter')?.value || 50;
-        const plVal  = document.getElementById('val-pledged')?.value  || 10;
-        const wcVal  = document.getElementById('val-wc')?.value       || 150;
-        const msiVal = document.getElementById('val-msi')?.value      || 80;
-        const qCode  = getCurrentQuarterCode();
-        const rules = [
-            { spanId: 'lbl-bypass-current-qtr', rowId: 'lbl-row-current-qtr', text: `🔓 Bypass Current Quarter Surge Only (${qCode})`,     filterId: 'filter-current-qtr' },
-            { spanId: 'lbl-bypass-peak-qtr',    rowId: 'lbl-row-peak-qtr',    text: `🔓 Bypass Highest Ever Quarterly Result`,               filterId: 'filter-peak-qtr'    },
-            { spanId: 'lbl-bypass-growth',      rowId: 'lbl-row-growth',      text: `🔓 Bypass Latest Qtr. YoY Operating Profit ≥ ${gVal}%`, filterId: 'filter-growth'      },
-            { spanId: 'lbl-bypass-promoter',    rowId: 'lbl-row-promoter',    text: `🔓 Bypass Promoter Holding ≥ ${pVal}%`,               filterId: 'filter-promoter'    },
-            { spanId: 'lbl-bypass-pledged',     rowId: 'lbl-row-pledged',     text: `🔓 Bypass Pledged Shares ≤ ${plVal}%`,                filterId: 'filter-pledged'     },
-            { spanId: 'lbl-bypass-wc',          rowId: 'lbl-row-wc',          text: `🔓 Bypass Working Capital Days ≤ ${wcVal}`,         filterId: 'filter-wc'          },
-            { spanId: 'lbl-bypass-msi',         rowId: 'lbl-row-msi',         text: `🔓 Bypass MSI Price Strength > ${msiVal}`,            filterId: 'filter-msi'         }
-        ];
-        rules.forEach(r => {
-            const span = document.getElementById(r.spanId); const row = document.getElementById(r.rowId);
-            const active = document.getElementById(r.filterId)?.checked;
-            if (span) span.textContent = r.text;
-            if (row) active ? row.classList.remove('disabled-rule') : row.classList.add('disabled-rule');
-        });
+    function updateCurrentQtrBadge() {
+        const badge = document.getElementById('current-qtr-badge');
+        if (badge) badge.textContent = getCurrentQuarterCode();
     }
 
-    /* ═══════════════════════════════════════════
-       COLUMN SETTINGS — Select All / Drag reorder
-    ═══════════════════════════════════════════ */
-    let dragSrcIndex = null;
+    function syncBypassLabels() {
+        const map = {
+            bypassCurrentQtr: { lbl: 'lbl-bypass-current-qtr', filter: 'filter-current-qtr', base: '🔓 Bypass Current Quarter Surge Only' },
+            bypassPeakQtr:    { lbl: 'lbl-bypass-peak-qtr',    filter: 'filter-peak-qtr',    base: '🔓 Bypass Highest Ever Quarterly Result' },
+            bypassGrowth:     { lbl: 'lbl-bypass-growth',      filter: 'filter-growth',      base: '🔓 Bypass Latest Qtr. YoY Operating Profit' },
+            bypassPromoter:   { lbl: 'lbl-bypass-promoter',    filter: 'filter-promoter',    base: '🔓 Bypass Promoter Holding' },
+            bypassPledged:    { lbl: 'lbl-bypass-pledged',     filter: 'filter-pledged',     base: '🔓 Bypass Pledged Shares' },
+            bypassWc:         { lbl: 'lbl-bypass-wc',          filter: 'filter-wc',          base: '🔓 Bypass Working Capital Days' },
+            bypassMsi:        { lbl: 'lbl-bypass-msi',         filter: 'filter-msi',         base: '🔓 Bypass MSI Price Strength' },
+        };
+        Object.entries(map).forEach(([key, cfg]) => {
+            const filterOn = document.getElementById(cfg.filter)?.checked;
+            const rowEl = document.getElementById('lbl-row-' + cfg.filter.replace('filter-',''));
+            const lblEl = document.getElementById(cfg.lbl);
+            if (rowEl) rowEl.classList.toggle('disabled-rule', !filterOn);
+            if (lblEl) lblEl.textContent = cfg.base;
+        });
+    }
 
     function renderColumnToggles() {
         const list = document.getElementById('col-items-list');
         list.innerHTML = '';
-        columnOrder.forEach((col, idx) => {
+        columnOrder.forEach((col) => {
             const isYoY = col.startsWith(YOY_PREFIX);
+            const isNSE = col === COL_NSE;
+            const isBSE = col === COL_BSE;
             const item = document.createElement('div');
             item.className = 'col-item';
-            item.setAttribute('draggable', 'true');
+            item.draggable = true;
             item.dataset.col = col;
-            item.dataset.idx = idx;
-            const labelClass = isYoY ? 'col-item-label yoy-label' : 'col-item-label';
-            const displayLbl = isYoY ? ('📊 ' + col.slice(YOY_PREFIX.length)) : getDisplayName(col);
-            item.innerHTML =
-                `<span class="col-drag-handle" title="Drag to reorder">⋮⋮</span>` +
-                `<input type="checkbox" id="chk-col-${idx}" ${visibleColumns.has(col) ? 'checked' : ''} onchange="handleColumnToggle(this, '${col}')" onclick="event.stopPropagation()">` +
-                `<label class="${labelClass}" for="chk-col-${idx}">${displayLbl}</label>`;
-
-            item.addEventListener('dragstart', e => {
-                dragSrcIndex = idx;
-                item.classList.add('dragging-item');
-                e.dataTransfer.effectAllowed = 'move';
-            });
-            item.addEventListener('dragend', () => {
-                item.classList.remove('dragging-item');
-                document.querySelectorAll('.col-item').forEach(el => el.classList.remove('drag-over'));
-            });
-            item.addEventListener('dragover', e => {
-                e.preventDefault(); e.dataTransfer.dropEffect = 'move';
-                document.querySelectorAll('.col-item').forEach(el => el.classList.remove('drag-over'));
-                item.classList.add('drag-over');
-            });
+            let label = col;
+            if (isNSE) label = 'NSE Code';
+            else if (isBSE) label = 'BSE Code';
+            else if (isYoY) label = col.slice(YOY_PREFIX.length);
+            else label = getDisplayName(col);
+            item.innerHTML = `<span class="col-drag-handle">☰</span><input type="checkbox" ${visibleColumns.has(col) ? 'checked' : ''} onchange="handleColumnToggle(this,'${col}')"><label class="col-item-label ${isYoY ? 'yoy-label' : ''}" onclick="this.previousElementSibling.click()">${label}</label>`;
+            item.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', col); item.classList.add('dragging-item'); });
+            item.addEventListener('dragend', () => { item.classList.remove('dragging-item'); list.querySelectorAll('.col-item').forEach(i => i.classList.remove('drag-over')); });
+            item.addEventListener('dragover', e => { e.preventDefault(); list.querySelectorAll('.col-item').forEach(i => i.classList.remove('drag-over')); item.classList.add('drag-over'); });
             item.addEventListener('drop', e => {
                 e.preventDefault();
-                if (dragSrcIndex === null || dragSrcIndex === idx) return;
-                const moved = columnOrder.splice(dragSrcIndex, 1)[0];
-                columnOrder.splice(idx, 0, moved);
-                dragSrcIndex = null;
-                renderColumnToggles();
-                updateDropdownText();
-                renderTable(currentFilteredData);
+                const srcCol = e.dataTransfer.getData('text/plain');
+                if (!srcCol || srcCol === col) return;
+                const srcIdx = columnOrder.indexOf(srcCol);
+                const dstIdx = columnOrder.indexOf(col);
+                if (srcIdx > -1 && dstIdx > -1) { columnOrder.splice(srcIdx, 1); columnOrder.splice(dstIdx, 0, srcCol); }
+                renderColumnToggles(); renderTable(currentFilteredData);
             });
             list.appendChild(item);
         });
@@ -573,101 +451,105 @@
     function selectAllColumns(e) {
         e.stopPropagation();
         columnOrder.forEach(col => visibleColumns.add(col));
-        renderColumnToggles();
-        updateDropdownText();
-        renderTable(currentFilteredData);
+        renderColumnToggles(); updateDropdownText(); renderTable(currentFilteredData);
     }
 
     function selectNoneColumns(e) {
         e.stopPropagation();
-        visibleColumns.clear();
-        visibleColumns.add('Company (Page)');
-        renderColumnToggles();
-        updateDropdownText();
-        renderTable(currentFilteredData);
+        visibleColumns.clear(); visibleColumns.add('Company (Page)');
+        renderColumnToggles(); updateDropdownText(); renderTable(currentFilteredData);
     }
 
     function updateDropdownText() {
         document.getElementById('dropdown-btn-text').innerHTML = `👁️ ${visibleColumns.size} Columns Selected <span>▼</span>`;
     }
 
-    /* ══════════════════════════════ */
-
     function switchView(mode) {
         currentView = mode;
-        const listSection = document.getElementById('list-section'); const chartsView = document.getElementById('charts-view');
-        const btnList = document.getElementById('btn-view-list'); const btnCharts = document.getElementById('btn-view-charts');
-        if (mode === 'charts') {
-            listSection.style.display = 'none'; chartsView.style.display = 'block';
-            btnList.classList.remove('active'); btnCharts.classList.add('active'); renderChartsGrid();
+        const listSection = document.getElementById('list-section');
+        const chartsView = document.getElementById('charts-view');
+        const btnList = document.getElementById('btn-view-list');
+        const btnCharts = document.getElementById('btn-view-charts');
+        if (mode === 'list') {
+            listSection.style.display = ''; chartsView.style.display = 'none';
+            btnList.classList.add('active'); btnCharts.classList.remove('active');
         } else {
-            listSection.style.display = 'block'; chartsView.style.display = 'none';
-            btnCharts.classList.remove('active'); btnList.classList.add('active');
+            listSection.style.display = 'none'; chartsView.style.display = '';
+            btnList.classList.remove('active'); btnCharts.classList.add('active');
+            renderChartsGrid();
         }
     }
 
     function renderChartsGrid() {
-        const grid = document.getElementById('charts-grid'); const countEl = document.getElementById('charts-count');
+        const grid = document.getElementById('charts-grid');
+        const countEl = document.getElementById('charts-count');
         if (!currentFilteredData || currentFilteredData.length === 0) { grid.innerHTML = '<div class="charts-loading">No stocks match the current filters.</div>'; countEl.textContent = '0 stocks'; return; }
-        const nseStocks = currentFilteredData.filter(r => (r["NSE Code Exact"] || "").toString().trim() !== "");
-        const bseOnly   = currentFilteredData.filter(r => (r["NSE Code Exact"] || "").toString().trim() === "");
-        countEl.textContent = currentFilteredData.length + " stocks (" + nseStocks.length + " with charts)";
-        grid.innerHTML = "";
+        const nseStocks = currentFilteredData.filter(r => getExchangeCodes(r).nse !== '');
+        const bseOnly = currentFilteredData.filter(r => getExchangeCodes(r).nse === '');
+        countEl.textContent = currentFilteredData.length + ' stocks (' + nseStocks.length + ' with charts)';
+        grid.innerHTML = '';
         nseStocks.forEach(function(row) {
-            const nse = (row["NSE Code Exact"] || "").toString().trim(); const symbol = "NSE:" + nse;
-            const name = (row["Company (Page)"] || row["Name"] || nse).toString();
-            const screener = (row["Screener Name Exact"] || row["Name"] || "").toString().trim();
-            const industry = (row["Industry"] || "").toString();
-            const scrLink = screener ? '<a href="https://www.screener.in/company/' + screener + '/" target="_blank">SCR</a>' : "";
-            const tvLink = '<a href="https://in.tradingview.com/chart/?symbol=' + encodeURIComponent(symbol) + '" target="_blank">📈 Open Full Chart</a>';
-            const cfg = encodeURIComponent(JSON.stringify({ "symbols": [[name, symbol + "|1D"]], "chartOnly": false, "width": "100%", "height": 400, "locale": "in", "colorTheme": "light", "autosize": true, "showVolume": true, "showMA": true, "hideDateRanges": false, "hideMarketStatus": false, "scalePosition": "right", "scaleMode": "Normal", "fontFamily": "Trebuchet MS", "fontSize": "10", "noTimeScale": false, "valuesTracking": "1", "changeMode": "price-and-percent", "chartType": "candlesticks", "upColor": "#26a69a", "downColor": "#ef5350", "borderUpColor": "#26a69a", "borderDownColor": "#ef5350", "wickUpColor": "#26a69a", "wickDownColor": "#ef5350" }));
-            const iframeSrc = "https://s.tradingview.com/embed-widget/symbol-overview/?locale=in#" + cfg;
-            const card = document.createElement("div"); card.className = "chart-card"; card.id = "card_" + nse;
-            card.innerHTML = '<div class="chart-card-header"><div><div class="chart-card-name">' + name + '</div><div class="chart-card-meta">' + symbol + ' &nbsp;|&nbsp; ' + industry + '</div></div><div class="chart-card-links">' + scrLink + tvLink + '</div></div><iframe src="' + iframeSrc + '" width="100%" height="400" frameborder="0" allowtransparency="true" scrolling="no" style="display:block;"></iframe>';
+            const { nse } = getExchangeCodes(row);
+            const symbol = 'NSE:' + nse;
+            const name = (row['Company (Page)'] || row['Name'] || nse).toString();
+            const screener = (row['Screener Name Exact'] || row['Name'] || '').toString().trim();
+            const industry = (row['Industry'] || '').toString();
+            const scrLink = screener ? `<a href="https://www.screener.in/company/${screener}/" target="_blank">SCR</a>` : '';
+            const tvLink = `<a href="https://in.tradingview.com/chart/?symbol=${encodeURIComponent(symbol)}" target="_blank">📈 Open Full Chart</a>`;
+            const cfg = encodeURIComponent(JSON.stringify({ symbols: [[name, symbol + '|1D']], chartOnly: false, width: '100%', height: 400, locale: 'in', colorTheme: 'light', autosize: true, showVolume: true, chartType: 'candlesticks', upColor: '#26a69a', downColor: '#ef5350' }));
+            const iframeSrc = 'https://s.tradingview.com/embed-widget/symbol-overview/?locale=in#' + cfg;
+            const card = document.createElement('div'); card.className = 'chart-card'; card.id = 'card_' + nse;
+            card.innerHTML = `<div class="chart-card-header"><div><div class="chart-card-name">${name}</div><div class="chart-card-meta">${symbol} &nbsp;|&nbsp; ${industry}</div></div><div class="chart-card-links">${scrLink}${tvLink}</div></div><iframe src="${iframeSrc}" width="100%" height="400" frameborder="0" allowtransparency="true" scrolling="no" style="display:block;"></iframe>`;
             grid.appendChild(card);
         });
         if (bseOnly.length > 0) {
-            const warn = document.createElement("div"); warn.style.cssText = "grid-column:1/-1;background:#fff5f5;border:1px solid #fed7d7;border-radius:8px;padding:12px 16px;color:#c53030;font-size:13px;font-weight:600;margin-top:8px;";
-            warn.innerHTML = "⚠️ " + bseOnly.length + " BSE-only stock(s) — no chart: " + bseOnly.map(r => r["Company (Page)"] || r["Name"] || "").join(", "); grid.appendChild(warn);
+            const warn = document.createElement('div'); warn.style.cssText = 'grid-column:1/-1;background:#fff5f5;border:1px solid #fed7d7;border-radius:8px;padding:12px 16px;color:#c53030;font-size:13px;font-weight:600;margin-top:8px;';
+            warn.innerHTML = '⚠️ ' + bseOnly.length + ' BSE-only stock(s) — no chart: ' + bseOnly.map(r => r['Company (Page)'] || r['Name'] || '').join(', ');
+            grid.appendChild(warn);
         }
     }
 
-    async function toggleLandscape() {
-        const tableContainer = document.getElementById('main-table-container');
+    function toggleLandscape() {
+        const tc = document.getElementById('main-table-container');
         try {
-            if (!document.fullscreenElement) {
-                if (tableContainer.requestFullscreen) await tableContainer.requestFullscreen();
-                else if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
-                if (screen.orientation && screen.orientation.lock) await screen.orientation.lock("landscape");
-            } else { if (document.exitFullscreen) await document.exitFullscreen(); }
-        } catch (err) { alert("To view in landscape mode comfortably, please physically rotate your phone."); }
+            if (!document.fullscreenElement) { if (tc.requestFullscreen) tc.requestFullscreen(); if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape'); }
+            else { if (document.exitFullscreen) document.exitFullscreen(); }
+        } catch (err) { alert('To view in landscape mode, please physically rotate your phone.'); }
     }
 
     function openChat(ticker, companyName) {
         currentChatTicker = ticker;
         document.getElementById('chat-title').innerText = `📝 Notes: ${companyName}`;
-        document.getElementById('chat-drawer').classList.add('open'); document.getElementById('chat-overlay').classList.add('open');
-        const savedName = localStorage.getItem('researcher_name'); if (savedName) document.getElementById('chat-author').value = savedName;
+        document.getElementById('chat-drawer').classList.add('open');
+        document.getElementById('chat-overlay').classList.add('open');
+        const savedName = localStorage.getItem('researcher_name');
+        if (savedName) document.getElementById('chat-author').value = savedName;
         loadComments(ticker);
     }
+
     function closeChat() { document.getElementById('chat-drawer').classList.remove('open'); document.getElementById('chat-overlay').classList.remove('open'); }
+
     async function loadComments(ticker) {
-        const msgDiv = document.getElementById('chat-messages'); msgDiv.innerHTML = `<div class="loading" style="padding:20px; font-size:14px;">Loading notes...</div>`;
+        const msgDiv = document.getElementById('chat-messages');
+        msgDiv.innerHTML = '<div class="loading" style="padding:20px;font-size:14px;">Loading notes...</div>';
         try {
-            const res = await fetch(`${CHAT_API_URL}?ticker=${encodeURIComponent(ticker)}`); const comments = await res.json();
-            if (!comments || comments.length === 0) { msgDiv.innerHTML = `<div style="text-align:center; color:#718096; font-size:13px; margin-top:20px;">No notes yet. Be the first!</div>`; return; }
+            const res = await fetch(`${CHAT_API_URL}?ticker=${encodeURIComponent(ticker)}`);
+            const comments = await res.json();
+            if (!comments || comments.length === 0) { msgDiv.innerHTML = '<div style="text-align:center;color:#718096;font-size:13px;margin-top:20px;">No notes yet. Be the first!</div>'; return; }
             msgDiv.innerHTML = comments.map(c => `<div class="chat-message"><div class="author">${c.author}</div><div class="text">${c.text}</div><div class="time">${new Date(c.timestamp).toLocaleString()}</div></div>`).join('');
             msgDiv.scrollTop = msgDiv.scrollHeight;
-        } catch (e) { msgDiv.innerHTML = `<div style="color:#e53e3e; font-size:13px; text-align:center; margin-top:20px;">Error connecting to database.</div>`; }
+        } catch (e) { msgDiv.innerHTML = '<div style="color:#e53e3e;font-size:13px;text-align:center;margin-top:20px;">Error connecting to database.</div>'; }
     }
+
     async function submitComment() {
-        const author = document.getElementById('chat-author').value.trim(); const text = document.getElementById('chat-input').value.trim();
-        if (!author || !text) { alert("Please enter your name and a note before posting."); return; }
+        const author = document.getElementById('chat-author').value.trim();
+        const text = document.getElementById('chat-input').value.trim();
+        if (!author || !text) { alert('Please enter your name and a note before posting.'); return; }
         localStorage.setItem('researcher_name', author);
-        const btn = document.querySelector('.chat-input-area button'); btn.disabled = true; btn.innerText = "Posting...";
-        try { await fetch(CHAT_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticker: currentChatTicker, author, text }) }); document.getElementById('chat-input').value = ""; await loadComments(currentChatTicker); }
-        catch (e) { alert("Failed to post note. Please try again."); }
-        btn.disabled = false; btn.innerText = "Post Note";
+        const btn = document.querySelector('.chat-input-area button'); btn.disabled = true; btn.innerText = 'Posting...';
+        try { await fetch(CHAT_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticker: currentChatTicker, author, text }) }); document.getElementById('chat-input').value = ''; await loadComments(currentChatTicker); }
+        catch (e) { alert('Failed to post note. Please try again.'); }
+        btn.disabled = false; btn.innerText = 'Post Note';
     }
 
     function resetToken() {
@@ -679,183 +561,120 @@
     async function triggerWorkflow() {
         const btn = document.getElementById('run-btn');
         let token = localStorage.getItem('gh_token');
-        if (!token) { token = prompt("Paste your GitHub Personal Access Token (PAT):"); if (!token) return; localStorage.setItem('gh_token', token.trim()); }
+        if (!token) { token = prompt('Paste your GitHub Personal Access Token (PAT):'); if (!token) return; localStorage.setItem('gh_token', token.trim()); }
         try {
-            btn.disabled = true;
-            _scrapeStartTime = Date.now();
+            btn.disabled = true; _scrapeStartTime = Date.now();
             setTelemetry('<span class="spinner"></span> Ignition sequence initiated…', 'Dispatching workflow to GitHub Actions', null, 'running');
             const dispatchRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/dispatches`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: BRANCH }) });
-            if (!dispatchRes.ok) {
-                if (dispatchRes.status === 401 || dispatchRes.status === 404) { localStorage.removeItem('gh_token'); throw new Error("Invalid Token. Wiped. Click Run to retry."); }
-                throw new Error(`API Error ${dispatchRes.status}`);
-            }
+            if (!dispatchRes.ok) { if (dispatchRes.status === 401 || dispatchRes.status === 404) { localStorage.removeItem('gh_token'); throw new Error('Invalid Token. Wiped. Click Run to retry.'); } throw new Error(`API Error ${dispatchRes.status}`); }
             setTelemetry('<span class="spinner"></span> Engine online — awaiting telemetry…', 'GitHub runner is spinning up', null, 'running');
             setTimeout(() => pollWorkflowStatus(token), 6000);
-        } catch (error) {
-            setTelemetry(`❌ ${error.message}`, '', null, 'error');
-            btn.disabled = false;
-        }
+        } catch (error) { setTelemetry(`❌ ${error.message}`, '', null, 'error'); btn.disabled = false; }
     }
 
     async function pollWorkflowStatus(token) {
+        const btn = document.getElementById('run-btn');
         try {
-            // ── 1. Check GitHub Actions run status ──────────────────────────
-            const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/runs?per_page=1`, { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' } });
-            const data = await res.json();
-
-            if (data.workflow_runs && data.workflow_runs.length > 0) {
-                const latestRun = data.workflow_runs[0];
-
-                if (latestRun.status === "completed") {
-                    if (latestRun.conclusion === "success") {
-                        setTelemetry('✅ Ingestion complete — synchronising data feed…', 'All equities processed · refreshing terminal', 100, 'success');
-                        setTimeout(() => {
-                            fetchData();
-                            document.getElementById('run-btn').disabled = false;
-                            setTelemetry('✅ Data feed synchronised', 'Terminal loaded with fresh intelligence', null, 'success');
-                        }, 3000);
-                    } else {
-                        setTelemetry('❌ Acquisition pipeline failed', latestRun.conclusion || 'Unknown error', null, 'error');
-                        document.getElementById('run-btn').disabled = false;
-                    }
-                    return;
+            const runsRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/runs?per_page=1`, { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' } });
+            const runsData = await runsRes.json();
+            const run = runsData.workflow_runs?.[0];
+            if (!run) { setTelemetry('<span class="spinner"></span> Waiting for runner…', '', null, 'running'); setTimeout(() => pollWorkflowStatus(token), 5000); return; }
+            const elapsed = Math.round((Date.now() - _scrapeStartTime) / 1000);
+            const pct = Math.min(90, (elapsed / 180) * 100);
+            if (run.status === 'completed') {
+                if (run.conclusion === 'success') {
+                    setTelemetry('✅ Scrape complete! Reloading data…', `Finished in ${elapsed}s`, 100, 'success');
+                    setTimeout(() => { fetchData(); btn.disabled = false; }, 3000);
+                } else {
+                    setTelemetry(`❌ Run failed (${run.conclusion})`, '', null, 'error'); btn.disabled = false;
                 }
-
-                // ── 2. Scraper is still running — fetch live progress.json ──
-                try {
-                    const prog = await fetch(`${PROGRESS_URL}?t=${Date.now()}`);
-                    if (prog.ok) {
-                        const p = await prog.json();
-                        // Expected shape: { total: 110, done: 20, phase: "ingesting" }
-                        const total   = p.total || 0;
-                        const done    = p.done  || 0;
-                        const phase   = p.phase || 'processing';
-                        const pct     = total > 0 ? Math.round((done / total) * 100) : null;
-
-                        // ETA calculation
-                        let etaStr = '';
-                        if (_scrapeStartTime && done > 0 && total > 0) {
-                            const elapsed   = (Date.now() - _scrapeStartTime) / 1000; // seconds
-                            const rate      = done / elapsed;                          // stocks/sec
-                            const remaining = (total - done) / rate;                  // seconds left
-                            if (remaining < 60)       etaStr = ` · ETA ~${Math.ceil(remaining)}s`;
-                            else if (remaining < 3600) etaStr = ` · ETA ~${Math.ceil(remaining / 60)} min`;
-                        }
-
-                        const phaseLabel = phase === 'scanning'   ? '🔍 Universe scan in progress' :
-                                           phase === 'ingesting'  ? '📥 Ingesting equity data'      :
-                                           phase === 'writing'    ? '💾 Committing to data store'   :
-                                                                    '⚙️ Processing';
-                        if (total > 0) {
-                            setTelemetry(
-                                `<span class="spinner"></span> ${phaseLabel}`,
-                                `${total} equities identified · ${done} / ${total} ingested${etaStr}`,
-                                pct,
-                                'running'
-                            );
-                        } else {
-                            setTelemetry(
-                                `<span class="spinner"></span> ${phaseLabel}`,
-                                'Cataloguing universe — stand by',
-                                null,
-                                'running'
-                            );
-                        }
-                    } else {
-                        // progress.json not yet available — generic running state
-                        const elapsedMin = _scrapeStartTime ? Math.floor((Date.now() - _scrapeStartTime) / 60000) : 0;
-                        setTelemetry(
-                            '<span class="spinner"></span> Acquisition pipeline active',
-                            `Elapsed: ${elapsedMin}m — awaiting first telemetry pulse`,
-                            null,
-                            'running'
-                        );
-                    }
-                } catch (_) {
-                    setTelemetry('<span class="spinner"></span> Acquisition pipeline active', 'Awaiting telemetry…', null, 'running');
-                }
+            } else {
+                setTelemetry(`<span class="spinner"></span> ${run.status === 'in_progress' ? '⚙️ Scraping in progress…' : '⏳ Queued…'}`, `Elapsed: ${elapsed}s`, pct, 'running');
+                setTimeout(() => pollWorkflowStatus(token), 5000);
             }
-        } catch (e) {}
-        setTimeout(() => pollWorkflowStatus(token), 8000);
+        } catch (e) { setTelemetry('❌ Poll error', e.message, null, 'error'); btn.disabled = false; }
     }
 
-    function toggleGlobalOverride(ruleKey, mainFilterId, checkboxElem) {
-        if (checkboxElem.checked) {
-            const mainFilter = document.getElementById(mainFilterId);
-            if (!mainFilter || !mainFilter.checked) { alert("PROHIBITED: You cannot exempt industries from this rule because the corresponding Strict Filter is currently OFF."); checkboxElem.checked = false; return; }
-        }
-        globalOverrides[ruleKey] = checkboxElem.checked; applyFiltersAndRender();
+    function toggleGlobalOverride(key, filterId, checkbox) {
+        globalOverrides[key] = checkbox.checked;
+        syncBypassLabels();
+        applyFiltersAndRender();
     }
-    function handleMainFilterChange(filterId, overrideId, ruleKey) {
-        const mainChecked = document.getElementById(filterId).checked;
-        if (!mainChecked) { const overrideCb = document.getElementById(overrideId); if (overrideCb) overrideCb.checked = false; globalOverrides[ruleKey] = false; }
-        applyFiltersAndRender(); syncBypassLabels();
+
+    function handleMainFilterChange(filterId, globalId, bypassKey) {
+        const filterOn = document.getElementById(filterId).checked;
+        if (!filterOn) { globalOverrides[bypassKey] = false; const gEl = document.getElementById(globalId); if (gEl) gEl.checked = false; }
+        syncBypassLabels();
+        applyFiltersAndRender();
     }
-    function renderExceptionsTree() {
-        const container = document.getElementById("exceptions-tree-container"); container.innerHTML = "";
-        Object.keys(MASTER_INDUSTRY_MAP).forEach(group => {
-            const subs = MASTER_INDUSTRY_MAP[group]; const safeId = group.replace(/\W/g, '');
-            const item = document.createElement("div"); item.className = "accordion-item";
-            item.innerHTML = `<div class="accordion-header" onclick="toggleAccordion(event, '${safeId}')"><input type="checkbox" id="chk-grp-${safeId}" onchange="toggleGroup(event, '${group}')"><span class="accordion-title" id="title-${safeId}">${group}</span><span class="accordion-toggle" id="arrow-${safeId}">▼</span></div><div class="accordion-body" id="body-${safeId}">${subs.map(sub => `<label onclick="event.stopPropagation()"><input type="checkbox" onchange="toggleSub('${sub}')" id="chk-sub-${sub.replace(/\W/g,'')}'">${sub}</label>`).join('')}</div>`;
-            container.appendChild(item);
-        }); updateTreeVisuals();
+
+    function renderExceptionsTree(data) {
+        const tree = document.getElementById('exceptions-tree');
+        const grouped = {};
+        data.forEach(row => {
+            const ind = row['Industry'] || 'Unknown';
+            const comp = row['Company (Page)'] || row['Name'] || '';
+            if (!grouped[ind]) grouped[ind] = [];
+            grouped[ind].push(comp);
+        });
+        tree.innerHTML = '';
+        Object.keys(grouped).sort().forEach(industry => {
+            const isVipInd = vipIndustries.has(industry);
+            const item = document.createElement('div'); item.className = 'accordion-item';
+            const companies = grouped[industry];
+            const allVip = companies.every(c => vipCompanies.has(c));
+            const someVip = companies.some(c => vipCompanies.has(c));
+            item.innerHTML = `<div class="accordion-header" onclick="toggleAccordion(this)"><input type="checkbox" ${isVipInd || allVip ? 'checked' : someVip ? 'indeterminate' : ''} onclick="event.stopPropagation();toggleGroup(this,'${industry.replace(/'/g,"\\'")}')"><span class="accordion-title">${industry} <span style="font-size:11px;color:#718096;">(${companies.length})</span></span><span class="accordion-toggle">▼</span></div><div class="accordion-body" id="body_${industry.replace(/\s/g,'_')}">${companies.map(c => `<label><input type="checkbox" ${vipCompanies.has(c)?'checked':''} onchange="toggleSub(this,'${c.replace(/'/g,"\\'")}','${industry.replace(/'/g,"\\'")}')"> ${c}</label>`).join('')}</div>`;
+            if (someVip && !allVip) { const cb = item.querySelector('.accordion-header input'); cb.indeterminate = true; }
+            tree.appendChild(item);
+        });
+        updateTreeVisuals();
     }
-    function toggleAccordion(event, safeId) {
-        if (event.target.tagName.toLowerCase() === 'input') return;
-        const body = document.getElementById(`body-${safeId}`); const arrow = document.getElementById(`arrow-${safeId}`);
-        if (body.style.display === "flex") { body.style.display = "none"; arrow.classList.remove("open"); } else { body.style.display = "flex"; arrow.classList.add("open"); }
+
+    function toggleAccordion(header) {
+        const body = header.nextElementSibling;
+        const toggle = header.querySelector('.accordion-toggle');
+        const isOpen = body.style.display === 'flex';
+        body.style.display = isOpen ? 'none' : 'flex';
+        toggle.classList.toggle('open', !isOpen);
     }
-    function toggleGroup(event, group) { event.stopPropagation(); const isChecked = event.target.checked; MASTER_INDUSTRY_MAP[group].forEach(sub => { if (isChecked) vipIndustries.add(sub); else vipIndustries.delete(sub); }); updateTreeVisuals(); }
-    function toggleSub(sub) { if (vipIndustries.has(sub)) vipIndustries.delete(sub); else vipIndustries.add(sub); updateTreeVisuals(); }
+
+    function toggleGroup(checkbox, industry) {
+        if (checkbox.checked) { vipIndustries.add(industry); rawData.filter(r => r['Industry'] === industry).forEach(r => vipCompanies.add(r['Company (Page)'] || r['Name'] || '')); }
+        else { vipIndustries.delete(industry); rawData.filter(r => r['Industry'] === industry).forEach(r => vipCompanies.delete(r['Company (Page)'] || r['Name'] || '')); }
+        renderExceptionsTree(rawData); applyFiltersAndRender();
+    }
+
+    function toggleSub(checkbox, company, industry) {
+        if (checkbox.checked) vipCompanies.add(company); else vipCompanies.delete(company);
+        const indCompanies = rawData.filter(r => r['Industry'] === industry).map(r => r['Company (Page)'] || r['Name'] || '');
+        if (indCompanies.every(c => vipCompanies.has(c))) vipIndustries.add(industry);
+        else vipIndustries.delete(industry);
+        updateTreeVisuals(); applyFiltersAndRender();
+    }
+
     function updateTreeVisuals() {
-        Object.keys(MASTER_INDUSTRY_MAP).forEach(group => {
-            const subs = MASTER_INDUSTRY_MAP[group]; const safeId = group.replace(/\W/g, ''); let checkedCount = 0;
-            subs.forEach(sub => { const isChecked = vipIndustries.has(sub); if (isChecked) checkedCount++; const subCb = document.getElementById(`chk-sub-${sub.replace(/\W/g, '')}`); if (subCb) subCb.checked = isChecked; });
-            const groupCb = document.getElementById(`chk-grp-${safeId}`);
-            if (groupCb) { groupCb.checked = (checkedCount === subs.length); groupCb.indeterminate = (checkedCount > 0 && checkedCount < subs.length); const titleSpan = document.getElementById(`title-${safeId}`); if (titleSpan) titleSpan.innerHTML = `${group} <span style="color:#718096; font-size:12px; font-weight:normal;">(${checkedCount}/${subs.length})</span>`; }
-        }); document.getElementById("exception-count").innerText = `${vipIndustries.size} VIP Industries Selected`;
+        document.getElementById('vip-count-label').textContent = `${vipIndustries.size} industries, ${vipCompanies.size} companies selected`;
     }
-    function openExceptionsModal() { document.getElementById("exceptions-modal").style.display = "flex"; if (document.getElementById("exceptions-tree-container").innerHTML === "") renderExceptionsTree(); syncBypassLabels(); }
-    function closeExceptionsModal() { document.getElementById("exceptions-modal").style.display = "none"; applyFiltersAndRender(); }
+
+    function openExceptionsModal() {
+        document.getElementById('exceptions-modal').style.display = 'flex';
+        syncBypassLabels();
+        renderExceptionsTree(rawData);
+    }
+
+    function closeExceptionsModal() { document.getElementById('exceptions-modal').style.display = 'none'; }
 
     function toggleDropdown() {
-        const dropdown = document.getElementById("column-dropdown"); const btn = document.getElementById("dropdown-btn-text");
-        dropdown.classList.toggle("show"); btn.classList.toggle("active");
-    }
-    window.onclick = function(event) {
-        if (!event.target.matches('.dropdown-btn') && !event.target.closest('.dropdown-content') && !event.target.closest('.modal-overlay') && !event.target.closest('.chat-drawer')) {
-            const dropdown = document.getElementById("column-dropdown"); const btn = document.getElementById("dropdown-btn-text");
-            if (dropdown && dropdown.classList.contains('show')) { dropdown.classList.remove('show'); btn.classList.remove('active'); }
+        const dd = document.getElementById('column-dropdown');
+        const btn = document.getElementById('dropdown-btn-text');
+        dd.classList.toggle('show');
+        btn.classList.toggle('active');
+        if (dd.classList.contains('show')) {
+            document.addEventListener('click', function handler(e) {
+                if (!dd.contains(e.target) && !btn.contains(e.target)) { dd.classList.remove('show'); btn.classList.remove('active'); document.removeEventListener('click', handler); }
+            });
         }
-    };
-
-    async function fetchData() {
-        try {
-            const response = await fetch(`${DATA_URL}?t=${new Date().getTime()}`);
-            if (!response.ok) throw new Error("Data not found");
-            rawData = await response.json();
-            if (rawData && rawData.length > 0) {
-                allColumns = Object.keys(rawData[0]).filter(col => col !== "Name" && col !== "NSE Code Exact" && col !== "Screener Name Exact" && col !== "Investing Name Exact");
-                quarterlyColumns = detectQuarterlyColumns(allColumns);
-                const yoyDescs = buildYoYDescriptors();
-                const yoyIds = yoyDescs.map(d => d.id);
-                columnOrder = [COL_NSE, COL_BSE, ...allColumns, ...yoyIds];
-                const defaultCols = ["Sr no","date","Company (Page)","Industry","Industry Group",COL_NSE,COL_BSE,"Promoter Holding","Pledged %","WC Days"];
-                visibleColumns = new Set(defaultCols.filter(c => allColumns.includes(c) || c===COL_NSE || c===COL_BSE));
-                renderColumnToggles(); applyFiltersAndRender();
-            } else {
-                document.getElementById('table-body').innerHTML = `<tr><td class="loading" style="color:#e53e3e; font-weight:bold;" colspan="100%">⚠️ DATA SYNC ERROR: JSON is empty. Click 'Run Backend Scraper' to rebuild.</td></tr>`;
-                document.getElementById('row-count').innerText = "Showing 0 of 0 stocks";
-            }
-        } catch (error) { document.getElementById('table-body').innerHTML = `<tr><td class="loading" style="color:#e53e3e;" colspan="100%">Raw data not found. Run the backend scraper!</td></tr>`; }
-    }
-
-    function getDisplayName(col) {
-        if (col === "date") return "Date";
-        if (col === "Company (Page)") return "Company";
-        if (col === "Promoter Holding") return "Promoter %";
-        if (col.startsWith(YOY_PREFIX)) return col.slice(YOY_PREFIX.length);
-        return col;
     }
 
     function handleSort(col) {
@@ -866,20 +685,14 @@
 
     function jumpToChart(nse) {
         switchView('charts');
-        setTimeout(() => {
-            const card = document.getElementById('card_' + nse);
-            if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 300);
+        setTimeout(() => { const card = document.getElementById('card_' + nse); if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 300);
     }
 
     function renderTable(data) {
         const thead = document.getElementById('table-head');
         const tbody = document.getElementById('table-body');
         document.getElementById('row-count').innerText = `Showing ${data.length} of ${rawData.length} stocks`;
-
         const orderedVisibleCols = columnOrder.filter(col => visibleColumns.has(col));
-
-        // Build header
         thead.innerHTML = '<tr>' + orderedVisibleCols.map(col => {
             const isYoY = col.startsWith(YOY_PREFIX);
             const thClass = isYoY ? ' class="yoy-th"' : '';
@@ -890,68 +703,35 @@
             if (sortColumn === col) sortIcon = `<span class="sort-icon">${sortAscending ? '▲' : '▼'}</span>`;
             return `<th${thClass} onclick="handleSort('${col}')">${label}${sortIcon}</th>`;
         }).join('') + '</tr>';
-
-        if (!data || data.length === 0) {
-            tbody.innerHTML = `<tr><td class="loading" colspan="100%">No stocks match the current filters.</td></tr>`;
-            return;
-        }
-
-        // Sort
+        if (!data || data.length === 0) { tbody.innerHTML = '<tr><td class="loading" colspan="100%">No stocks match the current filters.</td></tr>'; return; }
+        const yoyDescs = buildYoYDescriptors();
         const sorted = [...data].sort((a, b) => {
             let aVal, bVal;
             if (sortColumn === COL_NSE) { aVal = (getExchangeCodes(a).nse||'').toLowerCase(); bVal = (getExchangeCodes(b).nse||'').toLowerCase(); }
             else if (sortColumn === COL_BSE) { aVal = (getExchangeCodes(a).bse||'').toLowerCase(); bVal = (getExchangeCodes(b).bse||'').toLowerCase(); }
-            else if (sortColumn && sortColumn.startsWith(YOY_PREFIX)) {
-                const yoyDescs = buildYoYDescriptors();
-                const desc = yoyDescs.find(d => d.id === sortColumn);
-                aVal = desc ? calcYoY(a, desc.newCol, desc.oldCol) : null;
-                bVal = desc ? calcYoY(b, desc.newCol, desc.oldCol) : null;
-                aVal = (aVal === null || aVal === undefined) ? -Infinity : aVal;
-                bVal = (bVal === null || bVal === undefined) ? -Infinity : bVal;
-            } else {
-                aVal = a[sortColumn]; bVal = b[sortColumn];
-                const aNum = parseFloat(String(aVal).replace(/,/g, ''));
-                const bNum = parseFloat(String(bVal).replace(/,/g, ''));
-                if (!isNaN(aNum) && !isNaN(bNum)) { aVal = aNum; bVal = bNum; }
-                else { aVal = String(aVal||'').toLowerCase(); bVal = String(bVal||'').toLowerCase(); }
-            }
+            else if (sortColumn && sortColumn.startsWith(YOY_PREFIX)) { const desc = yoyDescs.find(d => d.id === sortColumn); aVal = desc ? (calcYoY(a, desc.newCol, desc.oldCol) ?? -Infinity) : -Infinity; bVal = desc ? (calcYoY(b, desc.newCol, desc.oldCol) ?? -Infinity) : -Infinity; }
+            else { aVal = a[sortColumn]; bVal = b[sortColumn]; const aNum = parseFloat(String(aVal||'').replace(/,/g,'')); const bNum = parseFloat(String(bVal||'').replace(/,/g,'')); if (!isNaN(aNum) && !isNaN(bNum)) { aVal = aNum; bVal = bNum; } else { aVal = String(aVal||'').toLowerCase(); bVal = String(bVal||'').toLowerCase(); } }
             if (aVal < bVal) return sortAscending ? -1 : 1;
             if (aVal > bVal) return sortAscending ? 1 : -1;
             return 0;
         });
-
         tbody.innerHTML = sorted.map(row => {
             const { nse, bse } = getExchangeCodes(row);
-            const screener = (row["Screener Name Exact"] || "").toString().trim();
-            const companyName = (row["Company (Page)"] || row["Name"] || "").toString();
-            const yoyDescs = buildYoYDescriptors();
-
+            const screener = (row['Screener Name Exact'] || '').toString().trim();
+            const companyName = (row['Company (Page)'] || row['Name'] || '').toString();
             const cells = orderedVisibleCols.map(col => {
-                if (col === COL_NSE) {
-                    if (!nse) return `<td><span style="font-size:11px;color:#a0aec0;">BSE Only</span></td>`;
-                    const tvUrl = `https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(nse)}`;
-                    return `<td><a href="${tvUrl}" target="_blank" style="font-weight:700;color:#2b6cb0;text-decoration:none;">${nse}</a></td>`;
-                }
-                if (col === COL_BSE) {
-                    if (!bse) return `<td><span style="font-size:11px;color:#a0aec0;">-</span></td>`;
-                    const bseUrl = `https://www.bseindia.com/stock-share-price/x/x/${bse}/`;
-                    return `<td><a href="${bseUrl}" target="_blank" style="font-weight:700;color:#276749;text-decoration:none;">${bse}</a></td>`;
-                }
-                if (col.startsWith(YOY_PREFIX)) {
-                    const desc = yoyDescs.find(d => d.id === col);
-                    if (!desc) return `<td>-</td>`;
-                    const yoy = calcYoY(row, desc.newCol, desc.oldCol);
-                    return `<td>${formatYoY(yoy)}</td>`;
-                }
+                if (col === COL_NSE) { if (!nse) return '<td><span style="font-size:11px;color:#a0aec0;">BSE Only</span></td>'; return `<td><a href="https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(nse)}" target="_blank" style="font-weight:700;color:#2b6cb0;text-decoration:none;">${nse}</a></td>`; }
+                if (col === COL_BSE) { if (!bse) return '<td><span style="font-size:11px;color:#a0aec0;">-</span></td>'; return `<td><a href="https://www.bseindia.com/stock-share-price/x/x/${bse}/" target="_blank" style="font-weight:700;color:#276749;text-decoration:none;">${bse}</a></td>`; }
+                if (col.startsWith(YOY_PREFIX)) { const desc = yoyDescs.find(d => d.id === col); if (!desc) return '<td>-</td>'; return `<td>${formatYoY(calcYoY(row, desc.newCol, desc.oldCol))}</td>`; }
                 if (col === 'Company (Page)') {
-                    const scrLink = screener ? `<a href="https://www.screener.in/company/${screener}/" target="_blank" class="action-links" style="font-size:11px;padding:3px 7px;border-radius:4px;background:#e2e8f0;color:#2b6cb0;font-weight:bold;border:1px solid #cbd5e0;text-decoration:none;">SCR</a>` : '';
-                    const tvLink = nse ? `<a href="https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(nse)}" target="_blank" style="font-size:11px;padding:3px 7px;border-radius:4px;background:#e2e8f0;color:#2b6cb0;font-weight:bold;border:1px solid #cbd5e0;text-decoration:none;">TV</a>` : '';
-                    const noteLink = `<a href="#" onclick="openChat('${(nse||bse||companyName).replace(/'/g,\')}','${companyName.replace(/'/g,\')}');return false;" style="font-size:11px;padding:3px 7px;border-radius:4px;background:#bee3f8;color:#2b6cb0;font-weight:bold;border:1px solid #90cdf4;text-decoration:none;">Notes</a>`;
+                    const scrLink = screener ? `<a href="https://www.screener.in/company/${screener}/" target="_blank" style="font-size:11px;padding:3px 7px;border-radius:4px;background:#e2e8f0;color:#2b6cb0;font-weight:bold;border:1px solid #cbd5e0;text-decoration:none;display:inline-block;">SCR</a>` : '';
+                    const tvLink = nse ? `<a href="https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(nse)}" target="_blank" style="font-size:11px;padding:3px 7px;border-radius:4px;background:#e2e8f0;color:#2b6cb0;font-weight:bold;border:1px solid #cbd5e0;text-decoration:none;display:inline-block;">TV</a>` : '';
+                    const noteLink = `<a href="#" onclick="openChat('${(nse||bse||companyName).replace(/'/g,"\\'")}','${companyName.replace(/'/g,"\\'")}');return false;" style="font-size:11px;padding:3px 7px;border-radius:4px;background:#bee3f8;color:#2b6cb0;font-weight:bold;border:1px solid #90cdf4;text-decoration:none;display:inline-block;">Notes</a>`;
                     return `<td><div style="font-weight:600;">${companyName}</div><div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;">${scrLink}${tvLink}${noteLink}</div></td>`;
                 }
+                if (col === 'Current Quarter Surge') return `<td>${row[col] === 'Yes' ? '<span class="badge-yes">Yes</span>' : (row[col]||'-')}</td>`;
+                if (col === 'Peak Quarter') return `<td>${row[col] === 'Yes' ? '<span class="badge-peak">🏆 Peak</span>' : (row[col]||'-')}</td>`;
                 const val = row[col];
-                if (col === 'Current Quarter Surge') return `<td>${val === 'Yes' ? '<span class="badge-yes">Yes</span>' : (val||'-')}</td>`;
-                if (col === 'Peak Quarter') return `<td>${val === 'Yes' ? '<span class="badge-peak">🏆 Peak</span>' : (val||'-')}</td>`;
                 return `<td>${val !== undefined && val !== null && val !== '' ? val : '-'}</td>`;
             }).join('');
             return `<tr>${cells}</tr>`;
@@ -961,23 +741,14 @@
     function exportToCSV() {
         if (!currentFilteredData || currentFilteredData.length === 0) { alert('No data to export.'); return; }
         const orderedVisibleCols = columnOrder.filter(col => visibleColumns.has(col));
-        const headers = orderedVisibleCols.map(col => {
-            if (col === COL_NSE) return 'NSE Code';
-            if (col === COL_BSE) return 'BSE Code';
-            return getDisplayName(col);
-        });
+        const headers = orderedVisibleCols.map(col => { if (col === COL_NSE) return 'NSE Code'; if (col === COL_BSE) return 'BSE Code'; return getDisplayName(col); });
+        const yoyDescs = buildYoYDescriptors();
         const rows = currentFilteredData.map(row => {
             const { nse, bse } = getExchangeCodes(row);
             return orderedVisibleCols.map(col => {
                 if (col === COL_NSE) return nse || '';
                 if (col === COL_BSE) return bse || '';
-                if (col.startsWith(YOY_PREFIX)) {
-                    const yoyDescs = buildYoYDescriptors();
-                    const desc = yoyDescs.find(d => d.id === col);
-                    if (!desc) return '';
-                    const yoy = calcYoY(row, desc.newCol, desc.oldCol);
-                    return yoy !== null ? yoy.toFixed(1) + '%' : 'N/A';
-                }
+                if (col.startsWith(YOY_PREFIX)) { const desc = yoyDescs.find(d => d.id === col); if (!desc) return ''; const yoy = calcYoY(row, desc.newCol, desc.oldCol); return yoy !== null ? yoy.toFixed(1) + '%' : 'N/A'; }
                 const v = row[col]; return `"${String(v !== undefined && v !== null ? v : '').replace(/"/g, '""')}"`;
             }).join(',');
         });
@@ -987,7 +758,6 @@
         const a = document.createElement('a'); a.href = url; a.download = 'equity_research_export.csv';
         document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
     }
-
 
     function applyFiltersAndRender() {
         const filterGrowth     = document.getElementById('filter-growth').checked;
@@ -1003,16 +773,89 @@
         const threshPledged    = parseFloat(document.getElementById('val-pledged').value)  || 10;
         const threshWc         = parseFloat(document.getElementById('val-wc').value)       || 150;
         const threshMsi        = parseFloat(document.getElementById('val-msi').value)      || 80;
-
         let filteredData = rawData.filter(row => {
-            const subIndustry = row["Industry"] || "Not Found";
-            const isVip = vipIndustries.has(subIndustry);
-            if (filterGrowth)     { if (!(isVip && globalOverrides.bypassGrowth)      && !hasYoYSurge(row, threshGrowth)) return false; }
-            if (filterCurrentQtr) {
-                const latestQtrCol = quarterlyColumns[0] || "";
-                const latestCode = toQtrCode(latestQtrCol);
-                if (!(isVip && globalOverrides.bypassCurrentQtr) && latestCode !== currentQtr) return false;
-                if (!(isVip && globalOverrides.bypassCurrentQtr) && !hasYoYSurge(row, 70)) return false;
+            const subIndustry = row['Industry'] || 'Not Found';
+            const isVip = vipIndustries.has(subIndustry) || vipCompanies.has(row['Company (Page)'] || row['Name'] || '');
+            if (filterGrowth)     { if (!(isVip && globalOverrides.bypassGrowth)      && !hasYoYSurge(row, threshGrowth))   return false; }
+            if (filterCurrentQtr) { const latestCode = quarterlyColumns[0] ? toQtrCode(quarterlyColumns[0]) : ''; if (!(isVip && globalOverrides.bypassCurrentQtr) && latestCode !== currentQtr) return false; if (!(isVip && globalOverrides.bypassCurrentQtr) && !hasYoYSurge(row, 70)) return false; }
+            if (filterPeakQtr)    { if (!(isVip && globalOverrides.bypassPeakQtr)    && !isLatestQtrHighest(row))            return false; }
+            if (filterPromoter)   { const v = parseFloat(String(row['Promoter Holding']||'').replace(/,/g,'')); if (!(isVip && globalOverrides.bypassPromoter) && (isNaN(v) || v < threshPromoter)) return false; }
+            if (filterPledged)    { const v = parseFloat(String(row['Pledged %']||'').replace(/,/g,'')); if (!(isVip && globalOverrides.bypassPledged) && !isNaN(v) && v > threshPledged) return false; }
+            if (filterWc)         { const v = parseFloat(String(row['WC Days']||'').replace(/,/g,'')); if (!(isVip && globalOverrides.bypassWc) && !isNaN(v) && v > threshWc) return false; }
+            if (filterMsi)        { const v = parseFloat(String(row['MSI']||row['MSI Price Strength']||'').replace(/,/g,'')); if (!(isVip && globalOverrides.bypassMsi) && (isNaN(v) || v <= threshMsi)) return false; }
+            return true;
+        });
+        currentFilteredData = filteredData;
+        renderTable(filteredData);
+        if (currentView === 'charts') renderChartsGrid();
+    }
+
+    function getDisplayName(col) {
+        if (col === 'date') return 'Date';
+        if (col === 'Company (Page)') return 'Company';
+        if (col === 'Promoter Holding') return 'Promoter %';
+        if (col === COL_NSE) return 'NSE Code';
+        if (col === COL_BSE) return 'BSE Code';
+        if (col.startsWith(YOY_PREFIX)) return col.slice(YOY_PREFIX.length);
+        return col;
+    }
+
+    async function fetchData() {
+        try {
+            const response = await fetch(`${DATA_URL}?t=${new Date().getTime()}`);
+            if (!response.ok) throw new Error('Data not found');
+            rawData = await response.json();
+            if (rawData && rawData.length > 0) {
+                allColumns = Object.keys(rawData[0]).filter(col => col !== 'Name' && col !== 'NSE Code Exact' && col !== 'Screener Name Exact' && col !== 'Investing Name Exact');
+                quarterlyColumns = detectQuarterlyColumns(allColumns);
+                const yoyDescs = buildYoYDescriptors();
+                const yoyIds = yoyDescs.map(d => d.id);
+                columnOrder = [COL_NSE, COL_BSE, ...allColumns, ...yoyIds];
+                const defaultCols = ['Sr no','date','Company (Page)','Industry','Industry Group',COL_NSE,COL_BSE,'Promoter Holding','Pledged %','WC Days'];
+                visibleColumns = new Set(defaultCols.filter(c => allColumns.includes(c) || c === COL_NSE || c === COL_BSE));
+                updateCurrentQtrBadge();
+                renderColumnToggles();
+                applyFiltersAndRender();
+            } else {
+                document.getElementById('table-body').innerHTML = '<tr><td class="loading" style="color:#e53e3e;font-weight:bold;" colspan="100%">⚠️ DATA SYNC ERROR: JSON is empty. Click Run Backend Scraper to rebuild.</td></tr>';
+                document.getElementById('row-count').innerText = 'Showing 0 of 0 stocks';
             }
-            if (filterPeakQtr)    { if (!(isVip && globalOverrides.bypassPeakQtr)    && !isLatestQtrHighest(row)) return false; }
-            if (filterPromoter)   { if (!(
+        } catch (error) {
+            document.getElementById('table-body').innerHTML = '<tr><td class="loading" style="color:#e53e3e;" colspan="100%">❌ Failed to load data. Check your R2 CORS settings or run the backend scraper.</td></tr>';
+            document.getElementById('row-count').innerText = 'Error loading data';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        fetchData();
+        const el = document.getElementById('main-table-container');
+        el.addEventListener('mousedown', function(e) {
+            if (e.button !== 0) return;
+            if (e.target.closest('a, button, input, label')) return;
+            isDragging = true; dragMoved = false;
+            startX = e.pageX - el.offsetLeft;
+            startScrollLeft = el.scrollLeft;
+            el.classList.add('dragging');
+        });
+        document.addEventListener('mouseup', function() {
+            isDragging = false; el.classList.remove('dragging');
+        });
+        el.addEventListener('mousemove', function(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            dragMoved = true;
+            const x = e.pageX - el.offsetLeft;
+            el.scrollLeft = startScrollLeft - (x - startX);
+        });
+        el.addEventListener('touchstart', function(e) {
+            startX = e.touches[0].pageX - el.offsetLeft;
+            startScrollLeft = el.scrollLeft;
+        }, { passive: true });
+        el.addEventListener('touchmove', function(e) {
+            const x = e.touches[0].pageX - el.offsetLeft;
+            el.scrollLeft = startScrollLeft - (x - startX);
+        }, { passive: true });
+    });
+</script>
+</body>
+</html>
