@@ -812,7 +812,7 @@
             const subIndustry = row['Industry'] || 'Not Found';
             const isVip = vipIndustries.has(subIndustry) || vipCompanies.has(row['Company (Page)'] || row['Name'] || '');
             if (filterGrowth)     { if (!(isVip && globalOverrides.bypassGrowth)      && !hasYoYSurge(row, threshGrowth))   return false; }
-            if (filterCurrentQtr) { const latestCode = quarterlyColumns[0] ? toQtrCode(quarterlyColumns[0]) : ''; if (!(isVip && globalOverrides.bypassCurrentQtr) && latestCode !== currentQtr) return false; if (!(isVip && globalOverrides.bypassCurrentQtr) && !hasYoYSurge(row, 70)) return false; }
+            if (filterCurrentQtr) { if (!(isVip && globalOverrides.bypassCurrentQtr)) { const surgeQtrs = getSurgeQuarters(row, threshGrowth); if (surgeQtrs.length !== 1 || surgeQtrs[0] !== currentQtr) return false; } }
             if (filterPeakQtr)    { if (!(isVip && globalOverrides.bypassPeakQtr)    && !isLatestQtrHighest(row))            return false; }
             if (filterPromoter)   { const v = parseFloat(String(row['Promoter Holding']||'').replace(/,/g,'')); if (!(isVip && globalOverrides.bypassPromoter) && (isNaN(v) || v < threshPromoter)) return false; }
             if (filterPledged)    { const v = parseFloat(String(row['Pledged %']||'').replace(/,/g,'')); if (!(isVip && globalOverrides.bypassPledged) && !isNaN(v) && v > threshPledged) return false; }
