@@ -112,6 +112,12 @@
         .chart-card-links a { text-decoration: none; font-size: 10px; padding: 3px 7px; border-radius: 4px; background: #e2e8f0; color: #2b6cb0; font-weight: bold; border: 1px solid #cbd5e0; }
         .chart-card-links a:hover { background: #cbd5e0; }
         .chart-card iframe { display:block; width:100%; height:400px; border:none; }
+        /* BSE-only placeholder card body */
+        .bse-chart-placeholder { display:flex; flex-direction:column; align-items:center; justify-content:center; height:400px; background: linear-gradient(135deg,#fffbeb 0%,#fef3c7 100%); gap:14px; }
+        .bse-chart-placeholder .bse-icon { font-size: 48px; }
+        .bse-chart-placeholder .bse-label { font-size: 13px; color: #92400e; font-weight: 600; text-align:center; padding: 0 20px; }
+        .bse-chart-placeholder a { display:inline-block; background:#d97706; color:white; font-weight:700; font-size:14px; padding:10px 24px; border-radius:8px; text-decoration:none; transition:0.2s; }
+        .bse-chart-placeholder a:hover { background:#b45309; }
         .charts-loading { text-align: center; padding: 60px; color: #718096; font-size: 16px; }
         .chat-drawer { position: fixed; top: 0; right: -450px; width: 400px; max-width: 100%; height: 100vh; background: white; box-shadow: -5px 0 15px rgba(0,0,0,0.2); transition: right 0.3s ease-in-out; z-index: 2000; display: flex; flex-direction: column; }
         .chat-drawer.open { right: 0; }
@@ -308,7 +314,6 @@
         return { nse, bse };
     }
 
-    // Returns the best TradingView symbol: NSE:CODE if available, else BSE:CODE
     function getTvSymbol(row) {
         const { nse, bse } = getExchangeCodes(row);
         if (nse) return { symbol: 'NSE:' + nse, exchange: 'NSE', code: nse };
@@ -515,7 +520,6 @@
             grid.innerHTML = '<div class="charts-loading">No stocks match the current filters.</div>';
             countEl.textContent = '0 stocks'; return;
         }
-        // Now ALL stocks with either NSE or BSE code get a chart
         const chartableStocks = currentFilteredData.filter(r => getTvSymbol(r) !== null);
         const noCodeStocks = currentFilteredData.filter(r => getTvSymbol(r) === null);
         countEl.textContent = currentFilteredData.length + ' stocks (' + chartableStocks.length + ' with charts)';
@@ -523,19 +527,27 @@
         chartableStocks.forEach(function(row) {
             const tvInfo = getTvSymbol(row);
             const { symbol, exchange, code } = tvInfo;
-            const { bse } = getExchangeCodes(row);
             const name = (row['Company (Page)'] || row['Name'] || code).toString();
             const screener = (row['Screener Name Exact'] || row['Name'] || '').toString().trim();
             const industry = (row['Industry'] || '').toString();
             const scrLink = screener ? `<a href="https://www.screener.in/company/${screener}/" target="_blank">SCR</a>` : '';
-            const tvLink = `<a href="https://in.tradingview.com/chart/?symbol=${encodeURIComponent(symbol)}" target="_blank">📈 Open Full Chart</a>`;
-            // Badge to show which exchange is being used
+            const tvUrl = `https://in.tradingview.com/chart/?symbol=${encodeURIComponent(symbol)}`;
+            const tvLink = `<a href="${tvUrl}" target="_blank">📈 Open Full Chart</a>`;
             const exchBadge = exchange === 'BSE' ? ` <span style="font-size:10px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;padding:1px 5px;border-radius:4px;font-weight:700;">BSE</span>` : '';
-            const cfg = encodeURIComponent(JSON.stringify({ symbols: [[name, symbol + '|1D']], chartOnly: false, width: '100%', height: 400, locale: 'in', colorTheme: 'light', autosize: true, showVolume: true, chartType: 'candlesticks', upColor: '#26a69a', downColor: '#ef5350' }));
-            const iframeSrc = 'https://s.tradingview.com/embed-widget/symbol-overview/?locale=in#' + cfg;
             const cardId = 'card_' + exchange + '_' + code;
-            const card = document.createElement('div'); card.className = 'chart-card'; card.id = cardId;
-            card.innerHTML = `<div class="chart-card-header"><div><div class="chart-card-name">${name}${exchBadge}</div><div class="chart-card-meta">${symbol} &nbsp;|&nbsp; ${industry}</div></div><div class="chart-card-links">${scrLink}${tvLink}</div></div><iframe src="${iframeSrc}" width="100%" height="400" frameborder="0" allowtransparency="true" scrolling="no" style="display:block;"></iframe>`;
+            const card = document.createElement('div');
+            card.className = 'chart-card'; card.id = cardId;
+            const headerHtml = `<div class="chart-card-header"><div><div class="chart-card-name">${name}${exchBadge}</div><div class="chart-card-meta">${symbol} &nbsp;|&nbsp; ${industry}</div></div><div class="chart-card-links">${scrLink}${tvLink}</div></div>`;
+
+            if (exchange === 'BSE') {
+                // BSE: embed widget does not support numeric BSE codes — show a styled click-to-open placeholder
+                card.innerHTML = headerHtml + `<div class="bse-chart-placeholder"><div class="bse-icon">📊</div><div class="bse-label">TradingView embedded widget does not support BSE numeric codes.<br>Click below to open the full interactive chart.</div><a href="${tvUrl}" target="_blank">Open ${symbol} on TradingView ↗</a></div>`;
+            } else {
+                // NSE: use the embed widget iframe as normal
+                const cfg = encodeURIComponent(JSON.stringify({ symbols: [[name, symbol + '|1D']], chartOnly: false, width: '100%', height: 400, locale: 'in', colorTheme: 'light', autosize: true, showVolume: true, chartType: 'candlesticks', upColor: '#26a69a', downColor: '#ef5350' }));
+                const iframeSrc = 'https://s.tradingview.com/embed-widget/symbol-overview/?locale=in#' + cfg;
+                card.innerHTML = headerHtml + `<iframe src="${iframeSrc}" width="100%" height="400" frameborder="0" allowtransparency="true" scrolling="no" style="display:block;"></iframe>`;
+            }
             grid.appendChild(card);
         });
         if (noCodeStocks.length > 0) {
@@ -730,7 +742,6 @@
         const tbody = document.getElementById('table-body');
         document.getElementById('row-count').innerText = `Showing ${data.length} of ${rawData.length} stocks`;
         const orderedVisibleCols = columnOrder.filter(col => visibleColumns.has(col));
-        const threshGrowth = parseFloat(document.getElementById('val-growth').value) || 70;
 
         thead.innerHTML = '<tr>' + orderedVisibleCols.map(col => {
             const isYoY = col.startsWith(YOY_PREFIX);
@@ -782,9 +793,8 @@
                 if (col.startsWith(YOY_PREFIX)) { const desc = yoyDescs.find(d => d.id === col); if (!desc) return '<td>-</td>'; return `<td>${formatYoY(calcYoY(row, desc.newCol, desc.oldCol))}</td>`; }
                 if (col === 'Company (Page)') {
                     const scrLink = screener ? `<a href="https://www.screener.in/company/${screener}/" target="_blank" style="font-size:11px;padding:3px 7px;border-radius:4px;background:#e2e8f0;color:#2b6cb0;font-weight:bold;border:1px solid #cbd5e0;text-decoration:none;display:inline-block;">SCR</a>` : '';
-                    // TV button: NSE preferred, fallback to BSE
                     const tvLink = tvInfo ? `<a href="https://in.tradingview.com/chart/?symbol=${encodeURIComponent(tvInfo.symbol)}" target="_blank" style="font-size:11px;padding:3px 7px;border-radius:4px;background:#e2e8f0;color:#2b6cb0;font-weight:bold;border:1px solid #cbd5e0;text-decoration:none;display:inline-block;">TV</a>` : '';
-                    const noteLink = `<a href="#" onclick="openChat('${(nse||bse||companyName).replace(/'/g,"\\'")}\'','${companyName.replace(/'/g,"\\'")}\'');return false;" style="font-size:11px;padding:3px 7px;border-radius:4px;background:#bee3f8;color:#2b6cb0;font-weight:bold;border:1px solid #90cdf4;text-decoration:none;display:inline-block;">Notes</a>`;
+                    const noteLink = `<a href="#" onclick="openChat('${(nse||bse||companyName).replace(/'/g,"\\'").replace(/\\'\\'/g,"\\'")}\'','${companyName.replace(/'/g,"\\'")}\'');return false;" style="font-size:11px;padding:3px 7px;border-radius:4px;background:#bee3f8;color:#2b6cb0;font-weight:bold;border:1px solid #90cdf4;text-decoration:none;display:inline-block;">Notes</a>`;
                     return `<td><div style="font-weight:600;">${companyName}</div><div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;">${scrLink}${tvLink}${noteLink}</div></td>`;
                 }
                 if (col === 'Current Quarter Surge') return `<td>${row[col] === 'Yes' ? '<span class="badge-yes">Yes</span>' : (row[col]||'-')}</td>`;
@@ -801,7 +811,6 @@
         const orderedVisibleCols = columnOrder.filter(col => visibleColumns.has(col));
         const headers = orderedVisibleCols.map(col => { if (col === COL_NSE) return 'NSE Code'; if (col === COL_BSE) return 'BSE Code'; if (col === COL_SURGE_QTR) return 'Surge Qtr'; return getDisplayName(col); });
         const yoyDescs = buildYoYDescriptors();
-        const threshGrowth = parseFloat(document.getElementById('val-growth').value) || 70;
         const rows = currentFilteredData.map(row => {
             const { nse, bse } = getExchangeCodes(row);
             return orderedVisibleCols.map(col => {
