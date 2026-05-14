@@ -66,6 +66,7 @@
         .col-item input[type="checkbox"] { margin: 0; transform: scale(1.1); cursor: pointer; flex-shrink: 0; }
         .col-item-label { font-size: 13px; color: #2d3748; flex: 1; cursor: pointer; }
         .col-item-label.yoy-label { color: #6b46c1; font-style: italic; }
+        .col-item-label.surge-label { color: #276749; font-weight: 700; }
         .threshold-input { width: 55px; padding: 2px 5px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 13px; font-weight: 600; color: #2b6cb0; text-align: center; margin: 0 2px; background: #ebf8ff; }
         .threshold-input:focus { outline: none; border-color: #3182ce; background: #fff; }
         .table-container { overflow-x: auto; overflow-y: visible; border: 1px solid #e2e8f0; border-radius: 8px; background: white; cursor: grab; }
@@ -78,10 +79,13 @@
         th:hover { background-color: #1a365d; }
         th.yoy-th { background-color: #553c9a; }
         th.yoy-th:hover { background-color: #44337a; }
+        th.surge-th { background-color: #276749; }
+        th.surge-th:hover { background-color: #1a4731; }
         .sort-icon { font-size: 12px; margin-left: 5px; opacity: 0.7; }
         tr:hover { background-color: #ebf8ff; }
         .badge-yes { background-color: #48bb78; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
         .badge-peak { background-color: #d69e2e; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        .surge-qtr-tag { display: inline-block; background: #c6f6d5; color: #276749; border: 1px solid #9ae6b4; padding: 2px 7px; border-radius: 8px; font-size: 12px; font-weight: 700; margin: 1px 2px; }
         .yoy-pos { color: #276749; font-weight: 700; }
         .yoy-neg { color: #c53030; font-weight: 700; }
         .yoy-na  { color: #a0aec0; font-size: 12px; }
@@ -275,6 +279,7 @@
 
     const COL_NSE = "__col_nse__";
     const COL_BSE = "__col_bse__";
+    const COL_SURGE_QTR = "__col_surge_qtr__";
     const YOY_PREFIX = "__yoy__";
     const QTR_COL_REGEX = /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{2,4}$/;
     const MONTH_LETTER = {Jan:'J',Feb:'F',Mar:'M',Apr:'A',May:'My',Jun:'J',Jul:'Jl',Aug:'Au',Sep:'S',Oct:'O',Nov:'N',Dec:'D'};
@@ -357,6 +362,19 @@
         return `<span class="${cls}">${sign}${val.toFixed(1)}%</span>`;
     }
 
+    // Returns array of quarter codes (e.g. ["M26","D25"]) that meet the YoY threshold
+    function getSurgeQuarters(row, threshold) {
+        if (!quarterlyColumns || quarterlyColumns.length < 5) return [];
+        const result = [];
+        for (let i = 0; i < quarterlyColumns.length - 4; i++) {
+            const yoy = calcYoY(row, quarterlyColumns[i], quarterlyColumns[i + 4]);
+            if (yoy !== null && yoy >= threshold) {
+                result.push(toQtrCode(quarterlyColumns[i]));
+            }
+        }
+        return result;
+    }
+
     function isLatestQtrHighest(row) {
         if (!quarterlyColumns || quarterlyColumns.length < 2) return false;
         const latestCol = quarterlyColumns[0];
@@ -415,6 +433,7 @@
             const isYoY = col.startsWith(YOY_PREFIX);
             const isNSE = col === COL_NSE;
             const isBSE = col === COL_BSE;
+            const isSurgeQtr = col === COL_SURGE_QTR;
             const item = document.createElement('div');
             item.className = 'col-item';
             item.draggable = true;
@@ -422,9 +441,11 @@
             let label = col;
             if (isNSE) label = 'NSE Code';
             else if (isBSE) label = 'BSE Code';
+            else if (isSurgeQtr) label = 'Surge Qtr';
             else if (isYoY) label = col.slice(YOY_PREFIX.length);
             else label = getDisplayName(col);
-            item.innerHTML = `<span class="col-drag-handle">☰</span><input type="checkbox" ${visibleColumns.has(col) ? 'checked' : ''} onchange="handleColumnToggle(this,'${col}')"><label class="col-item-label ${isYoY ? 'yoy-label' : ''}" onclick="this.previousElementSibling.click()">${label}</label>`;
+            const labelClass = isSurgeQtr ? 'surge-label' : isYoY ? 'yoy-label' : '';
+            item.innerHTML = `<span class="col-drag-handle">☰</span><input type="checkbox" ${visibleColumns.has(col) ? 'checked' : ''} onchange="handleColumnToggle(this,'${col}')"><label class="col-item-label ${labelClass}" onclick="this.previousElementSibling.click()">${label}</label>`;
             item.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', col); item.classList.add('dragging-item'); });
             item.addEventListener('dragend', () => { item.classList.remove('dragging-item'); list.querySelectorAll('.col-item').forEach(i => i.classList.remove('drag-over')); });
             item.addEventListener('dragover', e => { e.preventDefault(); list.querySelectorAll('.col-item').forEach(i => i.classList.remove('drag-over')); item.classList.add('drag-over'); });
@@ -693,28 +714,35 @@
         const tbody = document.getElementById('table-body');
         document.getElementById('row-count').innerText = `Showing ${data.length} of ${rawData.length} stocks`;
         const orderedVisibleCols = columnOrder.filter(col => visibleColumns.has(col));
+        const threshGrowth = parseFloat(document.getElementById('val-growth').value) || 70;
+
         thead.innerHTML = '<tr>' + orderedVisibleCols.map(col => {
             const isYoY = col.startsWith(YOY_PREFIX);
-            const thClass = isYoY ? ' class="yoy-th"' : '';
+            const isSurgeQtr = col === COL_SURGE_QTR;
+            let thClass = isYoY ? ' class="yoy-th"' : isSurgeQtr ? ' class="surge-th"' : '';
             let label = getDisplayName(col);
             if (col === COL_NSE) label = 'NSE Code';
             if (col === COL_BSE) label = 'BSE Code';
+            if (col === COL_SURGE_QTR) label = 'Surge Qtr';
             let sortIcon = '';
             if (sortColumn === col) sortIcon = `<span class="sort-icon">${sortAscending ? '▲' : '▼'}</span>`;
             return `<th${thClass} onclick="handleSort('${col}')">${label}${sortIcon}</th>`;
         }).join('') + '</tr>';
+
         if (!data || data.length === 0) { tbody.innerHTML = '<tr><td class="loading" colspan="100%">No stocks match the current filters.</td></tr>'; return; }
         const yoyDescs = buildYoYDescriptors();
         const sorted = [...data].sort((a, b) => {
             let aVal, bVal;
             if (sortColumn === COL_NSE) { aVal = (getExchangeCodes(a).nse||'').toLowerCase(); bVal = (getExchangeCodes(b).nse||'').toLowerCase(); }
             else if (sortColumn === COL_BSE) { aVal = (getExchangeCodes(a).bse||'').toLowerCase(); bVal = (getExchangeCodes(b).bse||'').toLowerCase(); }
+            else if (sortColumn === COL_SURGE_QTR) { aVal = getSurgeQuarters(a, threshGrowth).length; bVal = getSurgeQuarters(b, threshGrowth).length; }
             else if (sortColumn && sortColumn.startsWith(YOY_PREFIX)) { const desc = yoyDescs.find(d => d.id === sortColumn); aVal = desc ? (calcYoY(a, desc.newCol, desc.oldCol) ?? -Infinity) : -Infinity; bVal = desc ? (calcYoY(b, desc.newCol, desc.oldCol) ?? -Infinity) : -Infinity; }
             else { aVal = a[sortColumn]; bVal = b[sortColumn]; const aNum = parseFloat(String(aVal||'').replace(/,/g,'')); const bNum = parseFloat(String(bVal||'').replace(/,/g,'')); if (!isNaN(aNum) && !isNaN(bNum)) { aVal = aNum; bVal = bNum; } else { aVal = String(aVal||'').toLowerCase(); bVal = String(bVal||'').toLowerCase(); } }
             if (aVal < bVal) return sortAscending ? -1 : 1;
             if (aVal > bVal) return sortAscending ? 1 : -1;
             return 0;
         });
+
         tbody.innerHTML = sorted.map(row => {
             const { nse, bse } = getExchangeCodes(row);
             const screener = (row['Screener Name Exact'] || '').toString().trim();
@@ -722,6 +750,11 @@
             const cells = orderedVisibleCols.map(col => {
                 if (col === COL_NSE) { if (!nse) return '<td><span style="font-size:11px;color:#a0aec0;">BSE Only</span></td>'; return `<td><a href="https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(nse)}" target="_blank" style="font-weight:700;color:#2b6cb0;text-decoration:none;">${nse}</a></td>`; }
                 if (col === COL_BSE) { if (!bse) return '<td><span style="font-size:11px;color:#a0aec0;">-</span></td>'; return `<td><a href="https://www.bseindia.com/stock-share-price/x/x/${bse}/" target="_blank" style="font-weight:700;color:#276749;text-decoration:none;">${bse}</a></td>`; }
+                if (col === COL_SURGE_QTR) {
+                    const qtrs = getSurgeQuarters(row, threshGrowth);
+                    if (!qtrs.length) return '<td><span class="yoy-na">-</span></td>';
+                    return `<td>${qtrs.map(q => `<span class="surge-qtr-tag">${q}</span>`).join(' ')}</td>`;
+                }
                 if (col.startsWith(YOY_PREFIX)) { const desc = yoyDescs.find(d => d.id === col); if (!desc) return '<td>-</td>'; return `<td>${formatYoY(calcYoY(row, desc.newCol, desc.oldCol))}</td>`; }
                 if (col === 'Company (Page)') {
                     const scrLink = screener ? `<a href="https://www.screener.in/company/${screener}/" target="_blank" style="font-size:11px;padding:3px 7px;border-radius:4px;background:#e2e8f0;color:#2b6cb0;font-weight:bold;border:1px solid #cbd5e0;text-decoration:none;display:inline-block;">SCR</a>` : '';
@@ -741,13 +774,15 @@
     function exportToCSV() {
         if (!currentFilteredData || currentFilteredData.length === 0) { alert('No data to export.'); return; }
         const orderedVisibleCols = columnOrder.filter(col => visibleColumns.has(col));
-        const headers = orderedVisibleCols.map(col => { if (col === COL_NSE) return 'NSE Code'; if (col === COL_BSE) return 'BSE Code'; return getDisplayName(col); });
+        const headers = orderedVisibleCols.map(col => { if (col === COL_NSE) return 'NSE Code'; if (col === COL_BSE) return 'BSE Code'; if (col === COL_SURGE_QTR) return 'Surge Qtr'; return getDisplayName(col); });
         const yoyDescs = buildYoYDescriptors();
+        const threshGrowth = parseFloat(document.getElementById('val-growth').value) || 70;
         const rows = currentFilteredData.map(row => {
             const { nse, bse } = getExchangeCodes(row);
             return orderedVisibleCols.map(col => {
                 if (col === COL_NSE) return nse || '';
                 if (col === COL_BSE) return bse || '';
+                if (col === COL_SURGE_QTR) return `"${getSurgeQuarters(row, threshGrowth).join(', ')}"`;
                 if (col.startsWith(YOY_PREFIX)) { const desc = yoyDescs.find(d => d.id === col); if (!desc) return ''; const yoy = calcYoY(row, desc.newCol, desc.oldCol); return yoy !== null ? yoy.toFixed(1) + '%' : 'N/A'; }
                 const v = row[col]; return `"${String(v !== undefined && v !== null ? v : '').replace(/"/g, '""')}"`;
             }).join(',');
@@ -796,6 +831,7 @@
         if (col === 'Promoter Holding') return 'Promoter %';
         if (col === COL_NSE) return 'NSE Code';
         if (col === COL_BSE) return 'BSE Code';
+        if (col === COL_SURGE_QTR) return 'Surge Qtr';
         if (col.startsWith(YOY_PREFIX)) return col.slice(YOY_PREFIX.length);
         return col;
     }
@@ -810,9 +846,9 @@
                 quarterlyColumns = detectQuarterlyColumns(allColumns);
                 const yoyDescs = buildYoYDescriptors();
                 const yoyIds = yoyDescs.map(d => d.id);
-                columnOrder = [COL_NSE, COL_BSE, ...allColumns, ...yoyIds];
-                const defaultCols = ['Sr no','date','Company (Page)','Industry','Industry Group',COL_NSE,COL_BSE,'Promoter Holding','Pledged %','WC Days'];
-                visibleColumns = new Set(defaultCols.filter(c => allColumns.includes(c) || c === COL_NSE || c === COL_BSE));
+                columnOrder = [COL_NSE, COL_BSE, COL_SURGE_QTR, ...allColumns, ...yoyIds];
+                const defaultCols = ['Sr no','date','Company (Page)','Industry','Industry Group',COL_NSE,COL_BSE,COL_SURGE_QTR,'Promoter Holding','Pledged %','WC Days'];
+                visibleColumns = new Set(defaultCols.filter(c => allColumns.includes(c) || c === COL_NSE || c === COL_BSE || c === COL_SURGE_QTR));
                 updateCurrentQtrBadge();
                 renderColumnToggles();
                 applyFiltersAndRender();
