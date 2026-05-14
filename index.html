@@ -308,6 +308,14 @@
         return { nse, bse };
     }
 
+    // Returns the best TradingView symbol: NSE:CODE if available, else BSE:CODE
+    function getTvSymbol(row) {
+        const { nse, bse } = getExchangeCodes(row);
+        if (nse) return { symbol: 'NSE:' + nse, exchange: 'NSE', code: nse };
+        if (bse) return { symbol: 'BSE:' + bse, exchange: 'BSE', code: bse };
+        return null;
+    }
+
     function toQtrCode(colName) {
         const parts = colName.trim().split(/\s+/);
         const mon = parts[0]; const yr = parts[1] || '';
@@ -503,28 +511,37 @@
     function renderChartsGrid() {
         const grid = document.getElementById('charts-grid');
         const countEl = document.getElementById('charts-count');
-        if (!currentFilteredData || currentFilteredData.length === 0) { grid.innerHTML = '<div class="charts-loading">No stocks match the current filters.</div>'; countEl.textContent = '0 stocks'; return; }
-        const nseStocks = currentFilteredData.filter(r => getExchangeCodes(r).nse !== '');
-        const bseOnly = currentFilteredData.filter(r => getExchangeCodes(r).nse === '');
-        countEl.textContent = currentFilteredData.length + ' stocks (' + nseStocks.length + ' with charts)';
+        if (!currentFilteredData || currentFilteredData.length === 0) {
+            grid.innerHTML = '<div class="charts-loading">No stocks match the current filters.</div>';
+            countEl.textContent = '0 stocks'; return;
+        }
+        // Now ALL stocks with either NSE or BSE code get a chart
+        const chartableStocks = currentFilteredData.filter(r => getTvSymbol(r) !== null);
+        const noCodeStocks = currentFilteredData.filter(r => getTvSymbol(r) === null);
+        countEl.textContent = currentFilteredData.length + ' stocks (' + chartableStocks.length + ' with charts)';
         grid.innerHTML = '';
-        nseStocks.forEach(function(row) {
-            const { nse } = getExchangeCodes(row);
-            const symbol = 'NSE:' + nse;
-            const name = (row['Company (Page)'] || row['Name'] || nse).toString();
+        chartableStocks.forEach(function(row) {
+            const tvInfo = getTvSymbol(row);
+            const { symbol, exchange, code } = tvInfo;
+            const { bse } = getExchangeCodes(row);
+            const name = (row['Company (Page)'] || row['Name'] || code).toString();
             const screener = (row['Screener Name Exact'] || row['Name'] || '').toString().trim();
             const industry = (row['Industry'] || '').toString();
             const scrLink = screener ? `<a href="https://www.screener.in/company/${screener}/" target="_blank">SCR</a>` : '';
             const tvLink = `<a href="https://in.tradingview.com/chart/?symbol=${encodeURIComponent(symbol)}" target="_blank">📈 Open Full Chart</a>`;
+            // Badge to show which exchange is being used
+            const exchBadge = exchange === 'BSE' ? ` <span style="font-size:10px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;padding:1px 5px;border-radius:4px;font-weight:700;">BSE</span>` : '';
             const cfg = encodeURIComponent(JSON.stringify({ symbols: [[name, symbol + '|1D']], chartOnly: false, width: '100%', height: 400, locale: 'in', colorTheme: 'light', autosize: true, showVolume: true, chartType: 'candlesticks', upColor: '#26a69a', downColor: '#ef5350' }));
             const iframeSrc = 'https://s.tradingview.com/embed-widget/symbol-overview/?locale=in#' + cfg;
-            const card = document.createElement('div'); card.className = 'chart-card'; card.id = 'card_' + nse;
-            card.innerHTML = `<div class="chart-card-header"><div><div class="chart-card-name">${name}</div><div class="chart-card-meta">${symbol} &nbsp;|&nbsp; ${industry}</div></div><div class="chart-card-links">${scrLink}${tvLink}</div></div><iframe src="${iframeSrc}" width="100%" height="400" frameborder="0" allowtransparency="true" scrolling="no" style="display:block;"></iframe>`;
+            const cardId = 'card_' + exchange + '_' + code;
+            const card = document.createElement('div'); card.className = 'chart-card'; card.id = cardId;
+            card.innerHTML = `<div class="chart-card-header"><div><div class="chart-card-name">${name}${exchBadge}</div><div class="chart-card-meta">${symbol} &nbsp;|&nbsp; ${industry}</div></div><div class="chart-card-links">${scrLink}${tvLink}</div></div><iframe src="${iframeSrc}" width="100%" height="400" frameborder="0" allowtransparency="true" scrolling="no" style="display:block;"></iframe>`;
             grid.appendChild(card);
         });
-        if (bseOnly.length > 0) {
-            const warn = document.createElement('div'); warn.style.cssText = 'grid-column:1/-1;background:#fff5f5;border:1px solid #fed7d7;border-radius:8px;padding:12px 16px;color:#c53030;font-size:13px;font-weight:600;margin-top:8px;';
-            warn.innerHTML = '⚠️ ' + bseOnly.length + ' BSE-only stock(s) — no chart: ' + bseOnly.map(r => r['Company (Page)'] || r['Name'] || '').join(', ');
+        if (noCodeStocks.length > 0) {
+            const warn = document.createElement('div');
+            warn.style.cssText = 'grid-column:1/-1;background:#fff5f5;border:1px solid #fed7d7;border-radius:8px;padding:12px 16px;color:#c53030;font-size:13px;font-weight:600;margin-top:8px;';
+            warn.innerHTML = '⚠️ ' + noCodeStocks.length + ' stock(s) have no exchange code — no chart: ' + noCodeStocks.map(r => r['Company (Page)'] || r['Name'] || '').join(', ');
             grid.appendChild(warn);
         }
     }
@@ -703,9 +720,9 @@
         renderTable(currentFilteredData);
     }
 
-    function jumpToChart(nse) {
+    function jumpToChart(code, exchange) {
         switchView('charts');
-        setTimeout(() => { const card = document.getElementById('card_' + nse); if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 300);
+        setTimeout(() => { const card = document.getElementById('card_' + exchange + '_' + code); if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 300);
     }
 
     function renderTable(data) {
@@ -744,11 +761,18 @@
 
         tbody.innerHTML = sorted.map(row => {
             const { nse, bse } = getExchangeCodes(row);
+            const tvInfo = getTvSymbol(row);
             const screener = (row['Screener Name Exact'] || '').toString().trim();
             const companyName = (row['Company (Page)'] || row['Name'] || '').toString();
             const cells = orderedVisibleCols.map(col => {
-                if (col === COL_NSE) { if (!nse) return '<td><span style="font-size:11px;color:#a0aec0;">BSE Only</span></td>'; return `<td><a href="https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(nse)}" target="_blank" style="font-weight:700;color:#2b6cb0;text-decoration:none;">${nse}</a></td>`; }
-                if (col === COL_BSE) { if (!bse) return '<td><span style="font-size:11px;color:#a0aec0;">-</span></td>'; return `<td><a href="https://www.bseindia.com/stock-share-price/x/x/${bse}/" target="_blank" style="font-weight:700;color:#276749;text-decoration:none;">${bse}</a></td>`; }
+                if (col === COL_NSE) {
+                    if (!nse) return '<td><span style="font-size:11px;color:#a0aec0;">BSE Only</span></td>';
+                    return `<td><a href="https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(nse)}" target="_blank" style="font-weight:700;color:#2b6cb0;text-decoration:none;">${nse}</a></td>`;
+                }
+                if (col === COL_BSE) {
+                    if (!bse) return '<td><span style="font-size:11px;color:#a0aec0;">-</span></td>';
+                    return `<td><a href="https://www.bseindia.com/stock-share-price/x/x/${bse}/" target="_blank" style="font-weight:700;color:#276749;text-decoration:none;">${bse}</a></td>`;
+                }
                 if (col === COL_SURGE_QTR) {
                     const _thresh = parseFloat(document.getElementById('val-growth').value)||70;
                     const qtrs = getSurgeQuarters(row, _thresh);
@@ -758,8 +782,9 @@
                 if (col.startsWith(YOY_PREFIX)) { const desc = yoyDescs.find(d => d.id === col); if (!desc) return '<td>-</td>'; return `<td>${formatYoY(calcYoY(row, desc.newCol, desc.oldCol))}</td>`; }
                 if (col === 'Company (Page)') {
                     const scrLink = screener ? `<a href="https://www.screener.in/company/${screener}/" target="_blank" style="font-size:11px;padding:3px 7px;border-radius:4px;background:#e2e8f0;color:#2b6cb0;font-weight:bold;border:1px solid #cbd5e0;text-decoration:none;display:inline-block;">SCR</a>` : '';
-                    const tvLink = nse ? `<a href="https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(nse)}" target="_blank" style="font-size:11px;padding:3px 7px;border-radius:4px;background:#e2e8f0;color:#2b6cb0;font-weight:bold;border:1px solid #cbd5e0;text-decoration:none;display:inline-block;">TV</a>` : '';
-                    const noteLink = `<a href="#" onclick="openChat('${(nse||bse||companyName).replace(/'/g,"\\'")}','${companyName.replace(/'/g,"\\'")}');return false;" style="font-size:11px;padding:3px 7px;border-radius:4px;background:#bee3f8;color:#2b6cb0;font-weight:bold;border:1px solid #90cdf4;text-decoration:none;display:inline-block;">Notes</a>`;
+                    // TV button: NSE preferred, fallback to BSE
+                    const tvLink = tvInfo ? `<a href="https://in.tradingview.com/chart/?symbol=${encodeURIComponent(tvInfo.symbol)}" target="_blank" style="font-size:11px;padding:3px 7px;border-radius:4px;background:#e2e8f0;color:#2b6cb0;font-weight:bold;border:1px solid #cbd5e0;text-decoration:none;display:inline-block;">TV</a>` : '';
+                    const noteLink = `<a href="#" onclick="openChat('${(nse||bse||companyName).replace(/'/g,"\\'")}\'','${companyName.replace(/'/g,"\\'")}\'');return false;" style="font-size:11px;padding:3px 7px;border-radius:4px;background:#bee3f8;color:#2b6cb0;font-weight:bold;border:1px solid #90cdf4;text-decoration:none;display:inline-block;">Notes</a>`;
                     return `<td><div style="font-weight:600;">${companyName}</div><div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;">${scrLink}${tvLink}${noteLink}</div></td>`;
                 }
                 if (col === 'Current Quarter Surge') return `<td>${row[col] === 'Yes' ? '<span class="badge-yes">Yes</span>' : (row[col]||'-')}</td>`;
