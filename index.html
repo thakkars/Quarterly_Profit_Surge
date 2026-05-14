@@ -86,6 +86,7 @@
         .badge-yes { background-color: #48bb78; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
         .badge-peak { background-color: #d69e2e; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
         .surge-qtr-tag { display: inline-block; background: #c6f6d5; color: #276749; border: 1px solid #9ae6b4; padding: 2px 7px; border-radius: 8px; font-size: 12px; font-weight: 700; margin: 1px 2px; }
+        .surge-qtr-tag.current { background: #2b6cb0; color: white; border-color: #1a365d; }
         .yoy-pos { color: #276749; font-weight: 700; }
         .yoy-neg { color: #c53030; font-weight: 700; }
         .yoy-na  { color: #a0aec0; font-size: 12px; }
@@ -284,6 +285,24 @@
     const QTR_COL_REGEX = /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{2,4}$/;
     const MONTH_LETTER = {Jan:'J',Feb:'F',Mar:'M',Apr:'A',May:'My',Jun:'J',Jul:'Jl',Aug:'Au',Sep:'S',Oct:'O',Nov:'N',Dec:'D'};
 
+    // Maps a calendar month (1-12) to the quarter code prefix letter
+    // Results reporting season: Mar qtr -> reported Apr-Jun, Jun qtr -> Jul-Sep, Sep qtr -> Oct-Dec, Dec qtr -> Jan-Mar
+    // "Current Quarter" = the quarter whose results are currently being published:
+    //   Jan-Mar  => Dec of prev year (D25 in early 2026)
+    //   Apr-Jun  => Mar of this year  (M26 in Apr-Jun 2026)
+    //   Jul-Sep  => Jun of this year  (J26 in Jul-Sep 2026)
+    //   Oct-Dec  => Sep of this year  (S26 in Oct-Dec 2026)
+    function getCurrentQuarterCode() {
+        const now = new Date();
+        const month = now.getMonth() + 1; // 1-12
+        const yr  = String(now.getFullYear()).slice(-2);
+        const prevYr = String(now.getFullYear() - 1).slice(-2);
+        if (month >= 1  && month <= 3)  return `D${prevYr}`; // Jan-Mar  => Dec results
+        if (month >= 4  && month <= 6)  return `M${yr}`;     // Apr-Jun  => Mar results
+        if (month >= 7  && month <= 9)  return `J${yr}`;     // Jul-Sep  => Jun results
+        return `S${yr}`;                                       // Oct-Dec  => Sep results
+    }
+
     let rawData = [];
     let currentFilteredData = [];
     let allColumns = [];
@@ -391,15 +410,6 @@
         if (!quarterlyColumns || quarterlyColumns.length < 5) return false;
         const yoy = calcYoY(row, quarterlyColumns[0], quarterlyColumns[4]);
         return yoy !== null && yoy >= threshold;
-    }
-
-    function getCurrentQuarterCode() {
-        const now = new Date(); const month = now.getMonth() + 1;
-        const yr = String(now.getFullYear()).slice(-2); const prevYr = String(now.getFullYear() - 1).slice(-2);
-        if (month >= 1 && month <= 3)  return `D${prevYr}`;
-        if (month >= 4 && month <= 6)  return `M${yr}`;
-        if (month >= 7 && month <= 9)  return `S${yr}`;
-        return `D${yr}`;
     }
 
     function updateCurrentQtrBadge() {
@@ -715,6 +725,7 @@
         document.getElementById('row-count').innerText = `Showing ${data.length} of ${rawData.length} stocks`;
         const orderedVisibleCols = columnOrder.filter(col => visibleColumns.has(col));
         const threshGrowth = parseFloat(document.getElementById('val-growth').value) || 70;
+        const currentQtrCode = getCurrentQuarterCode();
 
         thead.innerHTML = '<tr>' + orderedVisibleCols.map(col => {
             const isYoY = col.startsWith(YOY_PREFIX);
@@ -753,7 +764,8 @@
                 if (col === COL_SURGE_QTR) {
                     const qtrs = getSurgeQuarters(row, threshGrowth);
                     if (!qtrs.length) return '<td><span class="yoy-na">-</span></td>';
-                    return `<td>${qtrs.map(q => `<span class="surge-qtr-tag">${q}</span>`).join(' ')}</td>`;
+                    // Highlight current quarter tag in blue
+                    return `<td>${qtrs.map(q => `<span class="surge-qtr-tag${q === currentQtrCode ? ' current' : ''}">${q}</span>`).join(' ')}</td>`;
                 }
                 if (col.startsWith(YOY_PREFIX)) { const desc = yoyDescs.find(d => d.id === col); if (!desc) return '<td>-</td>'; return `<td>${formatYoY(calcYoY(row, desc.newCol, desc.oldCol))}</td>`; }
                 if (col === 'Company (Page)') {
@@ -802,22 +814,37 @@
         const filterPledged    = document.getElementById('filter-pledged').checked;
         const filterWc         = document.getElementById('filter-wc').checked;
         const filterMsi        = document.getElementById('filter-msi').checked;
-        const currentQtr       = getCurrentQuarterCode();
         const threshGrowth     = parseFloat(document.getElementById('val-growth').value)   || 70;
         const threshPromoter   = parseFloat(document.getElementById('val-promoter').value) || 50;
         const threshPledged    = parseFloat(document.getElementById('val-pledged').value)  || 10;
         const threshWc         = parseFloat(document.getElementById('val-wc').value)       || 150;
         const threshMsi        = parseFloat(document.getElementById('val-msi').value)      || 80;
+
+        // Current quarter code derived from today's date (dynamic)
+        const currentQtr = getCurrentQuarterCode();
+        // Latest quarter code actually present in the data (first column in quarterlyColumns)
+        const latestDataCode = quarterlyColumns[0] ? toQtrCode(quarterlyColumns[0]) : '';
+
         let filteredData = rawData.filter(row => {
             const subIndustry = row['Industry'] || 'Not Found';
             const isVip = vipIndustries.has(subIndustry) || vipCompanies.has(row['Company (Page)'] || row['Name'] || '');
-            if (filterGrowth)     { if (!(isVip && globalOverrides.bypassGrowth)      && !hasYoYSurge(row, threshGrowth))   return false; }
-            if (filterCurrentQtr) { const latestCode = quarterlyColumns[0] ? toQtrCode(quarterlyColumns[0]) : ''; if (!(isVip && globalOverrides.bypassCurrentQtr) && latestCode !== currentQtr) return false; if (!(isVip && globalOverrides.bypassCurrentQtr) && !hasYoYSurge(row, 70)) return false; }
-            if (filterPeakQtr)    { if (!(isVip && globalOverrides.bypassPeakQtr)    && !isLatestQtrHighest(row))            return false; }
-            if (filterPromoter)   { const v = parseFloat(String(row['Promoter Holding']||'').replace(/,/g,'')); if (!(isVip && globalOverrides.bypassPromoter) && (isNaN(v) || v < threshPromoter)) return false; }
-            if (filterPledged)    { const v = parseFloat(String(row['Pledged %']||'').replace(/,/g,'')); if (!(isVip && globalOverrides.bypassPledged) && !isNaN(v) && v > threshPledged) return false; }
-            if (filterWc)         { const v = parseFloat(String(row['WC Days']||'').replace(/,/g,'')); if (!(isVip && globalOverrides.bypassWc) && !isNaN(v) && v > threshWc) return false; }
-            if (filterMsi)        { const v = parseFloat(String(row['MSI']||row['MSI Price Strength']||'').replace(/,/g,'')); if (!(isVip && globalOverrides.bypassMsi) && (isNaN(v) || v <= threshMsi)) return false; }
+
+            // Current Quarter Surge Only:
+            // 1. The latest data column must match the current calendar quarter
+            // 2. The stock must have a YoY surge >= threshGrowth in that latest quarter
+            if (filterCurrentQtr) {
+                if (!(isVip && globalOverrides.bypassCurrentQtr)) {
+                    if (latestDataCode !== currentQtr) return false;
+                    if (!hasYoYSurge(row, threshGrowth)) return false;
+                }
+            }
+
+            if (filterGrowth)   { if (!(isVip && globalOverrides.bypassGrowth)    && !hasYoYSurge(row, threshGrowth))   return false; }
+            if (filterPeakQtr)  { if (!(isVip && globalOverrides.bypassPeakQtr)  && !isLatestQtrHighest(row))            return false; }
+            if (filterPromoter) { const v = parseFloat(String(row['Promoter Holding']||'').replace(/,/g,'')); if (!(isVip && globalOverrides.bypassPromoter) && (isNaN(v) || v < threshPromoter)) return false; }
+            if (filterPledged)  { const v = parseFloat(String(row['Pledged %']||'').replace(/,/g,'')); if (!(isVip && globalOverrides.bypassPledged) && !isNaN(v) && v > threshPledged) return false; }
+            if (filterWc)       { const v = parseFloat(String(row['WC Days']||'').replace(/,/g,'')); if (!(isVip && globalOverrides.bypassWc) && !isNaN(v) && v > threshWc) return false; }
+            if (filterMsi)      { const v = parseFloat(String(row['MSI']||row['MSI Price Strength']||'').replace(/,/g,'')); if (!(isVip && globalOverrides.bypassMsi) && (isNaN(v) || v <= threshMsi)) return false; }
             return true;
         });
         currentFilteredData = filteredData;
