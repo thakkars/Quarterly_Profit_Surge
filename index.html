@@ -315,6 +315,27 @@
         return null;
     }
 
+    // For BSE-only stocks, build a TradingView search URL using company name
+    // TradingView search works by name even when BSE numeric code fails
+    function getTvSearchUrl(row) {
+        const name = (row['Company (Page)'] || row['Name'] || '').toString().trim();
+        if (!name) return null;
+        // Strip common suffixes to get a cleaner search query
+        const query = name.replace(/\s*(Limited|Ltd\.?|Ltd)\s*$/i, '').trim();
+        return 'https://in.tradingview.com/chart/?symbol=' + encodeURIComponent(query);
+    }
+
+    // Build the TradingView symbol-overview widget src for a given symbol string
+    function buildTvWidgetSrc(name, symbol) {
+        const cfg = encodeURIComponent(JSON.stringify({
+            symbols: [[name, symbol + '|1D']],
+            chartOnly: false, width: '100%', height: 400, locale: 'in',
+            colorTheme: 'light', autosize: true, showVolume: true,
+            chartType: 'candlesticks', upColor: '#26a69a', downColor: '#ef5350'
+        }));
+        return 'https://s.tradingview.com/embed-widget/symbol-overview/?locale=in#' + cfg;
+    }
+
     function toQtrCode(colName) {
         const parts = colName.trim().split(/\s+/);
         const mon = parts[0]; const yr = parts[1] || '';
@@ -525,24 +546,25 @@
             const screener = (row['Screener Name Exact'] || row['Name'] || '').toString().trim();
             const industry = (row['Industry'] || '').toString();
             const scrLink = screener ? `<a href="https://www.screener.in/company/${screener}/" target="_blank">SCR</a>` : '';
+            const bseLink = exchange === 'BSE' ? `<a href="https://www.bseindia.com/stock-share-price/x/x/${code}/" target="_blank">BSE ↗</a>` : '';
             const exchBadge = exchange === 'BSE' ? ` <span style="font-size:10px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;padding:1px 5px;border-radius:4px;font-weight:700;">BSE</span>` : '';
             const cardId = 'card_' + exchange + '_' + code;
             const card = document.createElement('div');
             card.className = 'chart-card'; card.id = cardId;
 
             if (exchange === 'BSE') {
-                // BSE: embed BSEIndia chart iframe — works for all BSE numeric codes
-                const bseChartUrl = `https://www.bseindia.com/stock-share-price/x/x/${code}/`;
-                const bseIframeSrc = `https://www.bseindia.com/stockinfo/graphnew.aspx?scrcd=${code}&period=6M`;
-                const tvUrl = `https://in.tradingview.com/chart/?symbol=${encodeURIComponent(symbol)}`;
-                const headerHtml = `<div class="chart-card-header"><div><div class="chart-card-name">${name}${exchBadge}</div><div class="chart-card-meta">${symbol} &nbsp;|&nbsp; ${industry}</div></div><div class="chart-card-links">${scrLink}<a href="${bseChartUrl}" target="_blank">BSE ↗</a><a href="${tvUrl}" target="_blank">TV ↗</a></div></div>`;
-                card.innerHTML = headerHtml + `<iframe src="${bseIframeSrc}" width="100%" height="400" frameborder="0" scrolling="no" style="display:block;"></iframe>`;
+                // BSE-only: TradingView doesn't support BSE numeric codes.
+                // Use the company name as the TradingView symbol — TV can often resolve Indian companies by name.
+                const companyQuery = name.replace(/\s*(Limited|Ltd\.?|Ltd)\s*$/i, '').trim();
+                const tvSearchUrl = 'https://in.tradingview.com/chart/?symbol=' + encodeURIComponent(companyQuery);
+                const tvWidgetSrc = buildTvWidgetSrc(name, companyQuery);
+                const headerHtml = `<div class="chart-card-header"><div><div class="chart-card-name">${name}${exchBadge}</div><div class="chart-card-meta">BSE: ${code} &nbsp;|&nbsp; ${industry}</div></div><div class="chart-card-links">${scrLink}${bseLink}<a href="${tvSearchUrl}" target="_blank">TV ↗</a></div></div>`;
+                card.innerHTML = headerHtml + `<iframe src="${tvWidgetSrc}" width="100%" height="400" frameborder="0" allowtransparency="true" scrolling="no" style="display:block;"></iframe>`;
             } else {
-                // NSE: use TradingView symbol-overview widget
+                // NSE: use standard TradingView symbol-overview widget
                 const tvUrl = `https://in.tradingview.com/chart/?symbol=${encodeURIComponent(symbol)}`;
                 const headerHtml = `<div class="chart-card-header"><div><div class="chart-card-name">${name}${exchBadge}</div><div class="chart-card-meta">${symbol} &nbsp;|&nbsp; ${industry}</div></div><div class="chart-card-links">${scrLink}<a href="${tvUrl}" target="_blank">📈 Open Full Chart</a></div></div>`;
-                const cfg = encodeURIComponent(JSON.stringify({ symbols: [[name, symbol + '|1D']], chartOnly: false, width: '100%', height: 400, locale: 'in', colorTheme: 'light', autosize: true, showVolume: true, chartType: 'candlesticks', upColor: '#26a69a', downColor: '#ef5350' }));
-                const iframeSrc = 'https://s.tradingview.com/embed-widget/symbol-overview/?locale=in#' + cfg;
+                const iframeSrc = buildTvWidgetSrc(name, symbol);
                 card.innerHTML = headerHtml + `<iframe src="${iframeSrc}" width="100%" height="400" frameborder="0" allowtransparency="true" scrolling="no" style="display:block;"></iframe>`;
             }
             grid.appendChild(card);
@@ -791,7 +813,7 @@
                 if (col === 'Company (Page)') {
                     const scrLink = screener ? `<a href="https://www.screener.in/company/${screener}/" target="_blank" style="font-size:11px;padding:3px 7px;border-radius:4px;background:#e2e8f0;color:#2b6cb0;font-weight:bold;border:1px solid #cbd5e0;text-decoration:none;display:inline-block;">SCR</a>` : '';
                     const tvLink = tvInfo ? `<a href="https://in.tradingview.com/chart/?symbol=${encodeURIComponent(tvInfo.symbol)}" target="_blank" style="font-size:11px;padding:3px 7px;border-radius:4px;background:#e2e8f0;color:#2b6cb0;font-weight:bold;border:1px solid #cbd5e0;text-decoration:none;display:inline-block;">TV</a>` : '';
-                    const noteLink = `<a href="#" onclick="openChat('${(nse||bse||companyName).replace(/'/g,"\\'").replace(/\\'\\''/g,"\\'")}\\'','${companyName.replace(/'/g,"\\'")}\\'');return false;" style="font-size:11px;padding:3px 7px;border-radius:4px;background:#bee3f8;color:#2b6cb0;font-weight:bold;border:1px solid #90cdf4;text-decoration:none;display:inline-block;">Notes</a>`;
+                    const noteLink = `<a href="#" onclick="openChat('${(nse||bse||companyName).replace(/'/g,"\\'")}\'','${companyName.replace(/'/g,"\\'")}\'');return false;" style="font-size:11px;padding:3px 7px;border-radius:4px;background:#bee3f8;color:#2b6cb0;font-weight:bold;border:1px solid #90cdf4;text-decoration:none;display:inline-block;">Notes</a>`;
                     return `<td><div style="font-weight:600;">${companyName}</div><div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;">${scrLink}${tvLink}${noteLink}</div></td>`;
                 }
                 if (col === 'Current Quarter Surge') return `<td>${row[col] === 'Yes' ? '<span class="badge-yes">Yes</span>' : (row[col]||'-')}</td>`;
