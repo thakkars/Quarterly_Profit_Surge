@@ -490,12 +490,40 @@
             margin-bottom: 20px;
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 10px;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
 
+        .filter-card h3 .icon-title { display: flex; align-items: center; gap: 10px; }
         .filter-card h3 .icon { font-size: 20px; }
+
+        .filter-select-all-wrap {
+            display: flex;
+            align-items: center;
+            background: var(--bg-secondary);
+            padding: 6px 14px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-subtle);
+            cursor: pointer;
+            text-transform: none;
+            letter-spacing: normal;
+        }
+
+        .filter-select-all-wrap input {
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            accent-color: var(--accent-blue);
+        }
+
+        .filter-select-all-wrap span {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
 
         .filter-divider {
             border: none;
@@ -1672,7 +1700,6 @@
     <base target="_blank">
 </head>
 <body>
-    <!-- Header -->
     <header class="app-header">
         <div class="header-inner">
             <div class="brand">
@@ -1705,7 +1732,6 @@
     </header>
 
     <div class="container">
-        <!-- View Toggle -->
         <div class="view-toggle-bar">
             <div class="stats-text" id="row-count">Loading data...</div>
             <div class="view-toggle">
@@ -1714,28 +1740,33 @@
             </div>
         </div>
 
-        <!-- List View -->
         <div id="list-section">
             <div class="filters-grid">
                 <div class="filter-card">
-                    <h3><span class="icon">🎯</span> Strict Filters</h3>
+                    <h3>
+                        <span class="icon-title"><span class="icon">🎯</span> Strict Filters</span>
+                        <label class="filter-select-all-wrap" id="strict-select-all-label">
+                            <input type="checkbox" id="strict-filter-select-all" onchange="toggleAllStrictFilters(this)">
+                            <span id="strict-select-all-text">Select All</span>
+                        </label>
+                    </h3>
                     <div class="filter-row">
                         <label class="filter-label">
-                            <input type="checkbox" id="filter-current-qtr" onchange="handleMainFilterChange('filter-current-qtr','global-current-qtr','bypassCurrentQtr')">
+                            <input type="checkbox" class="strict-filter-checkbox" id="filter-current-qtr" onchange="handleMainFilterChange('filter-current-qtr','global-current-qtr','bypassCurrentQtr')">
                             Current Quarter Surge
                         </label>
                         <span class="badge-inline" id="current-qtr-badge"></span>
                     </div>
                     <div class="filter-row">
                         <label class="filter-label">
-                            <input type="checkbox" id="filter-peak-qtr" onchange="handleMainFilterChange('filter-peak-qtr','global-peak-qtr','bypassPeakQtr')">
+                            <input type="checkbox" class="strict-filter-checkbox" id="filter-peak-qtr" onchange="handleMainFilterChange('filter-peak-qtr','global-peak-qtr','bypassPeakQtr')">
                             Highest Ever Quarter
                         </label>
                     </div>
                     <hr class="filter-divider">
                     <div class="filter-row">
                         <label class="filter-label">
-                            <input type="checkbox" id="filter-growth" onchange="handleMainFilterChange('filter-growth','global-growth','bypassGrowth')">
+                            <input type="checkbox" class="strict-filter-checkbox" id="filter-growth" onchange="handleMainFilterChange('filter-growth','global-growth','bypassGrowth')">
                             Latest QoQ Op. Profit >=
                         </label>
                         <div class="threshold-wrap">
@@ -1745,7 +1776,7 @@
                     </div>
                     <div class="filter-row">
                         <label class="filter-label">
-                            <input type="checkbox" id="filter-promoter" onchange="handleMainFilterChange('filter-promoter','global-promoter','bypassPromoter')">
+                            <input type="checkbox" class="strict-filter-checkbox" id="filter-promoter" onchange="handleMainFilterChange('filter-promoter','global-promoter','bypassPromoter')">
                             Promoter Holding >=
                         </label>
                         <div class="threshold-wrap">
@@ -1755,7 +1786,7 @@
                     </div>
                     <div class="filter-row">
                         <label class="filter-label">
-                            <input type="checkbox" id="filter-pledged" onchange="handleMainFilterChange('filter-pledged','global-pledged','bypassPledged')">
+                            <input type="checkbox" class="strict-filter-checkbox" id="filter-pledged" onchange="handleMainFilterChange('filter-pledged','global-pledged','bypassPledged')">
                             Pledged Shares <=
                         </label>
                         <div class="threshold-wrap">
@@ -1765,7 +1796,7 @@
                     </div>
                     <div class="filter-row">
                         <label class="filter-label">
-                            <input type="checkbox" id="filter-wc" onchange="handleMainFilterChange('filter-wc','global-wc','bypassWc')">
+                            <input type="checkbox" class="strict-filter-checkbox" id="filter-wc" onchange="handleMainFilterChange('filter-wc','global-wc','bypassWc')">
                             Working Capital Days <=
                         </label>
                         <div class="threshold-wrap">
@@ -1774,7 +1805,7 @@
                     </div>
                     <div class="filter-row">
                         <label class="filter-label">
-                            <input type="checkbox" id="filter-msi" onchange="handleMainFilterChange('filter-msi','global-msi','bypassMsi')">
+                            <input type="checkbox" class="strict-filter-checkbox" id="filter-msi" onchange="handleMainFilterChange('filter-msi','global-msi','bypassMsi')">
                             MSI Price Strength >
                         </label>
                         <div class="threshold-wrap">
@@ -1817,7 +1848,6 @@
             </div>
         </div>
 
-        <!-- Charts View -->
         <div id="charts-view">
             <div class="charts-header">
                 <h2>Price Charts</h2>
@@ -1827,7 +1857,6 @@
         </div>
     </div>
 
-    <!-- Chat Drawer -->
     <div class="chat-overlay" id="chat-overlay" onclick="closeChat()"></div>
     <div class="chat-drawer" id="chat-drawer">
         <div class="chat-header">
@@ -1842,7 +1871,6 @@
         </div>
     </div>
 
-    <!-- Exceptions Modal -->
     <div class="modal-overlay" id="exceptions-modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -1894,7 +1922,6 @@
     </div>
 
     <script>
-        // All your existing JavaScript remains exactly the same - just copy it here
         const GITHUB_OWNER = "thakkars";
         const GITHUB_REPO = "Quarterly_Profit_Surge";
         const WORKFLOW_FILE = "run_screener.yml";
@@ -1933,9 +1960,6 @@
         };
         let isDragging = false, dragMoved = false, startX = 0, startScrollLeft = 0;
 
-        // Copy all remaining JavaScript functions from your original code here...
-        // (getExchangeCodes, getTvSymbol, buildTvWidgetSrc, etc.)
-        
         function getExchangeCodes(row) {
             const nseRaw = (row["NSE Code Exact"] || "").toString().trim();
             const screenerRaw = (row["Screener Name Exact"] || "").toString().trim();
@@ -2087,6 +2111,34 @@
             });
         }
 
+        function toggleAllStrictFilters(masterCheckbox) {
+            const checkboxes = document.querySelectorAll('.strict-filter-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = masterCheckbox.checked;
+                // Dynamically trigger standard individual filter event updates mapped to specific parameters
+                if (cb.id === 'filter-current-qtr') handleMainFilterChange('filter-current-qtr','global-current-qtr','bypassCurrentQtr');
+                else if (cb.id === 'filter-peak-qtr') handleMainFilterChange('filter-peak-qtr','global-peak-qtr','bypassPeakQtr');
+                else if (cb.id === 'filter-growth') handleMainFilterChange('filter-growth','global-growth','bypassGrowth');
+                else if (cb.id === 'filter-promoter') handleMainFilterChange('filter-promoter','global-promoter','bypassPromoter');
+                else if (cb.id === 'filter-pledged') handleMainFilterChange('filter-pledged','global-pledged','bypassPledged');
+                else if (cb.id === 'filter-wc') handleMainFilterChange('filter-wc','global-wc','bypassWc');
+                else if (cb.id === 'filter-msi') handleMainFilterChange('filter-msi','global-msi','bypassMsi');
+            });
+            document.getElementById('strict-select-all-text').textContent = masterCheckbox.checked ? 'Unselect All' : 'Select All';
+            applyFiltersAndRender();
+        }
+
+        function updateStrictMasterCheckboxState() {
+            const checkboxes = document.querySelectorAll('.strict-filter-checkbox');
+            const master = document.getElementById('strict-filter-select-all');
+            if (!master || checkboxes.length === 0) return;
+            
+            const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+            master.checked = (checkedCount === checkboxes.length);
+            master.indeterminate = (checkedCount > 0 && checkedCount < checkboxes.length);
+            document.getElementById('strict-select-all-text').textContent = master.checked ? 'Unselect All' : 'Select All';
+        }
+
         function renderColumnToggles() {
             const list = document.getElementById('col-items-list');
             list.innerHTML = '';
@@ -2107,9 +2159,17 @@
                 else label = getDisplayName(col);
                 const labelClass = isSurgeQtr ? 'surge-label' : isYoY ? 'yoy-label' : '';
                 item.innerHTML = `<span class="col-drag-handle">&#9776;</span><input type="checkbox" ${visibleColumns.has(col) ? 'checked' : ''} onchange="handleColumnToggle(this,'${col}')"><label class="col-item-label ${labelClass}" onclick="this.previousElementSibling.click()">${label}</label>`;
+                
                 item.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', col); item.classList.add('dragging-item'); });
-                item.addEventListener('dragend', () => { item.classList.remove('dragging-item'); list.querySelectorAll('.col-item').forEach(i => i.classList.remove('col-over')); });
-                item.addEventListener('dragover', e => { e.preventDefault(); list.querySelectorAll('.col-item').forEach(i => i.classList.remove('col-over')); item.classList.add('col-over'); });
+                item.addEventListener('dragend', () => { 
+                    item.classList.remove('dragging-item'); 
+                    list.querySelectorAll('.col-item').forEach(i => i.classList.remove('drag-over')); 
+                });
+                item.addEventListener('dragover', e => { 
+                    e.preventDefault(); 
+                    list.querySelectorAll('.col-item').forEach(i => i.classList.remove('drag-over')); 
+                    item.classList.add('drag-over'); 
+                });
                 item.addEventListener('drop', e => {
                     e.preventDefault();
                     const srcCol = e.dataTransfer.getData('text/plain');
@@ -2340,6 +2400,7 @@
             const filterOn = document.getElementById(filterId).checked;
             if (!filterOn) { globalOverrides[bypassKey] = false; const gEl = document.getElementById(globalId); if (gEl) gEl.checked = false; }
             syncBypassLabels();
+            updateStrictMasterCheckboxState();
             applyFiltersAndRender();
         }
 
@@ -2550,12 +2611,33 @@
                     quarterlyColumns = detectQuarterlyColumns(allColumns);
                     const yoyDescs = buildYoYDescriptors();
                     const yoyIds = yoyDescs.map(d => d.id);
-                    columnOrder = [COL_NSE, COL_BSE, COL_SURGE_QTR, ...allColumns, ...yoyIds];
-                    const defaultCols = ['Sr no','date','Company (Page)','Industry','Industry Group',COL_NSE,COL_BSE,COL_SURGE_QTR,'Promoter Holding','Pledged %','WC Days'];
-                    visibleColumns = new Set(defaultCols.filter(c => allColumns.includes(c) || c === COL_NSE || c === COL_BSE || c === COL_SURGE_QTR));
+                    
+                    // Filter duplicate context items handled by your explicit foundational column layout assignment sequence
+                    const filteredAllColumns = allColumns.filter(c => 
+                        !['Sr no', 'date', 'Company (Page)', 'Industry', 'Industry Group'].includes(c)
+                    );
+
+                    // Pinned functional sequencing layout initialization configuration
+                    columnOrder = [
+                        'Sr no',
+                        'date',
+                        COL_NSE,
+                        COL_BSE,
+                        'Company (Page)',
+                        'Industry',
+                        'Industry Group',
+                        COL_SURGE_QTR,
+                        ...filteredAllColumns,
+                        ...yoyIds
+                    ];
+                    
+                    // Force complete workspace visibility map coverage tracking initialization matrix alignment rules
+                    visibleColumns = new Set(columnOrder);
+                    
                     updateCurrentQtrBadge();
                     renderColumnToggles();
                     applyFiltersAndRender();
+                    updateStrictMasterCheckboxState();
                 } else {
                     document.getElementById('table-body').innerHTML = '<tr><td colspan="100%"><div class="error-state"><span class="icon">⚠️</span>DATA SYNC ERROR: JSON is empty. Click Run Backend Scraper to rebuild.</div></td></tr>';
                     document.getElementById('row-count').innerText = 'Showing 0 of 0 stocks';
