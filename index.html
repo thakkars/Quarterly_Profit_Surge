@@ -2115,7 +2115,7 @@
             const isChecked = masterCheckbox.checked;
             const checkboxes = document.querySelectorAll('.strict-filter-checkbox');
             
-            // Explicitly sync state arrays directly to ensure filter metrics switch simultaneously
+            // Explicitly synchronize system state maps inside memory array matrices
             globalOverrides.bypassCurrentQtr = false;
             globalOverrides.bypassPeakQtr = false;
             globalOverrides.bypassGrowth = false;
@@ -2124,10 +2124,12 @@
             globalOverrides.bypassWc = false;
             globalOverrides.bypassMsi = false;
 
+            // Force visual checkbox rendering values to match the programmatic control state
             checkboxes.forEach(cb => {
                 cb.checked = isChecked;
             });
 
+            // Wipe standard runtime modal exceptions trackers simultaneously
             const gCurrent = document.getElementById('global-current-qtr'); if(gCurrent) gCurrent.checked = false;
             const gPeak = document.getElementById('global-peak-qtr'); if(gPeak) gPeak.checked = false;
             const gGrowth = document.getElementById('global-growth'); if(gGrowth) gGrowth.checked = false;
