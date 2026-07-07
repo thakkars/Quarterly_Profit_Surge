@@ -1207,10 +1207,11 @@
 
         /* Action Pills */
         .action-pills {
-            display: flex;
+            display: inline-flex;
             gap: 6px;
-            flex-wrap: wrap;
-            margin-top: 8px;
+            align-items: center;
+            vertical-align: middle;
+            margin-left: 8px;
         }
 
         .pill {
@@ -3107,7 +3108,7 @@
                     if (col === COL_BSE) { if (!bse) return '<td><span style="font-size:11px;color:var(--text-muted);">-</span></td>'; return `<td><a href="https://www.bseindia.com/stock-share-price/x/x/${bse}/" target="_blank" class="link-bse">${bse}</a></td>`; }
                     if (col === COL_SURGE_QTR) { const _thresh = parseFloat(document.getElementById('val-growth').value)||70; const qtrs = getSurgeQuarters(row, _thresh); if (!qtrs.length) return '<td><span class="yoy-na">-</span></td>'; return `<td>${qtrs.map(q => `<span class="surge-qtr-tag">${q}</span>`).join(' ')}</td>`; }
                     if (col.startsWith(YOY_PREFIX)) { const desc = yoyDescs.find(d => d.id === col); if (!desc) return '<td>-</td>'; return `<td>${formatYoY(calcYoY(row, desc.newCol, desc.oldCol))}</td>`; }
-                    if (col === 'Company (Page)') { const scrLink = screener ? `<a href="https://www.screener.in/company/${screener}/" target="_blank" class="pill pill-blue">SCR</a>` : ''; const tvLink = tvInfo ? `<a href="https://in.tradingview.com/chart/?symbol=${encodeURIComponent(tvInfo.symbol)}" target="_blank" class="pill pill-teal">TV</a>` : ''; const noteLink = `<a href="#" onclick="openChat('${(nse||bse||companyName).replace(/'/g,"\'")}','${companyName.replace(/'/g,"\'")}');return false;" class="pill pill-rose">Notes</a>`; return `<td><div class="company-cell"><span class="company-name">${companyName}</span><span class="company-industry">${industry}</span><div class="action-pills">${scrLink}${tvLink}${noteLink}</div></div></td>`; }
+                    if (col === 'Company (Page)') { const scrLink = screener ? `<a href="https://www.screener.in/company/${screener}/" target="_blank" class="pill pill-blue">SCR</a>` : ''; const tvLink = tvInfo ? `<a href="https://in.tradingview.com/chart/?symbol=${encodeURIComponent(tvInfo.symbol)}" target="_blank" class="pill pill-teal">TV</a>` : ''; const noteLink = `<a href="#" onclick="openChat('${(nse||bse||companyName).replace(/'/g,"\'")}','${companyName.replace(/'/g,"\'")}');return false;" class="pill pill-rose">Notes</a>`; return `<td><div class="company-cell"><span class="company-name">${companyName} <span class="action-pills">${scrLink}${tvLink}${noteLink}</span></span></div></td>`; }
                     if (col === 'Current Quarter Surge') return `<td>${row[col] === 'Yes' ? '<span class="badge badge-yes">Yes</span>' : (row[col]||'-')}</td>`;
                     if (col === 'Peak Quarter') return `<td>${row[col] === 'Yes' ? '<span class="badge badge-peak">Peak</span>' : (row[col]||'-')}</td>`;
                     const val = row[col];
