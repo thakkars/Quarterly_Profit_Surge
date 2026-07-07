@@ -2455,6 +2455,15 @@
     </div>
 
     <script>
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const matches = String(dateStr).match(/^(\d{4})[-/](\d{2})[-/](\d{2})/);
+            if (matches) {
+                return `${matches[3]}-${matches[2]}-${matches[1].slice(-2)}`;
+            }
+            return dateStr;
+        }
+
         function toggleCard(cardId) {
             const card = document.getElementById(cardId);
             if (card) {
@@ -3093,6 +3102,7 @@
                 const companyName = (row['Company (Page)'] || row['Name'] || '').toString();
                 const industry = (row['Industry'] || '').toString();
                 const cells = orderedVisibleCols.map(col => {
+                    if (col === 'date') return `<td>${formatDate(row[col])}</td>`;
                     if (col === COL_NSE) { if (!nse) return '<td><span style="font-size:11px;color:var(--text-muted);">BSE Only</span></td>'; return `<td><a href="https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(nse)}" target="_blank" class="link-nse">${nse}</a></td>`; }
                     if (col === COL_BSE) { if (!bse) return '<td><span style="font-size:11px;color:var(--text-muted);">-</span></td>'; return `<td><a href="https://www.bseindia.com/stock-share-price/x/x/${bse}/" target="_blank" class="link-bse">${bse}</a></td>`; }
                     if (col === COL_SURGE_QTR) { const _thresh = parseFloat(document.getElementById('val-growth').value)||70; const qtrs = getSurgeQuarters(row, _thresh); if (!qtrs.length) return '<td><span class="yoy-na">-</span></td>'; return `<td>${qtrs.map(q => `<span class="surge-qtr-tag">${q}</span>`).join(' ')}</td>`; }
@@ -3115,6 +3125,7 @@
             const rows = currentFilteredData.map(row => {
                 const { nse, bse } = getExchangeCodes(row);
                 return orderedVisibleCols.map(col => {
+                    if (col === 'date') return formatDate(row[col]);
                     if (col === COL_NSE) return nse || '';
                     if (col === COL_BSE) return bse || '';
                     if (col === COL_SURGE_QTR) { const _t = parseFloat(document.getElementById('val-growth').value)||70; return `"${getSurgeQuarters(row,_t).join(', ')}"`; }
@@ -3195,9 +3206,9 @@
                     columnOrder = [
                         'Sr no',
                         'date',
+                        'Company (Page)',
                         COL_NSE,
                         COL_BSE,
-                        'Company (Page)',
                         'Industry',
                         'Industry Group',
                         COL_SURGE_QTR,
