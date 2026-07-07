@@ -995,7 +995,6 @@
         .table-container {
             overflow-x: auto;
             cursor: grab;
-            max-height: calc(100vh - 300px);
         }
 
         .table-container::-webkit-scrollbar {
@@ -2190,6 +2189,39 @@
         ::-webkit-scrollbar-thumb:hover {
             background: linear-gradient(180deg, var(--accent-purple) 0%, var(--accent-pink) 100%);
         }
+
+        /* Collapsible Cards */
+        .collapsible-card h3 {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .collapsible-card .card-toggle-icon {
+            display: inline-block;
+            margin-left: 8px;
+            font-size: 11px;
+            transition: transform var(--transition-fast);
+        }
+
+        .collapsible-card.collapsed .card-toggle-icon {
+            transform: rotate(-90deg);
+        }
+
+        .collapsible-card .card-body {
+            max-height: 1000px;
+            opacity: 1;
+            transition: max-height 0.3s cubic-bezier(0, 1, 0, 1), opacity 0.2s ease, margin-top 0.2s ease;
+            overflow: visible;
+            margin-top: 10px;
+        }
+
+        .collapsible-card.collapsed .card-body {
+            max-height: 0;
+            opacity: 0;
+            margin-top: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
     </style>
     <base target="_blank">
 </head>
@@ -2237,88 +2269,94 @@
 
         <div id="list-section">
             <div class="filters-grid">
-                <div class="filter-card">
-                    <h3>
-                        <span class="icon-title"><span class="icon">🎯</span> Strict Filters</span>
-                        <label class="filter-select-all-wrap" id="strict-select-all-label">
+                <div class="filter-card collapsible-card" id="strict-filters-card">
+                    <h3 onclick="toggleCard('strict-filters-card')">
+                        <span class="icon-title"><span class="icon">🎯</span> Strict Filters <span class="card-toggle-icon">▼</span></span>
+                        <label class="filter-select-all-wrap" id="strict-select-all-label" onclick="event.stopPropagation()">
                             <input type="checkbox" id="strict-filter-select-all" onchange="toggleAllStrictFilters(this)">
                             <span id="strict-select-all-text">Select All</span>
                         </label>
                     </h3>
-                    <div class="filter-row">
-                        <label class="filter-label">
-                            <input type="checkbox" class="strict-filter-checkbox" id="filter-current-qtr" onchange="handleMainFilterChange('filter-current-qtr','global-current-qtr','bypassCurrentQtr')">
-                            Current Quarter Surge
-                        </label>
-                        <span class="badge-inline" id="current-qtr-badge"></span>
-                    </div>
-                    <div class="filter-row">
-                        <label class="filter-label">
-                            <input type="checkbox" class="strict-filter-checkbox" id="filter-peak-qtr" onchange="handleMainFilterChange('filter-peak-qtr','global-peak-qtr','bypassPeakQtr')">
-                            Highest Ever Quarter
-                        </label>
-                    </div>
-                    <hr class="filter-divider">
-                    <div class="filter-row">
-                        <label class="filter-label">
-                            <input type="checkbox" class="strict-filter-checkbox" id="filter-growth" onchange="handleMainFilterChange('filter-growth','global-growth','bypassGrowth')">
-                            Latest QoQ Op. Profit >=
-                        </label>
-                        <div class="threshold-wrap">
-                            <input type="number" id="val-growth" value="70" min="1" max="9999" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">
-                            <span class="threshold-unit">%</span>
+                    <div class="card-body">
+                        <div class="filter-row">
+                            <label class="filter-label">
+                                <input type="checkbox" class="strict-filter-checkbox" id="filter-current-qtr" onchange="handleMainFilterChange('filter-current-qtr','global-current-qtr','bypassCurrentQtr')">
+                                Current Quarter Surge
+                            </label>
+                            <span class="badge-inline" id="current-qtr-badge"></span>
                         </div>
-                    </div>
-                    <div class="filter-row">
-                        <label class="filter-label">
-                            <input type="checkbox" class="strict-filter-checkbox" id="filter-promoter" onchange="handleMainFilterChange('filter-promoter','global-promoter','bypassPromoter')">
-                            Promoter Holding >=
-                        </label>
-                        <div class="threshold-wrap">
-                            <input type="number" id="val-promoter" value="50" min="0" max="100" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">
-                            <span class="threshold-unit">%</span>
+                        <div class="filter-row">
+                            <label class="filter-label">
+                                <input type="checkbox" class="strict-filter-checkbox" id="filter-peak-qtr" onchange="handleMainFilterChange('filter-peak-qtr','global-peak-qtr','bypassPeakQtr')">
+                                Highest Ever Quarter
+                            </label>
                         </div>
-                    </div>
-                    <div class="filter-row">
-                        <label class="filter-label">
-                            <input type="checkbox" class="strict-filter-checkbox" id="filter-pledged" onchange="handleMainFilterChange('filter-pledged','global-pledged','bypassPledged')">
-                            Pledged Shares <=
-                        </label>
-                        <div class="threshold-wrap">
-                            <input type="number" id="val-pledged" value="10" min="0" max="100" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">
-                            <span class="threshold-unit">%</span>
+                        <hr class="filter-divider">
+                        <div class="filter-row">
+                            <label class="filter-label">
+                                <input type="checkbox" class="strict-filter-checkbox" id="filter-growth" onchange="handleMainFilterChange('filter-growth','global-growth','bypassGrowth')">
+                                Latest QoQ Op. Profit >=
+                            </label>
+                            <div class="threshold-wrap">
+                                <input type="number" id="val-growth" value="70" min="1" max="9999" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">
+                                <span class="threshold-unit">%</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="filter-row">
-                        <label class="filter-label">
-                            <input type="checkbox" class="strict-filter-checkbox" id="filter-wc" onchange="handleMainFilterChange('filter-wc','global-wc','bypassWc')">
-                            Working Capital Days <=
-                        </label>
-                        <div class="threshold-wrap">
-                            <input type="number" id="val-wc" value="150" min="0" max="9999" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">
+                        <div class="filter-row">
+                            <label class="filter-label">
+                                <input type="checkbox" class="strict-filter-checkbox" id="filter-promoter" onchange="handleMainFilterChange('filter-promoter','global-promoter','bypassPromoter')">
+                                Promoter Holding >=
+                            </label>
+                            <div class="threshold-wrap">
+                                <input type="number" id="val-promoter" value="50" min="0" max="100" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">
+                                <span class="threshold-unit">%</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="filter-row">
-                        <label class="filter-label">
-                            <input type="checkbox" class="strict-filter-checkbox" id="filter-msi" onchange="handleMainFilterChange('filter-msi','global-msi','bypassMsi')">
-                            MSI Price Strength >
-                        </label>
-                        <div class="threshold-wrap">
-                            <input type="number" id="val-msi" value="80" min="0" max="100" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">
+                        <div class="filter-row">
+                            <label class="filter-label">
+                                <input type="checkbox" class="strict-filter-checkbox" id="filter-pledged" onchange="handleMainFilterChange('filter-pledged','global-pledged','bypassPledged')">
+                                Pledged Shares <=
+                            </label>
+                            <div class="threshold-wrap">
+                                <input type="number" id="val-pledged" value="10" min="0" max="100" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">
+                                <span class="threshold-unit">%</span>
+                            </div>
+                        </div>
+                        <div class="filter-row">
+                            <label class="filter-label">
+                                <input type="checkbox" class="strict-filter-checkbox" id="filter-wc" onchange="handleMainFilterChange('filter-wc','global-wc','bypassWc')">
+                                Working Capital Days <=
+                            </label>
+                            <div class="threshold-wrap">
+                                <input type="number" id="val-wc" value="150" min="0" max="9999" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">
+                            </div>
+                        </div>
+                        <div class="filter-row">
+                            <label class="filter-label">
+                                <input type="checkbox" class="strict-filter-checkbox" id="filter-msi" onchange="handleMainFilterChange('filter-msi','global-msi','bypassMsi')">
+                                MSI Price Strength >
+                            </label>
+                            <div class="threshold-wrap">
+                                <input type="number" id="val-msi" value="80" min="0" max="100" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="filter-card">
-                    <h3><span class="icon">👁️</span> Column Settings</h3>
-                    <div class="dropdown-wrap">
-                        <button onclick="toggleDropdown()" class="dropdown-btn" id="dropdown-btn-text">Select Columns &#9662;</button>
-                        <div id="column-dropdown" class="dropdown-content">
-                            <div class="col-toolbar">
-                                <button class="col-toolbar-btn primary" onclick="selectAllColumns(event)">All</button>
-                                <button class="col-toolbar-btn secondary" onclick="selectNoneColumns(event)">None</button>
-                                <span class="col-toolbar-hint">&#9776; Drag to reorder</span>
+                <div class="filter-card collapsible-card" id="column-settings-card">
+                    <h3 onclick="toggleCard('column-settings-card')">
+                        <span><span class="icon">👁️</span> Column Settings <span class="card-toggle-icon">▼</span></span>
+                    </h3>
+                    <div class="card-body">
+                        <div class="dropdown-wrap">
+                            <button onclick="toggleDropdown()" class="dropdown-btn" id="dropdown-btn-text">Select Columns &#9662;</button>
+                            <div id="column-dropdown" class="dropdown-content">
+                                <div class="col-toolbar">
+                                    <button class="col-toolbar-btn primary" onclick="selectAllColumns(event)">All</button>
+                                    <button class="col-toolbar-btn secondary" onclick="selectNoneColumns(event)">None</button>
+                                    <span class="col-toolbar-hint">&#9776; Drag to reorder</span>
+                                </div>
+                                <div class="col-items-list" id="col-items-list"></div>
                             </div>
-                            <div class="col-items-list" id="col-items-list"></div>
                         </div>
                     </div>
                 </div>
@@ -2417,6 +2455,13 @@
     </div>
 
     <script>
+        function toggleCard(cardId) {
+            const card = document.getElementById(cardId);
+            if (card) {
+                card.classList.toggle('collapsed');
+            }
+        }
+
         function toggleTheme() {
             const body = document.body;
             const btn = document.getElementById('theme-btn');
