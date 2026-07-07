@@ -2083,9 +2083,10 @@
             const prevYr = String(now.getFullYear() - 1).slice(-2);
             if (month >= 1 && month <= 3) return `D${prevYr}`;
             if (month >= 4 && month <= 6) return `M${yr}`;
-            if (month >= 7 && month <= 9) return `S${yr}`;
-            return `D${yr}`;
+            if (month >= 7 && month <= 9) return `J${yr}`;
+            return `S${yr}`;
         }
+
 
         function updateCurrentQtrBadge() {
             const badge = document.getElementById('current-qtr-badge');
