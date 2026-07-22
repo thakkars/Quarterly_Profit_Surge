@@ -2495,10 +2495,8 @@
             <div class="bucket-pills-wrap">
                 <span class="bucket-pills-label">Bucket:</span>
                 <div class="bucket-pills">
-                    <button id="bucket-btn-all" class="bucket-btn active" onclick="setBucketFilter('all')">All (<span id="count-all">0</span>)</button>
-                    <button id="bucket-btn-pending" class="bucket-btn" onclick="setBucketFilter('pending')">Pending (<span id="count-pending">0</span>)</button>
+                    <button id="bucket-btn-pending" class="bucket-btn active" onclick="setBucketFilter('pending')">Pending (<span id="count-pending">0</span>)</button>
                     <button id="bucket-btn-accepted" class="bucket-btn" onclick="setBucketFilter('accepted')">🟢 Accepted (<span id="count-accepted">0</span>)</button>
-                    <button id="bucket-btn-rejected" class="bucket-btn" onclick="setBucketFilter('rejected')">🔴 Rejected (<span id="count-rejected">0</span>)</button>
                 </div>
             </div>
             <div class="bucket-actions">
@@ -2749,7 +2747,7 @@
         const MONTH_LETTER = {Jan:'J',Feb:'F',Mar:'M',Apr:'A',May:'My',Jun:'J',Jul:'Jl',Aug:'Au',Sep:'S',Oct:'O',Nov:'N',Dec:'D'};
 
         let rawData = [];
-        let activeBucketFilter = 'all';
+        let activeBucketFilter = 'pending';
 
         function getQuarterEvaluations(quarter) {
             const evals = localStorage.getItem('quarterly_evaluations');
@@ -3559,17 +3557,20 @@
             });
 
             // Update UI elements for counts
-            const countAllEl = document.getElementById('count-all');
             const countPendingEl = document.getElementById('count-pending');
             const countAcceptedEl = document.getElementById('count-accepted');
-            const countRejectedEl = document.getElementById('count-rejected');
             const activeQtrEl = document.getElementById('bucket-active-quarter');
 
-            if (countAllEl) countAllEl.textContent = counts.all;
             if (countPendingEl) countPendingEl.textContent = counts.pending;
             if (countAcceptedEl) countAcceptedEl.textContent = counts.accepted;
-            if (countRejectedEl) countRejectedEl.textContent = counts.rejected;
             if (activeQtrEl) activeQtrEl.textContent = activeQuarter;
+
+            // Show or hide bulk action buttons based on whether Pending bucket is active
+            const showBulk = (activeBucketFilter === 'pending');
+            const btnBulkAccept = document.querySelector('.btn-bulk-accept');
+            const btnBulkReject = document.querySelector('.btn-bulk-reject');
+            if (btnBulkAccept) btnBulkAccept.style.display = showBulk ? '' : 'none';
+            if (btnBulkReject) btnBulkReject.style.display = showBulk ? '' : 'none';
 
             // Apply active bucket filter
             if (activeBucketFilter === 'pending') {
@@ -3583,12 +3584,6 @@
                     const { nse, bse } = getExchangeCodes(row);
                     const ticker = nse || bse || (row['Company (Page)'] || row['Name'] || '');
                     return evaluations[ticker] === 'accepted';
-                });
-            } else if (activeBucketFilter === 'rejected') {
-                filteredData = filteredData.filter(row => {
-                    const { nse, bse } = getExchangeCodes(row);
-                    const ticker = nse || bse || (row['Company (Page)'] || row['Name'] || '');
-                    return evaluations[ticker] === 'rejected';
                 });
             }
 
