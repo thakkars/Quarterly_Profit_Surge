@@ -2405,6 +2405,127 @@
             box-shadow: 0 0 8px rgba(239, 68, 68, 0.15);
         }
 
+        .bucket-btn#bucket-btn-all.active {
+            background: rgba(59, 130, 246, 0.15);
+            color: #3b82f6;
+            box-shadow: 0 0 8px rgba(59, 130, 246, 0.15);
+        }
+
+        .decision-th {
+            min-width: 140px;
+        }
+
+        .decision-header-container {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            align-items: flex-start;
+        }
+
+        .decision-header-title {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 700;
+        }
+
+        .decision-header-checkboxes {
+            display: flex;
+            gap: 10px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .header-cb-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            user-select: none;
+            color: var(--text-muted);
+            transition: color var(--transition-fast);
+        }
+
+        .header-cb-label input[type="checkbox"] {
+            width: 12px;
+            height: 12px;
+            cursor: pointer;
+            accent-color: currentColor;
+        }
+
+        .header-cb-label.text-success:has(input:checked) {
+            color: #10b981;
+        }
+        body.light-theme .header-cb-label.text-success:has(input:checked) {
+            color: #059669;
+        }
+        .header-cb-label.text-danger:has(input:checked) {
+            color: #ef4444;
+        }
+        body.light-theme .header-cb-label.text-danger:has(input:checked) {
+            color: #dc2626;
+        }
+
+        .decision-checkboxes-cell {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            height: 100%;
+        }
+
+        .row-cb-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all var(--transition-fast);
+            color: var(--text-muted);
+            border: 1px solid transparent;
+        }
+
+        .row-cb-label input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+            accent-color: currentColor;
+        }
+
+        .row-cb-label:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+        body.light-theme .row-cb-label:hover {
+            background: rgba(0, 0, 0, 0.03);
+            color: var(--text-primary);
+        }
+
+        .row-cb-label.text-success:has(input:checked) {
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.12);
+            border-color: rgba(16, 185, 129, 0.25);
+        }
+        body.light-theme .row-cb-label.text-success:has(input:checked) {
+            color: #059669;
+            background: rgba(16, 185, 129, 0.08);
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+
+        .row-cb-label.text-danger:has(input:checked) {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.12);
+            border-color: rgba(239, 68, 68, 0.25);
+        }
+        body.light-theme .row-cb-label.text-danger:has(input:checked) {
+            color: #dc2626;
+            background: rgba(239, 68, 68, 0.08);
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+
         .bucket-actions {
             display: flex;
             align-items: center;
@@ -2495,8 +2616,10 @@
             <div class="bucket-pills-wrap">
                 <span class="bucket-pills-label">Bucket:</span>
                 <div class="bucket-pills">
+                    <button id="bucket-btn-all" class="bucket-btn" onclick="setBucketFilter('all')">All (<span id="count-all">0</span>)</button>
                     <button id="bucket-btn-pending" class="bucket-btn active" onclick="setBucketFilter('pending')">Pending (<span id="count-pending">0</span>)</button>
                     <button id="bucket-btn-accepted" class="bucket-btn" onclick="setBucketFilter('accepted')">🟢 Accepted (<span id="count-accepted">0</span>)</button>
+                    <button id="bucket-btn-rejected" class="bucket-btn" onclick="setBucketFilter('rejected')">🔴 Rejected (<span id="count-rejected">0</span>)</button>
                 </div>
             </div>
             <div class="bucket-actions">
@@ -2782,6 +2905,40 @@
                 parsed[activeQuarter][ticker] = status;
             }
             
+            localStorage.setItem('quarterly_evaluations', JSON.stringify(parsed));
+            applyFiltersAndRender();
+        }
+
+        function handleStockCheckboxChange(ticker, type, isChecked) {
+            let status = 'pending';
+            if (isChecked) {
+                status = type; // 'accepted' or 'rejected'
+            }
+            setStockEvaluation(ticker, status);
+        }
+
+        function toggleSelectAllEvaluations(status, isChecked) {
+            if (!currentFilteredData || currentFilteredData.length === 0) return;
+            const activeQuarter = quarterlyColumns[0] || getCurrentQuarterCode();
+            const allEvals = localStorage.getItem('quarterly_evaluations');
+            let parsed = {};
+            if (allEvals) {
+                try { parsed = JSON.parse(allEvals); } catch(e) {}
+            }
+            if (!parsed[activeQuarter]) parsed[activeQuarter] = {};
+
+            currentFilteredData.forEach(row => {
+                const { nse, bse } = getExchangeCodes(row);
+                const ticker = nse || bse || (row['Company (Page)'] || row['Name'] || '');
+                if (isChecked) {
+                    parsed[activeQuarter][ticker] = status;
+                } else {
+                    if (parsed[activeQuarter][ticker] === status) {
+                        delete parsed[activeQuarter][ticker];
+                    }
+                }
+            });
+
             localStorage.setItem('quarterly_evaluations', JSON.stringify(parsed));
             applyFiltersAndRender();
         }
@@ -3412,6 +3569,36 @@
                 if (col === COL_SURGE_QTR) label = 'Surge Qtr';
                 let sortIcon = '';
                 if (sortColumn === col) sortIcon = `<span class="sort-icon">${sortAscending ? '▲' : '▼'}</span>`;
+                
+                if (col === COL_DECISION) {
+                    const allVisibleAccepted = data.length > 0 && data.every(row => {
+                        const { nse, bse } = getExchangeCodes(row);
+                        const ticker = nse || bse || (row['Company (Page)'] || row['Name'] || '');
+                        return getStockEvaluation(ticker) === 'accepted';
+                    });
+                    const allVisibleRejected = data.length > 0 && data.every(row => {
+                        const { nse, bse } = getExchangeCodes(row);
+                        const ticker = nse || bse || (row['Company (Page)'] || row['Name'] || '');
+                        return getStockEvaluation(ticker) === 'rejected';
+                    });
+                    
+                    return `<th class="decision-th" onclick="event.stopPropagation()">
+                        <div class="decision-header-container">
+                            <span class="decision-header-title" onclick="handleSort('${COL_DECISION}')" style="cursor: pointer;">Status ${sortIcon}</span>
+                            <div class="decision-header-checkboxes">
+                                <label class="header-cb-label text-success" title="Select all visible stocks as Accepted">
+                                    <input type="checkbox" id="header-accept-all" ${allVisibleAccepted ? 'checked' : ''} onchange="toggleSelectAllEvaluations('accepted', this.checked)">
+                                    Acc
+                                </label>
+                                <label class="header-cb-label text-danger" title="Select all visible stocks as Rejected">
+                                    <input type="checkbox" id="header-reject-all" ${allVisibleRejected ? 'checked' : ''} onchange="toggleSelectAllEvaluations('rejected', this.checked)">
+                                    Rej
+                                </label>
+                            </div>
+                        </div>
+                    </th>`;
+                }
+                
                 return `<th${thClass} onclick="handleSort('${col}')">${label}${sortIcon}</th>`;
             }).join('') + '</tr>';
             if (!data || data.length === 0) { tbody.innerHTML = '<tr><td colspan="100%"><div class="loading-state"><p>No stocks match the current filters.</p></div></td></tr>'; return; }
@@ -3448,28 +3635,22 @@
                     if (col === COL_DECISION) {
                         const ticker = nse || bse || companyName;
                         const status = getStockEvaluation(ticker);
-                        if (status === 'accepted') {
-                            return `<td>
-                                <div class="decision-cell">
-                                    <span class="decision-badge badge-accepted">🟢 Accepted</span>
-                                    <button class="decision-reset-btn" onclick="setStockEvaluation('${ticker.replace(/'/g, "\\'")}', 'pending', event)" title="Reset decision">✕</button>
-                                </div>
-                            </td>`;
-                        } else if (status === 'rejected') {
-                            return `<td>
-                                <div class="decision-cell">
-                                    <span class="decision-badge badge-rejected">🔴 Rejected</span>
-                                    <button class="decision-reset-btn" onclick="setStockEvaluation('${ticker.replace(/'/g, "\\'")}', 'pending', event)" title="Reset decision">✕</button>
-                                </div>
-                            </td>`;
-                        } else {
-                            return `<td>
-                                <div class="decision-buttons">
-                                    <button class="decision-btn btn-accept" onclick="setStockEvaluation('${ticker.replace(/'/g, "\\'")}', 'accepted', event)" title="Accept Stock">✓ Accept</button>
-                                    <button class="decision-btn btn-reject" onclick="setStockEvaluation('${ticker.replace(/'/g, "\\'")}', 'rejected', event)" title="Reject Stock">✗ Reject</button>
-                                </div>
-                            </td>`;
-                        }
+                        return `<td>
+                            <div class="decision-checkboxes-cell" onclick="event.stopPropagation()">
+                                <label class="row-cb-label text-success" title="Accept stock">
+                                    <input type="checkbox" class="stock-cb accept-stock-cb" 
+                                           ${status === 'accepted' ? 'checked' : ''} 
+                                           onchange="handleStockCheckboxChange('${ticker.replace(/'/g, "\\'")}', 'accepted', this.checked)">
+                                    Accept
+                                </label>
+                                <label class="row-cb-label text-danger" title="Reject stock">
+                                    <input type="checkbox" class="stock-cb reject-stock-cb" 
+                                           ${status === 'rejected' ? 'checked' : ''} 
+                                           onchange="handleStockCheckboxChange('${ticker.replace(/'/g, "\\'")}', 'rejected', this.checked)">
+                                    Reject
+                                </label>
+                            </div>
+                        </td>`;
                     }
                     if (col === 'Company (Page)') { const scrLink = screener ? `<a href="https://www.screener.in/company/${screener}/" target="_blank" class="pill pill-blue">SCR</a>` : ''; const tvLink = tvInfo ? `<a href="https://in.tradingview.com/chart/?symbol=${encodeURIComponent(tvInfo.symbol)}" target="_blank" class="pill pill-teal">TV</a>` : ''; const noteLink = `<a href="#" onclick="openChat('${(nse||bse||companyName).replace(/'/g,"\'")}','${companyName.replace(/'/g,"\'")}');return false;" class="pill pill-rose">Notes</a>`; return `<td><div class="company-cell"><span class="company-name">${companyName} <span class="action-pills">${scrLink}${tvLink}${noteLink}</span></span></div></td>`; }
                     if (col === 'Current Quarter Surge') return `<td>${row[col] === 'Yes' ? '<span class="badge badge-yes">Yes</span>' : (row[col]||'-')}</td>`;
@@ -3557,16 +3738,20 @@
             });
 
             // Update UI elements for counts
+            const countAllEl = document.getElementById('count-all');
             const countPendingEl = document.getElementById('count-pending');
             const countAcceptedEl = document.getElementById('count-accepted');
+            const countRejectedEl = document.getElementById('count-rejected');
             const activeQtrEl = document.getElementById('bucket-active-quarter');
 
+            if (countAllEl) countAllEl.textContent = counts.all;
             if (countPendingEl) countPendingEl.textContent = counts.pending;
             if (countAcceptedEl) countAcceptedEl.textContent = counts.accepted;
+            if (countRejectedEl) countRejectedEl.textContent = counts.rejected;
             if (activeQtrEl) activeQtrEl.textContent = activeQuarter;
 
-            // Show or hide bulk action buttons based on whether Pending bucket is active
-            const showBulk = (activeBucketFilter === 'pending');
+            // Show or hide bulk action buttons based on whether Pending or All bucket is active
+            const showBulk = (activeBucketFilter === 'pending' || activeBucketFilter === 'all');
             const btnBulkAccept = document.querySelector('.btn-bulk-accept');
             const btnBulkReject = document.querySelector('.btn-bulk-reject');
             if (btnBulkAccept) btnBulkAccept.style.display = showBulk ? '' : 'none';
@@ -3584,6 +3769,12 @@
                     const { nse, bse } = getExchangeCodes(row);
                     const ticker = nse || bse || (row['Company (Page)'] || row['Name'] || '');
                     return evaluations[ticker] === 'accepted';
+                });
+            } else if (activeBucketFilter === 'rejected') {
+                filteredData = filteredData.filter(row => {
+                    const { nse, bse } = getExchangeCodes(row);
+                    const ticker = nse || bse || (row['Company (Page)'] || row['Name'] || '');
+                    return evaluations[ticker] === 'rejected';
                 });
             }
 
