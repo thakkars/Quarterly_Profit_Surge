@@ -2223,6 +2223,228 @@
             overflow: hidden;
             pointer-events: none;
         }
+
+        /* Decision Column & Action Buttons */
+        .decision-cell {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .decision-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .badge-accepted {
+            background: rgba(16, 185, 129, 0.12);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        body.light-theme .badge-accepted {
+            background: rgba(16, 185, 129, 0.08);
+            color: #059669;
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .badge-rejected {
+            background: rgba(239, 68, 68, 0.12);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+        }
+
+        body.light-theme .badge-rejected {
+            background: rgba(239, 68, 68, 0.08);
+            color: #dc2626;
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .decision-reset-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            cursor: pointer;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            transition: all var(--transition-fast);
+        }
+
+        .decision-reset-btn:hover {
+            background: var(--accent-red-light);
+            color: var(--accent-red);
+            border-color: rgba(239, 68, 68, 0.3);
+            transform: scale(1.1);
+        }
+
+        .decision-buttons {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .decision-btn {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .decision-btn.btn-accept:hover {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border-color: rgba(16, 185, 129, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .decision-btn.btn-reject:hover {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, 0.4);
+            transform: translateY(-1px);
+        }
+
+        /* Bucket Filter Bar */
+        .bucket-filter-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            padding: 12px 18px;
+            border-radius: var(--radius-lg);
+            backdrop-filter: blur(12px);
+            flex-wrap: wrap;
+            gap: 12px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .bucket-pills-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .bucket-pills-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .bucket-pills {
+            display: flex;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: var(--radius-md);
+            padding: 3px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        body.light-theme .bucket-pills {
+            background: rgba(15, 23, 42, 0.04);
+        }
+
+        .bucket-btn {
+            border: none;
+            padding: 6px 14px;
+            font-size: 12px;
+            cursor: pointer;
+            background: transparent;
+            color: var(--text-muted);
+            font-weight: 600;
+            border-radius: var(--radius-sm);
+            transition: all var(--transition-fast);
+            font-family: inherit;
+        }
+
+        .bucket-btn:hover {
+            color: var(--text-secondary);
+        }
+
+        .bucket-btn.active {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        body.light-theme .bucket-btn.active {
+            background: #ffffff;
+            color: var(--text-primary);
+        }
+
+        .bucket-btn#bucket-btn-accepted.active {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.15);
+        }
+
+        .bucket-btn#bucket-btn-rejected.active {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.15);
+        }
+
+        .bucket-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .bucket-info-text {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .bucket-info-text strong {
+            color: var(--accent-blue);
+        }
+
+        .btn-bulk-accept {
+            color: #10b981;
+            border-color: rgba(16, 185, 129, 0.25);
+            background: rgba(16, 185, 129, 0.05);
+        }
+        .btn-bulk-accept:hover {
+            background: var(--accent-green-dark);
+            color: white !important;
+            border-color: var(--accent-green);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+        }
+        .btn-bulk-reject {
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, 0.25);
+            background: rgba(239, 68, 68, 0.05);
+        }
+        .btn-bulk-reject:hover {
+            background: var(--accent-red-dark);
+            color: white !important;
+            border-color: var(--accent-red);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(239, 68, 68, 0.2);
+        }
     </style>
     <base target="_blank">
 </head>
@@ -2265,6 +2487,25 @@
             <div class="view-toggle">
                 <button id="btn-view-list" class="view-btn active" onclick="switchView('list')">📋 List</button>
                 <button id="btn-view-charts" class="view-btn" onclick="switchView('charts')">📊 Charts</button>
+            </div>
+        </div>
+
+        <!-- Bucket Filter Bar -->
+        <div class="bucket-filter-bar">
+            <div class="bucket-pills-wrap">
+                <span class="bucket-pills-label">Bucket:</span>
+                <div class="bucket-pills">
+                    <button id="bucket-btn-all" class="bucket-btn active" onclick="setBucketFilter('all')">All (<span id="count-all">0</span>)</button>
+                    <button id="bucket-btn-pending" class="bucket-btn" onclick="setBucketFilter('pending')">Pending (<span id="count-pending">0</span>)</button>
+                    <button id="bucket-btn-accepted" class="bucket-btn" onclick="setBucketFilter('accepted')">🟢 Accepted (<span id="count-accepted">0</span>)</button>
+                    <button id="bucket-btn-rejected" class="bucket-btn" onclick="setBucketFilter('rejected')">🔴 Rejected (<span id="count-rejected">0</span>)</button>
+                </div>
+            </div>
+            <div class="bucket-actions">
+                <span class="bucket-info-text">Active Quarter: <strong id="bucket-active-quarter">-</strong></span>
+                <button class="btn btn-secondary btn-bulk-accept" style="padding: 4px 10px; font-size: 11px;" onclick="bulkEvaluateFiltered('accepted')" title="Accept all currently filtered visible stocks">🟢 Accept All Filtered</button>
+                <button class="btn btn-secondary btn-bulk-reject" style="padding: 4px 10px; font-size: 11px;" onclick="bulkEvaluateFiltered('rejected')" title="Reject all currently filtered visible stocks">🔴 Reject All Filtered</button>
+                <button class="btn btn-danger btn-ghost" style="padding: 4px 10px; font-size: 11px;" onclick="clearQuarterDecisions()" title="Clear all accept/reject decisions for this quarter">🗑️ Clear Decisions</button>
             </div>
         </div>
 
@@ -2502,11 +2743,103 @@
         const COL_NSE = "__col_nse__";
         const COL_BSE = "__col_bse__";
         const COL_SURGE_QTR = "__col_surge_qtr__";
+        const COL_DECISION = "__col_decision__";
         const YOY_PREFIX = "__yoy__";
         const QTR_COL_REGEX = /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{2,4}$/;
         const MONTH_LETTER = {Jan:'J',Feb:'F',Mar:'M',Apr:'A',May:'My',Jun:'J',Jul:'Jl',Aug:'Au',Sep:'S',Oct:'O',Nov:'N',Dec:'D'};
 
         let rawData = [];
+        let activeBucketFilter = 'all';
+
+        function getQuarterEvaluations(quarter) {
+            const evals = localStorage.getItem('quarterly_evaluations');
+            if (!evals) return {};
+            try {
+                const parsed = JSON.parse(evals);
+                return parsed[quarter] || {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function getStockEvaluation(ticker) {
+            const activeQuarter = quarterlyColumns[0] || getCurrentQuarterCode();
+            const evals = getQuarterEvaluations(activeQuarter);
+            return evals[ticker] || 'pending';
+        }
+
+        function setStockEvaluation(ticker, status, event) {
+            if (event) event.stopPropagation();
+            const activeQuarter = quarterlyColumns[0] || getCurrentQuarterCode();
+            const allEvals = localStorage.getItem('quarterly_evaluations');
+            let parsed = {};
+            if (allEvals) {
+                try { parsed = JSON.parse(allEvals); } catch(e) {}
+            }
+            if (!parsed[activeQuarter]) parsed[activeQuarter] = {};
+            
+            if (status === 'pending') {
+                delete parsed[activeQuarter][ticker];
+            } else {
+                parsed[activeQuarter][ticker] = status;
+            }
+            
+            localStorage.setItem('quarterly_evaluations', JSON.stringify(parsed));
+            applyFiltersAndRender();
+        }
+
+        function setBucketFilter(filter) {
+            activeBucketFilter = filter;
+            document.querySelectorAll('.bucket-btn').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.getElementById(`bucket-btn-${filter}`);
+            if (activeBtn) activeBtn.classList.add('active');
+            applyFiltersAndRender();
+        }
+
+        function clearQuarterDecisions() {
+            const activeQuarter = quarterlyColumns[0] || getCurrentQuarterCode();
+            if (confirm(`Are you sure you want to clear all Accept/Reject decisions for quarter ${activeQuarter}?`)) {
+                const allEvals = localStorage.getItem('quarterly_evaluations');
+                if (allEvals) {
+                    try {
+                        let parsed = JSON.parse(allEvals);
+                        delete parsed[activeQuarter];
+                        localStorage.setItem('quarterly_evaluations', JSON.stringify(parsed));
+                    } catch(e) {}
+                }
+            }
+        }
+
+        function bulkEvaluateFiltered(status) {
+            if (!currentFilteredData || currentFilteredData.length === 0) {
+                alert('No stocks match the current filters to categorize.');
+                return;
+            }
+            const activeQuarter = quarterlyColumns[0] || getCurrentQuarterCode();
+            const actionText = status === 'accepted' ? 'Accept' : 'Reject';
+            if (confirm(`Are you sure you want to ${actionText} all ${currentFilteredData.length} currently filtered stocks for quarter ${activeQuarter}?`)) {
+                const allEvals = localStorage.getItem('quarterly_evaluations');
+                let parsed = {};
+                if (allEvals) {
+                    try { parsed = JSON.parse(allEvals); } catch(e) {}
+                }
+                if (!parsed[activeQuarter]) parsed[activeQuarter] = {};
+                
+                currentFilteredData.forEach(row => {
+                    const { nse, bse } = getExchangeCodes(row);
+                    const ticker = nse || bse || (row['Company (Page)'] || row['Name'] || '');
+                    if (status === 'pending') {
+                        delete parsed[activeQuarter][ticker];
+                    } else {
+                        parsed[activeQuarter][ticker] = status;
+                    }
+                });
+                
+                localStorage.setItem('quarterly_evaluations', JSON.stringify(parsed));
+                applyFiltersAndRender();
+            }
+        }
+
         let currentFilteredData = [];
         let allColumns = [];
         let columnOrder = [];
@@ -3090,6 +3423,12 @@
                 if (sortColumn === COL_NSE) { aVal = (getExchangeCodes(a).nse||'').toLowerCase(); bVal = (getExchangeCodes(b).nse||'').toLowerCase(); }
                 else if (sortColumn === COL_SURGE_QTR) { const _t = parseFloat(document.getElementById('val-growth').value)||70; aVal = getSurgeQuarters(a,_t).length; bVal = getSurgeQuarters(b,_t).length; }
                 else if (sortColumn === COL_BSE) { aVal = (getExchangeCodes(a).bse||'').toLowerCase(); bVal = (getExchangeCodes(b).bse||'').toLowerCase(); }
+                else if (sortColumn === COL_DECISION) {
+                    const tA = getExchangeCodes(a).nse || getExchangeCodes(a).bse || (a['Company (Page)'] || a['Name'] || '');
+                    const tB = getExchangeCodes(b).nse || getExchangeCodes(b).bse || (b['Company (Page)'] || b['Name'] || '');
+                    aVal = getStockEvaluation(tA);
+                    bVal = getStockEvaluation(tB);
+                }
                 else if (sortColumn && sortColumn.startsWith(YOY_PREFIX)) { const desc = yoyDescs.find(d => d.id === sortColumn); aVal = desc ? (calcYoY(a, desc.newCol, desc.oldCol) ?? -Infinity) : -Infinity; bVal = desc ? (calcYoY(b, desc.newCol, desc.oldCol) ?? -Infinity) : -Infinity; }
                 else { aVal = a[sortColumn]; bVal = b[sortColumn]; const aNum = parseFloat(String(aVal||'').replace(/,/g,'')); const bNum = parseFloat(String(bVal||'').replace(/,/g,'')); if (!isNaN(aNum) && !isNaN(bNum)) { aVal = aNum; bVal = bNum; } else { aVal = String(aVal||'').toLowerCase(); bVal = String(bVal||'').toLowerCase(); } }
                 if (aVal < bVal) return sortAscending ? -1 : 1;
@@ -3108,6 +3447,32 @@
                     if (col === COL_BSE) { if (!bse) return '<td><span style="font-size:11px;color:var(--text-muted);">-</span></td>'; return `<td><a href="https://www.bseindia.com/stock-share-price/x/x/${bse}/" target="_blank" class="link-bse">${bse}</a></td>`; }
                     if (col === COL_SURGE_QTR) { const _thresh = parseFloat(document.getElementById('val-growth').value)||70; const qtrs = getSurgeQuarters(row, _thresh); if (!qtrs.length) return '<td><span class="yoy-na">-</span></td>'; return `<td>${qtrs.map(q => `<span class="surge-qtr-tag">${q}</span>`).join(' ')}</td>`; }
                     if (col.startsWith(YOY_PREFIX)) { const desc = yoyDescs.find(d => d.id === col); if (!desc) return '<td>-</td>'; return `<td>${formatYoY(calcYoY(row, desc.newCol, desc.oldCol))}</td>`; }
+                    if (col === COL_DECISION) {
+                        const ticker = nse || bse || companyName;
+                        const status = getStockEvaluation(ticker);
+                        if (status === 'accepted') {
+                            return `<td>
+                                <div class="decision-cell">
+                                    <span class="decision-badge badge-accepted">🟢 Accepted</span>
+                                    <button class="decision-reset-btn" onclick="setStockEvaluation('${ticker.replace(/'/g, "\\'")}', 'pending', event)" title="Reset decision">✕</button>
+                                </div>
+                            </td>`;
+                        } else if (status === 'rejected') {
+                            return `<td>
+                                <div class="decision-cell">
+                                    <span class="decision-badge badge-rejected">🔴 Rejected</span>
+                                    <button class="decision-reset-btn" onclick="setStockEvaluation('${ticker.replace(/'/g, "\\'")}', 'pending', event)" title="Reset decision">✕</button>
+                                </div>
+                            </td>`;
+                        } else {
+                            return `<td>
+                                <div class="decision-buttons">
+                                    <button class="decision-btn btn-accept" onclick="setStockEvaluation('${ticker.replace(/'/g, "\\'")}', 'accepted', event)" title="Accept Stock">✓ Accept</button>
+                                    <button class="decision-btn btn-reject" onclick="setStockEvaluation('${ticker.replace(/'/g, "\\'")}', 'rejected', event)" title="Reject Stock">✗ Reject</button>
+                                </div>
+                            </td>`;
+                        }
+                    }
                     if (col === 'Company (Page)') { const scrLink = screener ? `<a href="https://www.screener.in/company/${screener}/" target="_blank" class="pill pill-blue">SCR</a>` : ''; const tvLink = tvInfo ? `<a href="https://in.tradingview.com/chart/?symbol=${encodeURIComponent(tvInfo.symbol)}" target="_blank" class="pill pill-teal">TV</a>` : ''; const noteLink = `<a href="#" onclick="openChat('${(nse||bse||companyName).replace(/'/g,"\'")}','${companyName.replace(/'/g,"\'")}');return false;" class="pill pill-rose">Notes</a>`; return `<td><div class="company-cell"><span class="company-name">${companyName} <span class="action-pills">${scrLink}${tvLink}${noteLink}</span></span></div></td>`; }
                     if (col === 'Current Quarter Surge') return `<td>${row[col] === 'Yes' ? '<span class="badge badge-yes">Yes</span>' : (row[col]||'-')}</td>`;
                     if (col === 'Peak Quarter') return `<td>${row[col] === 'Yes' ? '<span class="badge badge-peak">Peak</span>' : (row[col]||'-')}</td>`;
@@ -3130,6 +3495,10 @@
                     if (col === COL_NSE) return nse || '';
                     if (col === COL_BSE) return bse || '';
                     if (col === COL_SURGE_QTR) { const _t = parseFloat(document.getElementById('val-growth').value)||70; return `"${getSurgeQuarters(row,_t).join(', ')}"`; }
+                    if (col === COL_DECISION) {
+                        const ticker = nse || bse || (row['Company (Page)'] || row['Name'] || '');
+                        return getStockEvaluation(ticker);
+                    }
                     if (col.startsWith(YOY_PREFIX)) { const desc = yoyDescs.find(d => d.id === col); if (!desc) return ''; const yoy = calcYoY(row, desc.newCol, desc.oldCol); return yoy !== null ? yoy.toFixed(1) + '%' : 'N/A'; }
                     const v = row[col];
                     return `"${String(v !== undefined && v !== null ? v : '').replace(/"/g, '""')}"`;
@@ -3173,6 +3542,56 @@
                 if (filterMsi) { const v = parseFloat(String(row['MSI']||row['MSI Price Strength']||'').replace(/,/g,'')); if (!(isVip && globalOverrides.bypassMsi) && (isNaN(v) || v <= threshMsi)) return false; }
                 return true;
             });
+
+            // Calculate active quarter and evaluations
+            const activeQuarter = quarterlyColumns[0] || getCurrentQuarterCode();
+            const evaluations = getQuarterEvaluations(activeQuarter);
+
+            // Compute counts from the strictly-filtered dataset
+            let counts = { all: filteredData.length, pending: 0, accepted: 0, rejected: 0 };
+            filteredData.forEach(row => {
+                const { nse, bse } = getExchangeCodes(row);
+                const ticker = nse || bse || (row['Company (Page)'] || row['Name'] || '');
+                const status = evaluations[ticker] || 'pending';
+                if (status === 'accepted') counts.accepted++;
+                else if (status === 'rejected') counts.rejected++;
+                else counts.pending++;
+            });
+
+            // Update UI elements for counts
+            const countAllEl = document.getElementById('count-all');
+            const countPendingEl = document.getElementById('count-pending');
+            const countAcceptedEl = document.getElementById('count-accepted');
+            const countRejectedEl = document.getElementById('count-rejected');
+            const activeQtrEl = document.getElementById('bucket-active-quarter');
+
+            if (countAllEl) countAllEl.textContent = counts.all;
+            if (countPendingEl) countPendingEl.textContent = counts.pending;
+            if (countAcceptedEl) countAcceptedEl.textContent = counts.accepted;
+            if (countRejectedEl) countRejectedEl.textContent = counts.rejected;
+            if (activeQtrEl) activeQtrEl.textContent = activeQuarter;
+
+            // Apply active bucket filter
+            if (activeBucketFilter === 'pending') {
+                filteredData = filteredData.filter(row => {
+                    const { nse, bse } = getExchangeCodes(row);
+                    const ticker = nse || bse || (row['Company (Page)'] || row['Name'] || '');
+                    return (evaluations[ticker] || 'pending') === 'pending';
+                });
+            } else if (activeBucketFilter === 'accepted') {
+                filteredData = filteredData.filter(row => {
+                    const { nse, bse } = getExchangeCodes(row);
+                    const ticker = nse || bse || (row['Company (Page)'] || row['Name'] || '');
+                    return evaluations[ticker] === 'accepted';
+                });
+            } else if (activeBucketFilter === 'rejected') {
+                filteredData = filteredData.filter(row => {
+                    const { nse, bse } = getExchangeCodes(row);
+                    const ticker = nse || bse || (row['Company (Page)'] || row['Name'] || '');
+                    return evaluations[ticker] === 'rejected';
+                });
+            }
+
             currentFilteredData = filteredData;
             renderTable(filteredData);
             if (currentView === 'charts') renderChartsGrid();
@@ -3185,6 +3604,7 @@
             if (col === COL_NSE) return 'NSE Code';
             if (col === COL_BSE) return 'BSE Code';
             if (col === COL_SURGE_QTR) return 'Surge Qtr';
+            if (col === COL_DECISION) return 'Status';
             if (col.startsWith(YOY_PREFIX)) return col.slice(YOY_PREFIX.length);
             return col;
         }
@@ -3208,6 +3628,7 @@
                         'Sr no',
                         'date',
                         'Company (Page)',
+                        COL_DECISION,
                         COL_NSE,
                         COL_BSE,
                         'Industry',
