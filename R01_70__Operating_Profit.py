@@ -754,6 +754,11 @@ try:
             r2_upload(RAW_FILE_PATH,    R2_RAW_KEY)
             r2_upload(RAW_JSON_PATH,    R2_RAW_JSON_KEY)
             r2_upload(MASTER_FILE_PATH, R2_MASTER_KEY)
+            dec_paths = ["decisions.json", os.path.join(FOLDER_PATH, "decisions.json")]
+            for p in dec_paths:
+                if os.path.exists(p):
+                    r2_upload(p, "decisions.json")
+                    break
 
         push_progress("complete", total, total, "Dataset refreshed successfully.", status="complete", elapsed_sec=time.time()-run_start)
 

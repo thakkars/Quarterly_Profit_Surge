@@ -2585,6 +2585,7 @@
                 </button>
                 <button class="btn btn-ghost" onclick="resetToken()" title="Reset GitHub Token">🔄</button>
                 <button class="btn btn-danger" onclick="openExceptionsModal()">⚙️ VIP</button>
+                <button class="btn btn-secondary" onclick="openDecisionsModal()">📁 Decisions</button>
                 <button class="btn btn-secondary" onclick="exportToCSV()">📥 Export</button>
                 <button id="theme-btn" class="btn btn-secondary" onclick="toggleTheme()">☀️ Light</button>
                 <button id="landscape-btn" class="btn btn-accent mobile-only-btn" onclick="toggleLandscape()">📱 Flip</button>
@@ -2813,6 +2814,47 @@
             <div class="modal-footer">
                 <span style="font-size:13px;color:var(--text-muted);font-weight:600;" id="vip-count-label">0 industries selected</span>
                 <button onclick="closeExceptionsModal()" class="btn btn-primary">Done</button>
+        </div>
+    </div>
+
+    <!-- Decisions Sync & Backup Modal -->
+    <div class="modal-overlay" id="decisions-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>Decisions Sync & Backups</span>
+                <button class="modal-close" onclick="closeDecisionsModal()">&#215;</button>
+            </div>
+            <div class="modal-body" style="padding: 24px; display: flex; flex-direction: column; gap: 20px;">
+                <div class="global-overrides-panel" style="margin-bottom: 0;">
+                    <h4 style="margin-bottom: 8px; font-size: 14px; font-weight: 700; color: var(--accent-blue);">GitHub Auto-Sync</h4>
+                    <p style="margin-bottom: 12px; font-size: 12px; line-height: 1.5; color: var(--text-secondary);">Sync your accept/reject decisions directly to your repository so they are saved forever and visible on all devices.</p>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; border: 1px solid var(--border-subtle);">
+                            <div>
+                                <div style="font-weight: 600; font-size: 13px;">Status</div>
+                                <div id="github-sync-status-text" style="font-size: 12px; color: var(--text-muted);">Checking Token...</div>
+                            </div>
+                            <button id="github-auth-btn" class="btn btn-secondary" onclick="setupGitHubToken()" style="padding: 6px 12px; font-size: 12px;">Setup Sync</button>
+                        </div>
+                        <div id="github-sync-actions" style="display: none; gap: 8px; margin-top: 4px;">
+                            <button class="btn btn-primary" onclick="forcePushDecisionsToGitHub()" style="flex: 1; font-size: 12px; padding: 8px; font-weight: 600;">Push to GitHub</button>
+                            <button class="btn btn-secondary" onclick="forcePullDecisionsFromCloud()" style="flex: 1; font-size: 12px; padding: 8px; font-weight: 600;">Pull from Cloud</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="global-overrides-panel" style="margin-bottom: 0;">
+                    <h4 style="margin-bottom: 8px; font-size: 14px; font-weight: 700; color: var(--accent-blue);">Local Backups</h4>
+                    <p style="margin-bottom: 12px; font-size: 12px; line-height: 1.5; color: var(--text-secondary);">Save decisions as a local file or restore from a previous backup file.</p>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-secondary" onclick="downloadDecisionsBackup()" style="flex: 1; font-size: 12px; padding: 8px; font-weight: 600;">Download Backup</button>
+                        <button class="btn btn-secondary" onclick="document.getElementById('decision-file-input').click()" style="flex: 1; font-size: 12px; padding: 8px; font-weight: 600;">Upload Backup</button>
+                        <input type="file" id="decision-file-input" style="display: none;" accept=".json" onchange="uploadDecisionsBackup(event)">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeDecisionsModal()" class="btn btn-primary">Done</button>
             </div>
         </div>
     </div>
@@ -2907,6 +2949,7 @@
             
             localStorage.setItem('quarterly_evaluations', JSON.stringify(parsed));
             applyFiltersAndRender();
+            queueGitHubSync();
         }
 
         function handleStockCheckboxChange(ticker, type, isChecked) {
@@ -2941,6 +2984,7 @@
 
             localStorage.setItem('quarterly_evaluations', JSON.stringify(parsed));
             applyFiltersAndRender();
+            queueGitHubSync();
         }
 
         function setBucketFilter(filter) {
@@ -2960,6 +3004,8 @@
                         let parsed = JSON.parse(allEvals);
                         delete parsed[activeQuarter];
                         localStorage.setItem('quarterly_evaluations', JSON.stringify(parsed));
+                        applyFiltersAndRender();
+                        queueGitHubSync();
                     } catch(e) {}
                 }
             }
@@ -2992,6 +3038,7 @@
                 
                 localStorage.setItem('quarterly_evaluations', JSON.stringify(parsed));
                 applyFiltersAndRender();
+                queueGitHubSync();
             }
         }
 
@@ -3565,6 +3612,265 @@
             document.getElementById('exceptions-modal').classList.remove('open');
         }
 
+        async function loadDecisionsAndMerge() {
+            let fetchedEvals = {};
+            const token = localStorage.getItem('gh_token');
+            if (token) {
+                try {
+                    const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/decisions.json`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const decodedContent = decodeURIComponent(escape(atob(data.content.replace(/\s/g, ''))));
+                        fetchedEvals = JSON.parse(decodedContent);
+                        console.log("Decisions loaded from GitHub contents API");
+                    }
+                } catch(e) {
+                    console.warn("Failed to load decisions from GitHub:", e);
+                }
+            }
+            
+            if (Object.keys(fetchedEvals).length === 0) {
+                try {
+                    const decUrl = DATA_URL.replace('rawdata.json', 'decisions.json');
+                    const res = await fetch(`${decUrl}?t=${new Date().getTime()}`);
+                    if (res.ok) {
+                        fetchedEvals = await res.json();
+                        console.log("Decisions loaded from R2 bucket");
+                    }
+                } catch(e) {
+                    console.warn("Failed to load decisions from R2 bucket:", e);
+                }
+            }
+            
+            const localEvalsStr = localStorage.getItem('quarterly_evaluations');
+            let localEvals = {};
+            if (localEvalsStr) {
+                try { localEvals = JSON.parse(localEvalsStr); } catch(e) {}
+            }
+            
+            const merged = {};
+            const quarters = new Set([...Object.keys(fetchedEvals), ...Object.keys(localEvals)]);
+            quarters.forEach(qtr => {
+                merged[qtr] = Object.assign({}, fetchedEvals[qtr] || {}, localEvals[qtr] || {});
+            });
+            
+            localStorage.setItem('quarterly_evaluations', JSON.stringify(merged));
+        }
+
+        function openDecisionsModal() {
+            document.getElementById('decisions-modal').classList.add('open');
+            updateGitHubSyncStatus();
+        }
+
+        function closeDecisionsModal() {
+            document.getElementById('decisions-modal').classList.remove('open');
+        }
+
+        function updateGitHubSyncStatus() {
+            const token = localStorage.getItem('gh_token');
+            const statusText = document.getElementById('github-sync-status-text');
+            const authBtn = document.getElementById('github-auth-btn');
+            const actionsDiv = document.getElementById('github-sync-actions');
+            
+            if (token) {
+                statusText.innerHTML = '<span style="color:#10b981;font-weight:600;">Active</span> (Connected to GitHub)';
+                authBtn.textContent = 'Change Token';
+                actionsDiv.style.display = 'flex';
+            } else {
+                statusText.innerHTML = '<span style="color:var(--text-muted);">Inactive</span> (No Token)';
+                authBtn.textContent = 'Setup Sync';
+                actionsDiv.style.display = 'none';
+            }
+        }
+
+        function setupGitHubToken() {
+            const token = prompt('Paste your GitHub Personal Access Token (PAT) to enable auto-sync for decisions:');
+            if (token === null) return; // cancelled
+            if (token.trim() === '') {
+                localStorage.removeItem('gh_token');
+                alert('GitHub Token cleared. Auto-sync disabled.');
+            } else {
+                localStorage.setItem('gh_token', token.trim());
+                alert('GitHub Token saved! Testing auto-sync...');
+                forcePushDecisionsToGitHub();
+            }
+            updateGitHubSyncStatus();
+        }
+
+        function downloadDecisionsBackup() {
+            const evals = localStorage.getItem('quarterly_evaluations');
+            if (!evals || evals === '{}') {
+                alert('No decisions recorded yet. Accept or Reject a stock first!');
+                return;
+            }
+            const blob = new Blob([evals], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'decisions.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function uploadDecisionsBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const content = JSON.parse(e.target.result);
+                    if (typeof content !== 'object') throw new Error('Invalid format');
+                    
+                    // Merge with current local storage
+                    const localEvalsStr = localStorage.getItem('quarterly_evaluations');
+                    let localEvals = {};
+                    if (localEvalsStr) {
+                        try { localEvals = JSON.parse(localEvalsStr); } catch(err) {}
+                    }
+                    
+                    const merged = {};
+                    const quarters = new Set([...Object.keys(content), ...Object.keys(localEvals)]);
+                    quarters.forEach(qtr => {
+                        merged[qtr] = Object.assign({}, content[qtr] || {}, localEvals[qtr] || {});
+                    });
+                    
+                    localStorage.setItem('quarterly_evaluations', JSON.stringify(merged));
+                    alert('Decisions backup restored and merged successfully!');
+                    applyFiltersAndRender();
+                    
+                    // Trigger sync to GitHub if logged in
+                    queueGitHubSync();
+                } catch(err) {
+                    alert('Failed to parse file. Please upload a valid decisions.json backup file.');
+                }
+            };
+            reader.readAsText(file);
+            // Reset input so it triggers again for the same file if needed
+            event.target.value = '';
+        }
+
+        async function forcePushDecisionsToGitHub() {
+            const token = localStorage.getItem('gh_token');
+            if (!token) { alert('GitHub Token not found. Click Setup Sync first.'); return; }
+            
+            const allEvals = localStorage.getItem('quarterly_evaluations') || '{}';
+            const statusText = document.getElementById('github-sync-status-text');
+            if (statusText) statusText.innerHTML = '<span class="spinner"></span> Syncing to GitHub...';
+            
+            try {
+                const path = 'decisions.json';
+                let sha = null;
+                
+                // 1. Fetch current file to get sha
+                try {
+                    const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        sha = data.sha;
+                    }
+                } catch(e) {}
+                
+                // 2. Put file content
+                const content = btoa(unescape(encodeURIComponent(allEvals)));
+                const putRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: 'Sync decisions via VIP terminal dashboard',
+                        content: content,
+                        sha: sha || undefined,
+                        branch: BRANCH
+                    })
+                });
+                
+                if (putRes.ok) {
+                    alert('Decisions successfully synced to GitHub!');
+                } else {
+                    const errData = await putRes.json().catch(() => ({}));
+                    alert(`Failed to sync to GitHub: ${errData.message || putRes.statusText || putRes.status}`);
+                }
+            } catch(e) {
+                alert(`Error during GitHub sync: ${e.message}`);
+            }
+            updateGitHubSyncStatus();
+        }
+
+        async function forcePullDecisionsFromCloud() {
+            if (!confirm('Are you sure you want to pull decisions from the cloud? This will merge them with your current browser decisions.')) return;
+            
+            const statusText = document.getElementById('github-sync-status-text');
+            if (statusText) statusText.innerHTML = '<span class="spinner"></span> Pulling from cloud...';
+            
+            await loadDecisionsAndMerge();
+            alert('Decisions pulled and merged from cloud successfully!');
+            applyFiltersAndRender();
+            updateGitHubSyncStatus();
+        }
+
+        let gitHubSyncTimeout = null;
+        function queueGitHubSync() {
+            const token = localStorage.getItem('gh_token');
+            if (!token) return;
+            
+            clearTimeout(gitHubSyncTimeout);
+            gitHubSyncTimeout = setTimeout(async () => {
+                const allEvals = localStorage.getItem('quarterly_evaluations');
+                if (!allEvals) return;
+                
+                try {
+                    const path = 'decisions.json';
+                    let sha = null;
+                    
+                    try {
+                        const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Accept': 'application/vnd.github.v3+json'
+                            }
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            sha = data.sha;
+                        }
+                    } catch(e) {}
+                    
+                    const content = btoa(unescape(encodeURIComponent(allEvals)));
+                    await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Accept': 'application/vnd.github.v3+json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            message: 'Auto-sync decisions via dashboard',
+                            content: content,
+                            sha: sha || undefined,
+                            branch: BRANCH
+                        })
+                    });
+                } catch(err) {
+                    console.error("Auto-sync error:", err);
+                }
+            }, 5000);
+        }
+
         function toggleDropdown() {
             const dd = document.getElementById('column-dropdown');
             const btn = document.getElementById('dropdown-btn-text');
@@ -3854,6 +4160,12 @@
                     ];
                     
                     visibleColumns = new Set(columnOrder);
+                    
+                    try {
+                        await loadDecisionsAndMerge();
+                    } catch(e) {
+                        console.warn("Failed to load/merge decisions on startup:", e);
+                    }
                     
                     updateCurrentQtrBadge();
                     renderColumnToggles();
