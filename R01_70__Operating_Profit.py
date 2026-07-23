@@ -97,7 +97,7 @@ def push_progress(phase, completed, total, current_company="", status="running",
         if IS_GITHUB_ACTIONS:
             r2_upload_progress()
     except Exception as e:
-        print(f"⚠️  Progress push failed: {e}")
+        print(f"[WARN]  Progress push failed: {e}")
 
 def r2_upload_progress():
     """Lightweight upload of just progress.json — called after every stock."""
@@ -118,7 +118,7 @@ def r2_upload_progress():
             }
         )
     except Exception as e:
-        print(f"⚠️  R2 progress upload failed: {e}")
+        print(f"[WARN]  R2 progress upload failed: {e}")
 
 # ═══════════════════════════════════════════════════════════
 # R2 HELPERS
@@ -137,16 +137,16 @@ def r2_download(r2_key, local_path):
     try:
         client = get_r2_client()
         client.download_file(R2_BUCKET, r2_key, local_path)
-        print(f"⬇️  Downloaded from R2: {r2_key} → {local_path}")
+        print(f"[DOWN]  Downloaded from R2: {r2_key} -> {local_path}")
         return True
     except Exception as e:
-        print(f"⚠️  R2 download failed for {r2_key}: {e}")
+        print(f"[WARN]  R2 download failed for {r2_key}: {e}")
         return False
 
 def r2_upload(local_path, r2_key):
     try:
         if not os.path.exists(local_path):
-            print(f"⚠️  Skipping R2 upload — file not found: {local_path}")
+            print(f"[WARN]  Skipping R2 upload - file not found: {local_path}")
             return False
         client = get_r2_client()
         extra_args = {}
@@ -156,14 +156,14 @@ def r2_upload(local_path, r2_key):
                 'CacheControl': 'no-cache, no-store, must-revalidate'
             }
         client.upload_file(local_path, R2_BUCKET, r2_key, ExtraArgs=extra_args)
-        print(f"⬆️  Uploaded to R2 : {local_path} → {r2_key}")
+        print(f"[UP]  Uploaded to R2 : {local_path} -> {r2_key}")
         return True
     except Exception as e:
-        print(f"⚠️  R2 upload failed for {r2_key}: {e}")
+        print(f"[WARN]  R2 upload failed for {r2_key}: {e}")
         return False
 
 if IS_GITHUB_ACTIONS:
-    print("\n📥 Downloading existing files from Cloudflare R2...")
+    print("\n[DOWN] Downloading existing files from Cloudflare R2...")
     r2_download(R2_MASTER_KEY,   MASTER_FILE_PATH)
     r2_download(R2_RAW_KEY,      RAW_FILE_PATH)
     r2_download(R2_INDUSTRY_KEY, INDUSTRY_FILE_PATH)
@@ -171,48 +171,149 @@ if IS_GITHUB_ACTIONS:
 # ═══════════════════════════════════════════════════════════
 # MAPPING & ENRICHMENT
 # ═══════════════════════════════════════════════════════════
+def _get_industry_df():
+    file_path = INDUSTRY_FILE_PATH
+    if not os.path.exists(file_path):
+        dir_name = os.path.dirname(file_path)
+        fallbacks = [
+            os.path.join(dir_name, "screener_industry.xlsx"),
+            os.path.join(dir_name, "Screener_Industry_Data.csv"),
+            os.path.join(dir_name, "Screener_Industry_Data.xlsx")
+        ]
+        for f in fallbacks:
+            if os.path.exists(f):
+                file_path = f
+                break
+        else:
+            return None, ""
+    try:
+        if file_path.endswith('.csv'):
+            df = pd.read_csv(file_path)
+        else:
+            xl = pd.ExcelFile(file_path)
+            sheet = "Screener Industry" if "Screener Industry" in xl.sheet_names else xl.sheet_names[0]
+            df = pd.read_excel(xl, sheet_name=sheet)
+        return df, file_path
+    except Exception as e:
+        print(f"[WARN] Error loading industry data file {file_path}: {e}")
+        return None, ""
+
 def load_industry_maps():
-    if not os.path.exists(INDUSTRY_FILE_PATH):
+    df, path = _get_industry_df()
+    if df is None:
+        print("[WARN] No industry data file found - industry maps empty")
         return {}, {}
     try:
-        df = pd.read_excel(INDUSTRY_FILE_PATH, sheet_name="Screener Industry")
-        df["Name_Clean"] = df["Full Name"].astype(str).str.strip().str.lower()
-        return (
-            df.set_index("Name_Clean")["Industry"].to_dict(),
-            df.set_index("Name_Clean")["Industry Group"].to_dict()
-        )
-    except:
+        # Standardize column mapping
+        name_col = None
+        for c in df.columns:
+            c_clean = str(c).strip().lower()
+            if c_clean in ('full name', 'company', 'name'):
+                name_col = c
+                break
+        if not name_col:
+            return {}, {}
+            
+        df["Name_Clean"] = df[name_col].astype(str).str.strip().str.lower()
+        
+        industry_map = {}
+        group_map = {}
+        for _, row in df.iterrows():
+            k = str(row["Name_Clean"]).strip()
+            if not k or k == "nan":
+                continue
+            if "Industry" in row:
+                industry_map[k] = row["Industry"]
+            if "Industry Group" in row:
+                group_map[k] = row["Industry Group"]
+                
+        # Also map short Name if Company and Name columns exist
+        if 'Company' in df.columns and 'Name' in df.columns:
+            for _, row in df.iterrows():
+                short_name = str(row['Name']).strip().lower()
+                if short_name and short_name != 'nan':
+                    if "Industry" in row:
+                        industry_map[short_name] = row["Industry"]
+                    if "Industry Group" in row:
+                        group_map[short_name] = row["Industry Group"]
+                        
+        print(f"[OK] Loaded industry mappings from {os.path.basename(path)}")
+        return industry_map, group_map
+    except Exception as e:
+        print(f"[WARN] Could not parse industry maps: {e}")
         return {}, {}
 
 def load_symbol_maps():
-    if not os.path.exists(INDUSTRY_FILE_PATH):
-        print("⚠️  Screener_Industry_Data.xlsx not found — symbol maps empty")
+    df, path = _get_industry_df()
+    if df is None:
+        print("[WARN] No symbol mapping file found - symbol maps empty")
         return {}
     try:
-        df = pd.read_excel(INDUSTRY_FILE_PATH, sheet_name="Screener Industry")
+        # Standardize column mapping
+        col_mapping = {}
+        for c in df.columns:
+            c_clean = str(c).strip().lower()
+            if c_clean in ('full name', 'company', 'name'):
+                col_mapping['name'] = c
+            elif c_clean in ('nse code', 'nse_code'):
+                col_mapping['nse'] = c
+            elif c_clean in ('bse code', 'bse_code'):
+                col_mapping['bse'] = c
+
+        name_col = col_mapping.get('name')
+        nse_col = col_mapping.get('nse')
+        bse_col = col_mapping.get('bse')
+
+        if not name_col:
+            print("[WARN] Name column not found in mapping file")
+            return {}
+
         mapping = {}
         for _, row in df.iterrows():
-            full_name = str(row["Full Name"]).strip()
-            if not full_name or full_name.lower() == "nan":
+            name_val = str(row[name_col]).strip()
+            if not name_val or name_val.lower() == "nan":
                 continue
-            nse = str(row["NSE Code"]).strip() if pd.notna(row["NSE Code"]) else ""
-            bse = str(row["BSE Code"]).strip() if pd.notna(row["BSE Code"]) else ""
-            if nse.lower() in ("nan", "none", ""):
+
+            nse = str(row[nse_col]).strip() if nse_col and pd.notna(row[nse_col]) else ""
+            bse = str(row[bse_col]).strip() if bse_col and pd.notna(row[bse_col]) else ""
+
+            if nse.lower() in ("nan", "none", "0", ""):
                 nse = ""
-            if bse.lower() in ("nan", "none", ""):
+            if bse.lower() in ("nan", "none", "0", ""):
                 bse = ""
             if bse and bse.endswith(".0"):
                 bse = bse[:-2]
+
             screener_slug = nse if nse else bse
-            mapping[full_name.lower()] = {
+
+            mapping[name_val.lower()] = {
                 "NSE_Code":      nse,
                 "BSE_Code":      bse,
                 "Screener_Name": screener_slug
             }
-        print(f"✅ Loaded {len(mapping)} symbol mappings from Screener_Industry_Data.xlsx")
+
+        # Also support short Name mapping if Company column is present
+        if 'Company' in df.columns and 'Name' in df.columns:
+            for _, row in df.iterrows():
+                short_name = str(row['Name']).strip()
+                if short_name and short_name.lower() != 'nan':
+                    nse = str(row[nse_col]).strip() if nse_col and pd.notna(row[nse_col]) else ""
+                    bse = str(row[bse_col]).strip() if bse_col and pd.notna(row[bse_col]) else ""
+                    if nse.lower() in ("nan", "none", "0", ""): nse = ""
+                    if bse.lower() in ("nan", "none", "0", ""): bse = ""
+                    if bse and bse.endswith(".0"): bse = bse[:-2]
+                    screener_slug = nse if nse else bse
+                    
+                    mapping[short_name.lower()] = {
+                        "NSE_Code":      nse,
+                        "BSE_Code":      bse,
+                        "Screener_Name": screener_slug
+                    }
+
+        print(f"[OK] Loaded {len(mapping)} symbol mappings from {os.path.basename(path)}")
         return mapping
     except Exception as e:
-        print(f"⚠️  Could not load symbol maps: {e}")
+        print(f"[WARN] Could not parse symbol maps: {e}")
         return {}
 
 def enrich_with_data(row_dict, industry_map, group_map, symbol_map):
@@ -580,9 +681,9 @@ def generate_raw_json(sheet_name):
         df.columns = df.columns.astype(str).str.strip()
         df = df.fillna(0)
         df.to_json(RAW_JSON_PATH, orient="records")
-        print(f"✅ Saved rawdata.json for Dashboard (Sheet: {sheet_name})")
+        print(f"[OK] Saved rawdata.json for Dashboard (Sheet: {sheet_name})")
     except Exception as e:
-        print(f"⚠️  Error saving JSON: {e}")
+        print(f"[WARN]  Error saving JSON: {e}")
 
 # ═══════════════════════════════════════════════════════════
 # MAIN
@@ -603,7 +704,7 @@ try:
     push_progress("collecting", 0, 1, "Enumerating universe from Screener screen...")
     company_data_list = collect_all_company_data()
     total = len(company_data_list)
-    print(f"📊 Universe identified: {total} equities")
+    print(f"[STATS] Universe identified: {total} equities")
     push_progress("collecting", 0, total, f"Universe identified: {total} equities")
 
     if company_data_list:
@@ -657,7 +758,7 @@ try:
         push_progress("complete", total, total, "Dataset refreshed successfully.", status="complete", elapsed_sec=time.time()-run_start)
 
 except Exception as e:
-    print(f"\n❌ Fatal error: {e}")
+    print(f"\n[ERROR] Fatal error: {e}")
     traceback.print_exc()
     push_progress("failed", 0, 0, str(e), status="failed")
 finally:

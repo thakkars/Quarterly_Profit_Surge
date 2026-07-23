@@ -3018,6 +3018,32 @@
         };
         let isDragging = false, dragMoved = false, startX = 0, startScrollLeft = 0;
 
+        const BSE_TICKER_MAP = {
+            "526071": "STELLANT",
+            "512393": "SHARDUL",
+            "509438": "BENARAS",
+            "513119": "ONIX",
+            "535916": "ALACRITY",
+            "506597": "AMAL",
+            "540175": "REGENCY",
+            "503248": "SUPERSALES",
+            "530585": "SWASTIKA",
+            "500044": "BHAGWATI",
+            "531279": "TRISHAKT"
+        };
+
+        function getBseTicker(code, companyName) {
+            if (code && BSE_TICKER_MAP[code]) {
+                return BSE_TICKER_MAP[code];
+            }
+            if (companyName) {
+                const cleanName = companyName.replace(/\s*(Limited|Ltd\.?|Ltd)\s*$/i, '').trim();
+                const firstWord = cleanName.split(/\s+/)[0].replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+                return firstWord;
+            }
+            return code;
+        }
+
         function getExchangeCodes(row) {
             const nseRaw = (row["NSE Code Exact"] || "").toString().trim();
             const screenerRaw = (row["Screener Name Exact"] || "").toString().trim();
@@ -3028,8 +3054,12 @@
 
         function getTvSymbol(row) {
             const { nse, bse } = getExchangeCodes(row);
+            const companyName = (row['Company (Page)'] || row['Name'] || '').toString();
             if (nse) return { symbol: 'NSE:' + nse, exchange: 'NSE', code: nse };
-            if (bse) return { symbol: 'BSE:' + bse, exchange: 'BSE', code: bse };
+            if (bse) {
+                const ticker = getBseTicker(bse, companyName);
+                return { symbol: 'BSE:' + ticker, exchange: 'BSE', code: bse };
+            }
             return null;
         }
 
@@ -3333,9 +3363,8 @@
                 card.className = 'chart-card';
                 card.id = cardId;
                 if (exchange === 'BSE') {
-                    const companyQuery = name.replace(/\s*(Limited|Ltd\.?|Ltd)\s*$/i, '').trim();
-                    const tvSearchUrl = 'https://in.tradingview.com/chart/?symbol=' + encodeURIComponent(companyQuery);
-                    const tvWidgetSrc = buildTvWidgetSrc(name, companyQuery);
+                    const tvSearchUrl = 'https://in.tradingview.com/chart/?symbol=' + encodeURIComponent(symbol);
+                    const tvWidgetSrc = buildTvWidgetSrc(name, symbol);
                     const headerHtml = `<div class="chart-card-header"><div><div class="chart-card-name">${name}${exchBadge}</div><div class="chart-card-meta">BSE: ${code} &nbsp;|&nbsp; ${industry}</div></div><div class="chart-card-links">${scrLink}${bseLink}<a href="${tvSearchUrl}" target="_blank" class="pill pill-amber">TV</a></div></div>`;
                     card.innerHTML = headerHtml + `<iframe src="${tvWidgetSrc}" width="100%" height="400" frameborder="0" allowtransparency="true" scrolling="no" style="display:block;"></iframe>`;
                 } else {
