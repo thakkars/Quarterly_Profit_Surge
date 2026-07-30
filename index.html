@@ -2662,7 +2662,7 @@
                                 Latest QoQ Op. Profit >=
                             </label>
                             <div class="threshold-wrap">
-                                <input type="number" id="val-growth" value="70" min="1" max="9999" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">
+                                <input type="number" id="val-growth" value="65" min="1" max="9999" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">
                                 <span class="threshold-unit">%</span>
                             </div>
                         </div>
@@ -2789,7 +2789,7 @@
                     <hr class="modal-filter-divider">
                     <label class="global-override-label" id="lbl-row-growth">
                         <input type="checkbox" id="global-growth" onchange="toggleGlobalOverride('bypassGrowth','filter-growth',this)">
-                        <span id="lbl-bypass-growth">Bypass Latest Qtr. YoY Operating Profit >= 70%</span>
+                        <span id="lbl-bypass-growth">Bypass Latest Qtr. YoY Operating Profit >= 65%</span>
                     </label>
                     <label class="global-override-label" id="lbl-row-promoter">
                         <input type="checkbox" id="global-promoter" onchange="toggleGlobalOverride('bypassPromoter','filter-promoter',this)">
@@ -3232,7 +3232,7 @@
             const map = {
                 bypassCurrentQtr: { lbl: 'lbl-bypass-current-qtr', filter: 'filter-current-qtr', base: 'Bypass Current Quarter Surge Only' },
                 bypassPeakQtr: { lbl: 'lbl-bypass-peak-qtr', filter: 'filter-peak-qtr', base: 'Bypass Highest Ever Quarterly Result' },
-                bypassGrowth: { lbl: 'lbl-bypass-growth', filter: 'filter-growth', base: 'Bypass Latest Qtr. YoY Operating Profit >= 70%' },
+                bypassGrowth: { lbl: 'lbl-bypass-growth', filter: 'filter-growth', base: 'Bypass Latest Qtr. YoY Operating Profit >= 65%' },
                 bypassPromoter: { lbl: 'lbl-bypass-promoter', filter: 'filter-promoter', base: 'Bypass Promoter Holding >= 50%' },
                 bypassPledged: { lbl: 'lbl-bypass-pledged', filter: 'filter-pledged', base: 'Bypass Pledged Shares <= 10%' },
                 bypassWc: { lbl: 'lbl-bypass-wc', filter: 'filter-wc', base: 'Bypass Working Capital Days <= 150' },
@@ -3941,7 +3941,7 @@
             const sorted = [...data].sort((a, b) => {
                 let aVal, bVal;
                 if (sortColumn === COL_NSE) { aVal = (getExchangeCodes(a).nse||'').toLowerCase(); bVal = (getExchangeCodes(b).nse||'').toLowerCase(); }
-                else if (sortColumn === COL_SURGE_QTR) { const _t = parseFloat(document.getElementById('val-growth').value)||70; aVal = getSurgeQuarters(a,_t).length; bVal = getSurgeQuarters(b,_t).length; }
+                else if (sortColumn === COL_SURGE_QTR) { const _t = parseFloat(document.getElementById('val-growth').value)||65; aVal = getSurgeQuarters(a,_t).length; bVal = getSurgeQuarters(b,_t).length; }
                 else if (sortColumn === COL_BSE) { aVal = (getExchangeCodes(a).bse||'').toLowerCase(); bVal = (getExchangeCodes(b).bse||'').toLowerCase(); }
                 else if (sortColumn === COL_DECISION) {
                     const tA = getExchangeCodes(a).nse || getExchangeCodes(a).bse || (a['Company (Page)'] || a['Name'] || '');
@@ -3965,7 +3965,7 @@
                     if (col === 'date') return `<td>${formatDate(row[col])}</td>`;
                     if (col === COL_NSE) { if (!nse) return '<td><span style="font-size:11px;color:var(--text-muted);">BSE Only</span></td>'; return `<td><a href="https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(nse)}" target="_blank" class="link-nse">${nse}</a></td>`; }
                     if (col === COL_BSE) { if (!bse) return '<td><span style="font-size:11px;color:var(--text-muted);">-</span></td>'; return `<td><a href="https://www.bseindia.com/stock-share-price/x/x/${bse}/" target="_blank" class="link-bse">${bse}</a></td>`; }
-                    if (col === COL_SURGE_QTR) { const _thresh = parseFloat(document.getElementById('val-growth').value)||70; const qtrs = getSurgeQuarters(row, _thresh); if (!qtrs.length) return '<td><span class="yoy-na">-</span></td>'; return `<td>${qtrs.map(q => `<span class="surge-qtr-tag">${q}</span>`).join(' ')}</td>`; }
+                    if (col === COL_SURGE_QTR) { const _thresh = parseFloat(document.getElementById('val-growth').value)||65; const qtrs = getSurgeQuarters(row, _thresh); if (!qtrs.length) return '<td><span class="yoy-na">-</span></td>'; return `<td>${qtrs.map(q => `<span class="surge-qtr-tag">${q}</span>`).join(' ')}</td>`; }
                     if (col.startsWith(YOY_PREFIX)) { const desc = yoyDescs.find(d => d.id === col); if (!desc) return '<td>-</td>'; return `<td>${formatYoY(calcYoY(row, desc.newCol, desc.oldCol))}</td>`; }
                     if (col === COL_DECISION) {
                         const ticker = nse || bse || companyName;
@@ -4008,7 +4008,7 @@
                     if (col === 'date') return formatDate(row[col]);
                     if (col === COL_NSE) return nse || '';
                     if (col === COL_BSE) return bse || '';
-                    if (col === COL_SURGE_QTR) { const _t = parseFloat(document.getElementById('val-growth').value)||70; return `"${getSurgeQuarters(row,_t).join(', ')}"`; }
+                    if (col === COL_SURGE_QTR) { const _t = parseFloat(document.getElementById('val-growth').value)||65; return `"${getSurgeQuarters(row,_t).join(', ')}"`; }
                     if (col === COL_DECISION) {
                         const ticker = nse || bse || (row['Company (Page)'] || row['Name'] || '');
                         return getStockEvaluation(ticker);
@@ -4039,7 +4039,7 @@
             const filterWc = document.getElementById('filter-wc').checked;
             const filterMsi = document.getElementById('filter-msi').checked;
             const currentQtr = getCurrentQuarterCode();
-            const threshGrowth = parseFloat(document.getElementById('val-growth').value) || 70;
+            const threshGrowth = parseFloat(document.getElementById('val-growth').value) || 65;
             const threshPromoter = parseFloat(document.getElementById('val-promoter').value) || 50;
             const threshPledged = parseFloat(document.getElementById('val-pledged').value) || 10;
             const threshWc = parseFloat(document.getElementById('val-wc').value) || 150;
