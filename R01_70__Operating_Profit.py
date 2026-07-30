@@ -14,6 +14,8 @@ import os
 import json
 from openpyxl import load_workbook
 from openpyxl.styles import Alignment, Border, Side
+import urllib.request
+import html
 
 if os.environ.get("GITHUB_ACTIONS", "false").lower() != "true":
     from webdriver_manager.chrome import ChromeDriverManager
@@ -119,6 +121,35 @@ def r2_upload_progress():
         )
     except Exception as e:
         print(f"[WARN]  R2 progress upload failed: {e}")
+
+# ═══════════════════════════════════════════════════════════
+# TELEGRAM ALERTS
+# ═══════════════════════════════════════════════════════════
+def send_telegram_message(message):
+    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    if not token or not chat_id:
+        print("[WARN] TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not set — skipping notification.")
+        return
+    try:
+        url = f"https://api.telegram.org/bot{token}/sendMessage"
+        payload = {
+            "chat_id": chat_id,
+            "text": message,
+            "parse_mode": "HTML",
+            "disable_web_page_preview": True
+        }
+        data = json.dumps(payload).encode('utf-8')
+        req = urllib.request.Request(
+            url,
+            data=data,
+            headers={'Content-Type': 'application/json'},
+            method='POST'
+        )
+        with urllib.request.urlopen(req, timeout=15) as response:
+            print("[OK] Telegram notification sent successfully.")
+    except Exception as e:
+        print(f"[WARN] Telegram notification error: {e}")
 
 # ═══════════════════════════════════════════════════════════
 # R2 HELPERS
@@ -707,6 +738,7 @@ try:
     print(f"[STATS] Universe identified: {total} equities")
     push_progress("collecting", 0, total, f"Universe identified: {total} equities")
 
+    newly_added = []
     if company_data_list:
         push_progress("scraping", 0, total, company_data_list[0]['short_name'])
 
@@ -717,7 +749,15 @@ try:
 
         target_sheet   = detect_latest_quarter(first_row) or datetime.now().strftime("%b %y")
         existing_names = get_existing_companies_in_sheet(target_sheet)
-        pending_rows   = [] if str(first_row.get("Name", "")).strip() in existing_names else [first_row]
+        
+        is_first_new = str(first_row.get("Name", "")).strip() not in existing_names
+        if is_first_new:
+            pending_rows = [first_row]
+            comp_name = first_row.get("Company (Page)", first_row.get("Name", "Unknown"))
+            if comp_name and comp_name != "Load Failed":
+                newly_added.append(comp_name)
+        else:
+            pending_rows = []
 
         remaining = [
             c for c in company_data_list[1:]
@@ -731,6 +771,10 @@ try:
             enriched = attach_msi_metrics(enriched, msi_cache, msi_driver, msi_wait)
             pending_rows.append(enriched)
             completed_count += 1
+            
+            comp_name = enriched.get("Company (Page)", info['short_name'])
+            if comp_name and comp_name != "Load Failed":
+                newly_added.append(comp_name)
 
             push_progress(
                 "scraping",
@@ -762,10 +806,59 @@ try:
 
         push_progress("complete", total, total, "Dataset refreshed successfully.", status="complete", elapsed_sec=time.time()-run_start)
 
+        # Send Success Telegram notification
+        run_duration_min = round((time.time() - run_start) / 60, 1)
+        current_date = datetime.now().strftime("%Y-%m-%d %I:%M %p")
+        
+        telegram_msg = (
+            f"🔔 <b>Stock Screener Run Complete</b>\n"
+            f"📅 Date: <code>{current_date}</code>\n"
+            f"⏱️ Duration: <code>{run_duration_min} mins</code>\n\n"
+            f"📊 <b>Summary:</b>\n"
+            f"• Total Universe: <code>{total}</code> stocks\n"
+            f"• Scraped/Updated: <code>{completed_count}</code> stocks\n"
+            f"• Newly Added: <b>{len(newly_added)}</b> stocks\n\n"
+        )
+        if newly_added:
+            telegram_msg += "✨ <b>Newly Added Stocks:</b>\n"
+            for stock in newly_added[:30]:
+                telegram_msg += f"• {html.escape(stock)}\n"
+            if len(newly_added) > 30:
+                telegram_msg += f"• <i>...and {len(newly_added) - 30} more</i>\n"
+        else:
+            telegram_msg += "✨ No new stocks added in this run.\n"
+            
+        send_telegram_message(telegram_msg)
+    else:
+        push_progress("complete", 0, 0, "No equities identified.", status="complete", elapsed_sec=time.time()-run_start)
+        current_date = datetime.now().strftime("%Y-%m-%d %I:%M %p")
+        telegram_msg = (
+            f"🔔 <b>Stock Screener Run Complete</b>\n"
+            f"📅 Date: <code>{current_date}</code>\n\n"
+            f"⚠️ <b>Universe is empty:</b> No equities were identified from the Screener URL."
+        )
+        send_telegram_message(telegram_msg)
+
 except Exception as e:
     print(f"\n[ERROR] Fatal error: {e}")
     traceback.print_exc()
     push_progress("failed", 0, 0, str(e), status="failed")
+    
+    # Send Failure Telegram notification
+    try:
+        current_date = datetime.now().strftime("%Y-%m-%d %I:%M %p")
+        error_msg = html.escape(str(e))
+        if len(error_msg) > 1000:
+            error_msg = error_msg[:1000] + "..."
+        telegram_msg = (
+            f"⚠️ <b>Stock Screener Run FAILED</b>\n"
+            f"📅 Date: <code>{current_date}</code>\n\n"
+            f"❌ <b>Error Detail:</b>\n"
+            f"<code>{error_msg}</code>"
+        )
+        send_telegram_message(telegram_msg)
+    except Exception as te:
+        print(f"[WARN] Failed to send error notification: {te}")
 finally:
     try:
         driver.quit()
