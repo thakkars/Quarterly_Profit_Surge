@@ -3185,10 +3185,28 @@
 
         function getSurgeQuarters(row, threshold) {
             if (!quarterlyColumns || quarterlyColumns.length < 5) return [];
+            const chronCols = [...quarterlyColumns].reverse();
+            let firstValidIdx = -1;
+            for (let j = 0; j < chronCols.length; j++) {
+                const val = parseFloat(String(row[chronCols[j]] || '').replace(/,/g, ''));
+                if (!isNaN(val) && val !== 0) {
+                    firstValidIdx = j;
+                    break;
+                }
+            }
+            if (firstValidIdx === -1) return [];
+
             const result = [];
             for (let i = 0; i < quarterlyColumns.length - 4; i++) {
-                const yoy = calcYoY(row, quarterlyColumns[i], quarterlyColumns[i + 4]);
-                if (yoy !== null && yoy >= threshold) result.push(toQtrCode(quarterlyColumns[i]));
+                const newCol = quarterlyColumns[i];
+                const oldCol = quarterlyColumns[i + 4];
+                const oldIdx = chronCols.indexOf(oldCol);
+                if (oldIdx >= firstValidIdx) {
+                    const yoy = calcYoY(row, newCol, oldCol);
+                    if (yoy !== null && yoy >= threshold) {
+                        result.push(toQtrCode(newCol));
+                    }
+                }
             }
             return result;
         }
@@ -3207,7 +3225,22 @@
 
         function hasYoYSurge(row, threshold) {
             if (!quarterlyColumns || quarterlyColumns.length < 5) return false;
-            const yoy = calcYoY(row, quarterlyColumns[0], quarterlyColumns[4]);
+            const chronCols = [...quarterlyColumns].reverse();
+            let firstValidIdx = -1;
+            for (let j = 0; j < chronCols.length; j++) {
+                const val = parseFloat(String(row[chronCols[j]] || '').replace(/,/g, ''));
+                if (!isNaN(val) && val !== 0) {
+                    firstValidIdx = j;
+                    break;
+                }
+            }
+            if (firstValidIdx === -1) return false;
+
+            const oldCol = quarterlyColumns[4];
+            const oldIdx = chronCols.indexOf(oldCol);
+            if (oldIdx < firstValidIdx) return false;
+
+            const yoy = calcYoY(row, quarterlyColumns[0], oldCol);
             return yoy !== null && yoy >= threshold;
         }
 

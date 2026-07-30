@@ -195,19 +195,41 @@ def passes_strict_filters(row):
     if len(q_cols) < 5:
         return False
         
+    # Find the earliest quarter in chronological order with non-zero result
+    chron_q_cols = sorted(q_cols, key=lambda x: pd.to_datetime(x, format="%b %Y"))
+    first_valid_idx = None
+    for idx, col in enumerate(chron_q_cols):
+        val_str = str(row.get(col, "0")).strip().replace(",", "")
+        try:
+            val = float(val_str)
+            if val != 0:
+                first_valid_idx = idx
+                break
+        except:
+            pass
+            
+    if first_valid_idx is None:
+        return False
+        
     latest_qtr_col = q_cols[0]
     
     # 1. Latest QoQ Op. Profit >= 65% (evaluated as YoY growth of the latest quarter vs 4 quarters ago)
-    yoy_latest = calc_yoy(row, q_cols[0], q_cols[4])
+    old_col_latest = q_cols[4]
+    if chron_q_cols.index(old_col_latest) < first_valid_idx:
+        return False
+        
+    yoy_latest = calc_yoy(row, q_cols[0], old_col_latest)
     if yoy_latest is None or yoy_latest < 65:
         return False
         
     # 2. Current Quarter Surge: surge happened ONLY in the latest quarter
     surge_quarters = []
     for i in range(len(q_cols) - 4):
-        yoy_val = calc_yoy(row, q_cols[i], q_cols[i+4])
-        if yoy_val is not None and yoy_val >= 65:
-            surge_quarters.append(to_qtr_code(q_cols[i]))
+        old_col = q_cols[i+4]
+        if chron_q_cols.index(old_col) >= first_valid_idx:
+            yoy_val = calc_yoy(row, q_cols[i], old_col)
+            if yoy_val is not None and yoy_val >= 65:
+                surge_quarters.append(to_qtr_code(q_cols[i]))
             
     current_qtr_code = to_qtr_code(latest_qtr_col)
     if len(surge_quarters) != 1 or surge_quarters[0] != current_qtr_code:
