@@ -151,6 +151,104 @@ def send_telegram_message(message):
     except Exception as e:
         print(f"[WARN] Telegram notification error: {e}")
 
+def to_qtr_code(col_name):
+    if not col_name:
+        return ""
+    parts = str(col_name).strip().split()
+    if not parts:
+        return ""
+    mon = parts[0]
+    yr = parts[1] if len(parts) > 1 else ""
+    yy = yr[2:] if len(yr) == 4 else yr
+    
+    month_letter = {
+        'Jan':'J','Feb':'F','Mar':'M','Apr':'A','May':'My','Jun':'J',
+        'Jul':'Jl','Aug':'Au','Sep':'S','Oct':'O','Nov':'N','Dec':'D'
+    }
+    mon_clean = mon.capitalize()
+    letter = month_letter.get(mon_clean, mon_clean[0] if mon_clean else "")
+    return f"{letter}{yy}"
+
+def calc_yoy(row, new_col, old_col):
+    try:
+        nv = float(str(row.get(new_col, "0")).replace(",", ""))
+        ov = float(str(row.get(old_col, "0")).replace(",", ""))
+        if ov == 0:
+            return None
+        return ((nv - ov) / abs(ov)) * 100
+    except:
+        return None
+
+def passes_strict_filters(row):
+    # Extract quarterly columns (keys that represent dates like 'Jun 2026')
+    q_cols = []
+    for k in row.keys():
+        try:
+            pd.to_datetime(k, format="%b %Y")
+            q_cols.append(k)
+        except:
+            pass
+    
+    # Sort quarterly columns in reverse chronological order (latest first)
+    q_cols.sort(key=lambda x: pd.to_datetime(x, format="%b %Y"), reverse=True)
+    
+    if len(q_cols) < 5:
+        return False
+        
+    latest_qtr_col = q_cols[0]
+    
+    # 1. Latest QoQ Op. Profit >= 65% (evaluated as YoY growth of the latest quarter vs 4 quarters ago)
+    yoy_latest = calc_yoy(row, q_cols[0], q_cols[4])
+    if yoy_latest is None or yoy_latest < 65:
+        return False
+        
+    # 2. Current Quarter Surge: surge happened ONLY in the latest quarter
+    surge_quarters = []
+    for i in range(len(q_cols) - 4):
+        yoy_val = calc_yoy(row, q_cols[i], q_cols[i+4])
+        if yoy_val is not None and yoy_val >= 65:
+            surge_quarters.append(to_qtr_code(q_cols[i]))
+            
+    current_qtr_code = to_qtr_code(latest_qtr_col)
+    if len(surge_quarters) != 1 or surge_quarters[0] != current_qtr_code:
+        return False
+        
+    # 3. Highest Ever Quarter:
+    try:
+        latest_val = float(str(row.get(latest_qtr_col, "0")).replace(",", ""))
+        for col in q_cols[1:]:
+            val = float(str(row.get(col, "0")).replace(",", ""))
+            if val >= latest_val:
+                return False
+    except:
+        return False
+        
+    # 4. Promoter Holding >= 50%
+    try:
+        promoter = float(row.get("Promoter Holding", 0.0))
+        if promoter < 50:
+            return False
+    except:
+        return False
+        
+    # 5. Pledged Shares <= 10%
+    try:
+        pledged = float(row.get("Pledged %", 0.0))
+        if pledged > 10:
+            return False
+    except:
+        return False
+        
+    # 6. Working Capital Days <= 150
+    try:
+        wc = float(row.get("WC Days", 0.0))
+        if wc > 150:
+            return False
+    except:
+        return False
+        
+    return True
+
 # ═══════════════════════════════════════════════════════════
 # R2 HELPERS
 # ═══════════════════════════════════════════════════════════
@@ -739,6 +837,7 @@ try:
     push_progress("collecting", 0, total, f"Universe identified: {total} equities")
 
     newly_added = []
+    matched_stocks = []
     if company_data_list:
         push_progress("scraping", 0, total, company_data_list[0]['short_name'])
 
@@ -756,6 +855,10 @@ try:
             comp_name = first_row.get("Company (Page)", first_row.get("Name", "Unknown"))
             if comp_name and comp_name != "Load Failed":
                 newly_added.append(comp_name)
+            if passes_strict_filters(first_row):
+                comp_name_exact = first_row.get("Company (Page)", first_row.get("Name", "Unknown"))
+                if comp_name_exact and comp_name_exact != "Load Failed":
+                    matched_stocks.append(comp_name_exact)
         else:
             pending_rows = []
 
@@ -775,6 +878,11 @@ try:
             comp_name = enriched.get("Company (Page)", info['short_name'])
             if comp_name and comp_name != "Load Failed":
                 newly_added.append(comp_name)
+                
+            if passes_strict_filters(enriched):
+                comp_name_exact = enriched.get("Company (Page)", info['short_name'])
+                if comp_name_exact and comp_name_exact != "Load Failed":
+                    matched_stocks.append(comp_name_exact)
 
             push_progress(
                 "scraping",
@@ -810,6 +918,22 @@ try:
         run_duration_min = round((time.time() - run_start) / 60, 1)
         current_date = datetime.now().strftime("%Y-%m-%d %I:%M %p")
         
+        # Get target quarter code (e.g. "J26")
+        target_qtr_code = ""
+        if company_data_list and 'first_row' in locals():
+            q_cols = []
+            for k in first_row.keys():
+                try:
+                    pd.to_datetime(k, format="%b %Y")
+                    q_cols.append(k)
+                except:
+                    pass
+            q_cols.sort(key=lambda x: pd.to_datetime(x, format="%b %Y"), reverse=True)
+            if q_cols:
+                target_qtr_code = to_qtr_code(q_cols[0])
+        if not target_qtr_code:
+            target_qtr_code = to_qtr_code(datetime.now().strftime("%b %Y"))
+
         telegram_msg = (
             f"🔔 <b>Stock Screener Run Complete</b>\n"
             f"📅 Date: <code>{current_date}</code>\n"
@@ -817,17 +941,28 @@ try:
             f"📊 <b>Summary:</b>\n"
             f"• Total Universe: <code>{total}</code> stocks\n"
             f"• Scraped/Updated: <code>{completed_count}</code> stocks\n"
-            f"• Newly Added: <b>{len(newly_added)}</b> stocks\n\n"
+            f"• Newly Added: <code>{len(newly_added)}</code> stocks\n\n"
+            f"🎯 <b>Matched Stocks (Passing Strict Filters):</b>\n"
         )
-        if newly_added:
-            telegram_msg += "✨ <b>Newly Added Stocks:</b>\n"
-            for stock in newly_added[:30]:
-                telegram_msg += f"• {html.escape(stock)}\n"
-            if len(newly_added) > 30:
-                telegram_msg += f"• <i>...and {len(newly_added) - 30} more</i>\n"
+        if matched_stocks:
+            for stock in matched_stocks[:30]:
+                telegram_msg += f"• <b>{html.escape(stock)}</b>\n"
+            if len(matched_stocks) > 30:
+                telegram_msg += f"• <i>...and {len(matched_stocks) - 30} more</i>\n"
         else:
-            telegram_msg += "✨ No new stocks added in this run.\n"
+            telegram_msg += "• <i>None of the newly added stocks matched the strict filters.</i>\n"
             
+        telegram_msg += (
+            f"\n📝 <i>Applied Strict Filters:\n"
+            f"• Current Quarter Surge [{target_qtr_code}]\n"
+            f"• Highest Ever Quarter\n"
+            f"• Latest QoQ Op. Profit >= 65%\n"
+            f"• Promoter Holding >= 50%\n"
+            f"• Pledged Shares <= 10%\n"
+            f"• Working Capital Days <= 150\n"
+            f"• (MSI Price Strength > 80 Excluded)</i>\n"
+        )
+        
         send_telegram_message(telegram_msg)
     else:
         push_progress("complete", 0, 0, "No equities identified.", status="complete", elapsed_sec=time.time()-run_start)
