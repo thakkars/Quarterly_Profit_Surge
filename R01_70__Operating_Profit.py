@@ -956,11 +956,11 @@ try:
             f"\n📝 <i>Applied Strict Filters:\n"
             f"• Current Quarter Surge [{target_qtr_code}]\n"
             f"• Highest Ever Quarter\n"
-            f"• Latest QoQ Op. Profit >= 65%\n"
-            f"• Promoter Holding >= 50%\n"
-            f"• Pledged Shares <= 10%\n"
-            f"• Working Capital Days <= 150\n"
-            f"• (MSI Price Strength > 80 Excluded)</i>\n"
+            f"• Latest QoQ Op. Profit &gt;= 65%\n"
+            f"• Promoter Holding &gt;= 50%\n"
+            f"• Pledged Shares &lt;= 10%\n"
+            f"• Working Capital Days &lt;= 150\n"
+            f"• (MSI Price Strength &gt; 80 Excluded)</i>\n"
         )
         
         send_telegram_message(telegram_msg)
