@@ -27,7 +27,7 @@ IS_GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS", "false").lower() == "true"
 
 USERNAME   = os.environ.get("SCREENER_USERNAME", "deepak.khatwani2712@gmail.com")
 PASSWORD   = os.environ.get("SCREENER_PASSWORD", "gaurav23")
-SCREEN_URL = "https://www.screener.in/screens/3647191/equity-research-github/"
+SCREEN_URL = os.environ.get("SCREEN_URL") or os.environ.get("SCREENER_SCREEN_URL") or "https://www.screener.in/screens/3650931/all-nse-bse-stocks/"
 
 if IS_GITHUB_ACTIONS:
     FOLDER_PATH = "/tmp/screener_data"
@@ -58,7 +58,7 @@ R2_INDUSTRY_KEY  = "Screener_Industry_Data.xlsx"
 R2_PROGRESS_KEY  = "progress.json"
 
 # ─── MSI CONFIG (guest mode scraping) ──────────────────────
-MSI_ENABLED   = True
+MSI_ENABLED   = os.environ.get("MSI_ENABLED", "false").lower() == "true"
 MSI_BASE_URL  = "https://marketsmithindia.com/mstool/eval"
 MSI_COLS      = [
     "MSI EPS Strength",
@@ -71,11 +71,14 @@ MSI_COLS      = [
 # ═══════════════════════════════════════════════════════════
 # PROGRESS TELEMETRY
 # ═══════════════════════════════════════════════════════════
-def push_progress(phase, completed, total, current_company="", status="running", elapsed_sec=0):
+_last_progress_upload = 0.0
+
+def push_progress(phase, completed, total, current_company="", status="running", elapsed_sec=0, force_r2=False):
     """
-    Write progress.json locally and upload to R2.
+    Write progress.json locally and upload to R2 (throttled to avoid network overhead).
     phase: 'initialising' | 'collecting' | 'scraping' | 'enriching' | 'finalising' | 'complete' | 'failed'
     """
+    global _last_progress_upload
     pct = round((completed / total * 100)) if total > 0 else 0
     eta_sec = 0
     if completed > 0 and total > completed and elapsed_sec > 0:
@@ -96,14 +99,27 @@ def push_progress(phase, completed, total, current_company="", status="running",
     try:
         with open(PROGRESS_JSON_PATH, "w") as f:
             json.dump(payload, f)
-        if IS_GITHUB_ACTIONS:
+        
+        now = time.time()
+        # Upload to R2 if forced, on status changes, or at least 15s apart
+        should_upload = (
+            force_r2
+            or status in ("complete", "failed")
+            or phase in ("initialising", "collecting", "finalising")
+            or (now - _last_progress_upload >= 15.0)
+            or completed == total
+        )
+        if IS_GITHUB_ACTIONS and should_upload:
+            _last_progress_upload = now
             r2_upload_progress()
     except Exception as e:
         print(f"[WARN]  Progress push failed: {e}")
 
 def r2_upload_progress():
-    """Lightweight upload of just progress.json — called after every stock."""
+    """Lightweight upload of just progress.json."""
     try:
+        if not R2_ENDPOINT or not R2_ACCESS_KEY:
+            return
         import boto3
         client = boto3.client(
             "s3",
@@ -481,8 +497,10 @@ def enrich_with_data(row_dict, industry_map, group_map, symbol_map):
 
 # ═══════════════════════════════════════════════════════════
 # SELENIUM DRIVER INIT
-# ═══════════════════════════════════════════════════════════
-def init_driver():
+driver = None
+wait   = None
+
+def init_driver(max_retries=3):
     opts = Options()
     if HEADLESS:
         opts.add_argument("--headless=new")
@@ -490,50 +508,29 @@ def init_driver():
     opts.add_argument("--window-size=1600,900")
     opts.add_argument("--no-sandbox")
     opts.add_argument("--disable-dev-shm-usage")
-    if IS_GITHUB_ACTIONS:
-        return webdriver.Chrome(options=opts)
-    else:
-        return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=opts)
+    opts.add_argument("--disable-blink-features=AutomationControlled")
+    opts.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+    opts.add_experimental_option("excludeSwitches", ["enable-automation"])
+    opts.add_experimental_option("useAutomationExtension", False)
 
-driver = init_driver()
-wait   = WebDriverWait(driver, 15)
+    for attempt in range(1, max_retries + 1):
+        try:
+            if IS_GITHUB_ACTIONS:
+                d = webdriver.Chrome(options=opts)
+            else:
+                d = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=opts)
+            d.set_page_load_timeout(45)
+            return d
+        except Exception as e:
+            print(f"[WARN] Chrome driver launch attempt {attempt}/{max_retries} failed: {e}")
+            time.sleep(2)
+            if attempt == max_retries:
+                raise RuntimeError(f"Failed to launch Chrome driver after {max_retries} attempts: {e}")
 
 # ═══════════════════════════════════════════════════════════
-# MARKETSMITH INDIA (MSI) GUEST SCRAPER
+# MARKETSMITH INDIA (MSI) GUEST SCRAPER (FAST DOM PARSER)
 # ═══════════════════════════════════════════════════════════
-def msi_get_metric_value(msi_driver, msi_wait, header_text):
-    try:
-        h4 = msi_wait.until(
-            EC.presence_of_element_located(
-                (By.XPATH, f"//h4[normalize-space()='{header_text}']")
-            )
-        )
-        h3 = h4.find_element(By.XPATH, "following::h3[1]")
-        spans = h3.find_elements(By.TAG_NAME, "span")
-        if len(spans) >= 2:
-            return spans[1].text.strip()
-        elif spans:
-            return spans[0].text.split(":")[-1].strip()
-    except Exception:
-        pass
-    return ""
-
-def msi_get_master_score(msi_driver):
-    try:
-        ms = msi_driver.find_element(By.CSS_SELECTOR, "#masterScoreIndicator .masters b")
-        return ms.text.strip()
-    except Exception:
-        pass
-    try:
-        h2 = msi_driver.find_element(By.CSS_SELECTOR, "h2.contentMasters b")
-        parts = h2.text.strip().split()
-        if len(parts) >= 3:
-            return parts[2].rstrip(":")
-        return ""
-    except Exception:
-        return ""
-
-def msi_scrape_symbol(msi_driver, msi_wait, symbol):
+def msi_scrape_symbol(msi_driver, symbol):
     result = {
         "MSI EPS Strength":   "",
         "MSI Price Strength": "",
@@ -541,23 +538,54 @@ def msi_scrape_symbol(msi_driver, msi_wait, symbol):
         "MSI Group Rank":     "",
         "MSI Master Score":   "",
     }
-    if not symbol:
+    if not symbol or not msi_driver:
         return result
     url = f"{MSI_BASE_URL}/{symbol.lower()}/evaluation.jsp"
     try:
         msi_driver.get(url)
-        msi_wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "span")))
-        time.sleep(1.5)
-        result["MSI EPS Strength"]   = msi_get_metric_value(msi_driver, msi_wait, "EPS Strength")
-        result["MSI Price Strength"] = msi_get_metric_value(msi_driver, msi_wait, "Price Strength")
-        result["MSI Buyer Demand"]   = msi_get_metric_value(msi_driver, msi_wait, "Buyer Demand")
-        result["MSI Group Rank"]     = msi_get_metric_value(msi_driver, msi_wait, "Group Rank")
-        result["MSI Master Score"]   = msi_get_master_score(msi_driver)
+        time.sleep(1.0)
+        # Fast non-blocking evaluation of all h4 metrics in a single pass
+        h4_list = msi_driver.find_elements(By.TAG_NAME, "h4")
+        for h4 in h4_list:
+            try:
+                htext = h4.text.strip()
+                h3 = h4.find_element(By.XPATH, "following::h3[1]")
+                spans = h3.find_elements(By.TAG_NAME, "span")
+                val = ""
+                if len(spans) >= 2:
+                    val = spans[1].text.strip()
+                elif spans:
+                    val = spans[0].text.split(":")[-1].strip()
+                
+                if "EPS Strength" in htext:
+                    result["MSI EPS Strength"] = val
+                elif "Price Strength" in htext:
+                    result["MSI Price Strength"] = val
+                elif "Buyer Demand" in htext:
+                    result["MSI Buyer Demand"] = val
+                elif "Group Rank" in htext:
+                    result["MSI Group Rank"] = val
+            except Exception:
+                continue
+                
+        # Master Score
+        try:
+            ms = msi_driver.find_elements(By.CSS_SELECTOR, "#masterScoreIndicator .masters b")
+            if ms:
+                result["MSI Master Score"] = ms[0].text.strip()
+            else:
+                h2 = msi_driver.find_elements(By.CSS_SELECTOR, "h2.contentMasters b")
+                if h2:
+                    parts = h2[0].text.strip().split()
+                    if len(parts) >= 3:
+                        result["MSI Master Score"] = parts[2].rstrip(":")
+        except Exception:
+            pass
     except Exception as e:
         print(f"  MSI error for {symbol}: {e}")
     return result
 
-def attach_msi_metrics(row_dict, msi_cache, msi_driver, msi_wait):
+def attach_msi_metrics(row_dict, msi_cache, msi_driver):
     if not MSI_ENABLED or msi_driver is None:
         for c in MSI_COLS:
             row_dict.setdefault(c, "")
@@ -572,7 +600,7 @@ def attach_msi_metrics(row_dict, msi_cache, msi_driver, msi_wait):
     if symbol in msi_cache:
         row_dict.update(msi_cache[symbol])
         return row_dict
-    metrics = msi_scrape_symbol(msi_driver, msi_wait, symbol)
+    metrics = msi_scrape_symbol(msi_driver, symbol)
     msi_cache[symbol] = metrics
     row_dict.update(metrics)
     return row_dict
@@ -581,14 +609,32 @@ def attach_msi_metrics(row_dict, msi_cache, msi_driver, msi_wait):
 # SCRAPER LOGIC (SCREENER)
 # ═══════════════════════════════════════════════════════════
 def login():
+    global driver, wait
+    if not driver:
+        driver = init_driver()
+        wait   = WebDriverWait(driver, 15)
+    if not USERNAME or not PASSWORD:
+        print("[WARN] SCREENER_USERNAME or SCREENER_PASSWORD is not configured.")
+        return False
+    print("🔐 Authenticating with Screener.in...")
     driver.get("https://www.screener.in/login/")
     try:
-        wait.until(EC.presence_of_element_located((By.NAME, "username"))).send_keys(USERNAME)
-        driver.find_element(By.NAME, "password").send_keys(PASSWORD)
-        driver.find_element(By.NAME, "password").submit()
+        user_field = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.NAME, "username")))
+        user_field.clear()
+        user_field.send_keys(USERNAME)
+        pwd_field = driver.find_element(By.NAME, "password")
+        pwd_field.clear()
+        pwd_field.send_keys(PASSWORD)
+        pwd_field.submit()
         time.sleep(3)
-    except:
-        pass
+        if "login" in driver.current_url.lower():
+            print("[WARN] Still on login page — authentication may have failed. Check credentials in secrets.")
+            return False
+        print("✅ Logged in to Screener.in successfully.")
+        return True
+    except Exception as e:
+        print(f"[WARN] Login exception: {e}")
+        return False
 
 def safe_get(url):
     global driver, wait
@@ -604,18 +650,21 @@ def safe_get(url):
         wait   = WebDriverWait(driver, 15)
         login()
         return safe_get(url)
-    except:
+    except Exception as e:
+        print(f"[WARN] safe_get failed for {url}: {e}")
         return False
 
 def get_company_full_name():
-    selectors = ["h1.margin-0", "h1.shrink-text", "h1", ".company-name h1"]
+    # Fast element check without 15s timeout loop
+    selectors = ["h1.margin-0", "h1.shrink-text", "h1.h2", ".company-name h1", "#overview h1", "h1"]
     for sel in selectors:
         try:
-            el   = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, sel)))
-            name = el.text.strip()
-            if name and name.lower() != "unknown":
-                return name
-        except:
+            elements = driver.find_elements(By.CSS_SELECTOR, sel)
+            for el in elements:
+                name = el.text.strip()
+                if name and name.lower() != "unknown":
+                    return name
+        except Exception:
             continue
     return "Unknown"
 
@@ -625,8 +674,12 @@ def get_top_dashboard_metrics():
         ratio_items = driver.find_elements(By.CSS_SELECTOR, "ul#top-ratios li")
         for li in ratio_items:
             try:
-                label  = li.find_element(By.CSS_SELECTOR, "span.name").text.lower().strip()
-                val_el = li.find_element(By.CSS_SELECTOR, "span.number").text.strip().replace(",", "")
+                name_els = li.find_elements(By.CSS_SELECTOR, "span.name")
+                num_els  = li.find_elements(By.CSS_SELECTOR, "span.number")
+                if not name_els or not num_els:
+                    continue
+                label  = name_els[0].text.lower().strip()
+                val_el = num_els[0].text.strip().replace(",", "")
                 value  = float(val_el) if val_el else 0.0
                 if "promoter holding" in label:
                     metrics["Promoter Holding"] = value
@@ -634,44 +687,70 @@ def get_top_dashboard_metrics():
                     metrics["Pledged %"] = value
                 elif "wc days" in label:
                     metrics["WC Days"] = value
-            except:
+            except Exception:
                 continue
-    except:
+    except Exception:
         pass
     return metrics
 
 def extract_operating_profit():
     try:
-        table = wait.until(EC.presence_of_element_located((By.XPATH, "//section[@id='quarters']//table")))
-    except:
+        tables = driver.find_elements(By.XPATH, "//section[@id='quarters']//table")
+        if not tables:
+            tables = driver.find_elements(By.CSS_SELECTOR, "#quarters table")
+        if not tables:
+            return {}
+        table = tables[0]
+        headers    = [th.text.strip() for th in table.find_elements(By.TAG_NAME, "th")]
+        rows       = table.find_elements(By.TAG_NAME, "tr")
+        target_row = next((r for r in rows if "operating profit" in r.text.lower()), None)
+        if not target_row:
+            target_row = next((r for r in rows if "financing profit" in r.text.lower()), None)
+        if not target_row:
+            return {}
+        values = [c.text.strip() for c in target_row.find_elements(By.TAG_NAME, "td")]
+        return {h: v for h, v in zip(headers[1:], values[1:])}
+    except Exception:
         return {}
-    headers    = [th.text.strip() for th in table.find_elements(By.TAG_NAME, "th")]
-    rows       = table.find_elements(By.TAG_NAME, "tr")
-    target_row = next((r for r in rows if "operating profit" in r.text.lower()), None)
-    if not target_row:
-        target_row = next((r for r in rows if "financing profit" in r.text.lower()), None)
-    if not target_row:
-        return {}
-    values = [c.text.strip() for c in target_row.find_elements(By.TAG_NAME, "td")]
-    return {h: v for h, v in zip(headers[1:], values[1:])}
 
 def collect_all_company_data():
     if not safe_get(SCREEN_URL):
+        print(f"[WARN] Could not load screen URL: {SCREEN_URL}")
         return []
     company_list, seen_urls = [], set()
+    page_num = 1
     while True:
-        for a in driver.find_elements(By.CSS_SELECTOR, "a[href*='/company/']"):
-            href, short_name = a.get_attribute("href"), a.text.strip()
-            if href and "/company/" in href and href not in seen_urls:
-                seen_urls.add(href)
-                company_list.append({"short_name": short_name, "url": href})
+        time.sleep(1.0)
+        # Target table links directly
+        links = driver.find_elements(By.CSS_SELECTOR, "table.data-table a[href*='/company/'], .results-table a[href*='/company/'], a[href*='/company/']")
+        page_added = 0
+        for a in links:
+            try:
+                href = a.get_attribute("href") or ""
+                short_name = a.text.strip()
+                if href and "/company/" in href and href not in seen_urls and short_name:
+                    seen_urls.add(href)
+                    company_list.append({"short_name": short_name, "url": href})
+                    page_added += 1
+            except Exception:
+                continue
+        print(f"  [PAGE {page_num}] Identified {page_added} equities (Total: {len(company_list)})")
+        
         try:
-            next_btn = driver.find_element(By.XPATH, "//a[contains(text(), 'Next')]")
-            if "disabled" in (next_btn.get_attribute("class") or "").lower():
+            next_btns = driver.find_elements(By.XPATH, "//a[contains(., 'Next')] | //a[contains(@href, 'page=')]")
+            next_btn = next((b for b in next_btns if "next" in b.text.lower() or "next" in (b.get_attribute("innerText") or "").lower()), None)
+            if not next_btn or "disabled" in (next_btn.get_attribute("class") or "").lower():
                 break
+            prev_url = driver.current_url
+            driver.execute_script("arguments[0].scrollIntoView(true);", next_btn)
             driver.execute_script("arguments[0].click();", next_btn)
             time.sleep(1.5)
-        except:
+            if driver.current_url == prev_url and page_added == 0:
+                break
+            page_num += 1
+            if page_num > 50:
+                break
+        except Exception:
             break
     return company_list
 
@@ -684,20 +763,25 @@ def scrape_company(company_info):
             "date": datetime.now().strftime("%Y-%m-%d"),
         }
     try:
-        time.sleep(1.5)
+        time.sleep(1.2)
         try:
-            driver.find_element(By.LINK_TEXT, "Consolidated").click()
-            time.sleep(1.5)
-        except:
-            try:
-                driver.find_element(By.PARTIAL_LINK_TEXT, "Consolidated").click()
-                time.sleep(1.5)
-            except:
-                pass
+            cons_btn = driver.find_elements(By.LINK_TEXT, "Consolidated")
+            if cons_btn:
+                driver.execute_script("arguments[0].click();", cons_btn[0])
+                time.sleep(1.0)
+            else:
+                cons_part = driver.find_elements(By.PARTIAL_LINK_TEXT, "Consolidated")
+                if cons_part:
+                    driver.execute_script("arguments[0].click();", cons_part[0])
+                    time.sleep(1.0)
+        except Exception:
+            pass
+
         full_name = get_company_full_name()
         if full_name == "Unknown":
             slug = url.rstrip("/").split("/")[-1]
             full_name = slug if slug else short_name
+
         return {
             "Name": short_name,
             "Company (Page)": full_name,
@@ -707,7 +791,7 @@ def scrape_company(company_info):
             **get_top_dashboard_metrics(),
             "date": datetime.now().strftime("%Y-%m-%d"),
         }
-    except:
+    except Exception:
         return {
             "Name": short_name,
             "Company (Page)": short_name,
@@ -841,31 +925,34 @@ def generate_raw_json(sheet_name):
 # ═══════════════════════════════════════════════════════════
 run_start = time.time()
 try:
-    push_progress("initialising", 0, 1, "Authenticating with Screener.in...")
+    push_progress("initialising", 0, 1, "Authenticating with Screener.in...", force_r2=True)
 
     INDUSTRY_MAP, GROUP_MAP = load_industry_maps()
     SYMBOL_MAP              = load_symbol_maps()
 
-    msi_driver = init_driver() if MSI_ENABLED else None
-    msi_wait   = WebDriverWait(msi_driver, 20) if MSI_ENABLED and msi_driver else None
+    print("🚀 Initializing Chrome driver...")
+    driver = init_driver()
+    wait   = WebDriverWait(driver, 15)
+
+    msi_driver = driver if MSI_ENABLED else None
     msi_cache  = {}
 
     login()
 
-    push_progress("collecting", 0, 1, "Enumerating universe from Screener screen...")
+    push_progress("collecting", 0, 1, "Enumerating universe from Screener screen...", force_r2=True)
     company_data_list = collect_all_company_data()
     total = len(company_data_list)
     print(f"[STATS] Universe identified: {total} equities")
-    push_progress("collecting", 0, total, f"Universe identified: {total} equities")
+    push_progress("collecting", 0, total, f"Universe identified: {total} equities", force_r2=True)
 
     newly_added = []
     matched_stocks = []
     if company_data_list:
-        push_progress("scraping", 0, total, company_data_list[0]['short_name'])
+        push_progress("scraping", 0, total, company_data_list[0]['short_name'], force_r2=True)
 
         first_scraped = scrape_company(company_data_list[0])
         first_row     = enrich_with_data(first_scraped, INDUSTRY_MAP, GROUP_MAP, SYMBOL_MAP)
-        first_row     = attach_msi_metrics(first_row, msi_cache, msi_driver, msi_wait)
+        first_row     = attach_msi_metrics(first_row, msi_cache, msi_driver)
         push_progress("scraping", 1, total, first_row.get("Company (Page)", ""), elapsed_sec=time.time()-run_start)
 
         target_sheet   = detect_latest_quarter(first_row) or datetime.now().strftime("%b %y")
@@ -893,7 +980,7 @@ try:
         for i, info in enumerate(remaining, start=2):
             scraped  = scrape_company(info)
             enriched = enrich_with_data(scraped, INDUSTRY_MAP, GROUP_MAP, SYMBOL_MAP)
-            enriched = attach_msi_metrics(enriched, msi_cache, msi_driver, msi_wait)
+            enriched = attach_msi_metrics(enriched, msi_cache, msi_driver)
             pending_rows.append(enriched)
             completed_count += 1
             
@@ -921,7 +1008,7 @@ try:
         if pending_rows:
             append_rows_to_raw_excel(pending_rows, target_sheet)
 
-        push_progress("finalising", total, total, "Serialising dataset & committing to R2...")
+        push_progress("finalising", total, total, "Serialising dataset & committing to R2...", force_r2=True)
         generate_raw_json(target_sheet)
 
         if IS_GITHUB_ACTIONS:
@@ -934,7 +1021,7 @@ try:
                     r2_upload(p, "decisions.json")
                     break
 
-        push_progress("complete", total, total, "Dataset refreshed successfully.", status="complete", elapsed_sec=time.time()-run_start)
+        push_progress("complete", total, total, "Dataset refreshed successfully.", status="complete", elapsed_sec=time.time()-run_start, force_r2=True)
 
         # Send Success Telegram notification
         run_duration_min = round((time.time() - run_start) / 60, 1)
@@ -987,7 +1074,7 @@ try:
         
         send_telegram_message(telegram_msg)
     else:
-        push_progress("complete", 0, 0, "No equities identified.", status="complete", elapsed_sec=time.time()-run_start)
+        push_progress("complete", 0, 0, "No equities identified.", status="complete", elapsed_sec=time.time()-run_start, force_r2=True)
         current_date = datetime.now().strftime("%Y-%m-%d %I:%M %p")
         telegram_msg = (
             f"🔔 <b>Stock Screener Run Complete</b>\n"
@@ -999,7 +1086,7 @@ try:
 except Exception as e:
     print(f"\n[ERROR] Fatal error: {e}")
     traceback.print_exc()
-    push_progress("failed", 0, 0, str(e), status="failed")
+    push_progress("failed", 0, 0, str(e), status="failed", force_r2=True)
     
     # Send Failure Telegram notification
     try:
@@ -1018,11 +1105,7 @@ except Exception as e:
         print(f"[WARN] Failed to send error notification: {te}")
 finally:
     try:
-        driver.quit()
-    except:
-        pass
-    try:
-        if MSI_ENABLED and msi_driver:
-            msi_driver.quit()
-    except:
-        pass
+        if driver is not None:
+            driver.quit()
+    except Exception as e:
+        print(f"[WARN] Error during driver cleanup: {e}")

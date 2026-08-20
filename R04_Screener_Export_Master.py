@@ -275,25 +275,29 @@ def export_csv(driver, wait, session):
     )
 
 # ═══════════════════════════════════════════════════════════
-# FETCH FULL COMPANY NAME
+# FETCH FULL COMPANY NAME (FAST API LOOKUP)
 # ═══════════════════════════════════════════════════════════
-def fetch_full_name(driver, wait, nse_code, bse_code):
-    slug = (nse_code or bse_code or "").strip()
+def fetch_full_name(session, nse_code, bse_code, short_name=""):
+    slug = (nse_code or bse_code or short_name or "").strip()
     if not slug:
-        return ""
-    url = f"https://www.screener.in/company/{slug}/"
+        return short_name
     try:
-        driver.get(url)
-        h1 = wait.until(EC.presence_of_element_located(
-            (By.CSS_SELECTOR, "h1.h2, h1, .company-name h1, #overview h1")
-        ))
-        name = h1.text.strip()
-        name = re.sub(r"\s*(BSE|NSE|\|).*$", "", name).strip()
-        time.sleep(NAME_DELAY)
-        return name
+        url = "https://www.screener.in/api/company/search/"
+        resp = session.get(url, params={"q": slug, "v": 3}, timeout=5)
+        if resp.status_code == 200:
+            data = resp.json()
+            if data and isinstance(data, list) and len(data) > 0:
+                for item in data:
+                    name = item.get("name", "").strip()
+                    url_path = item.get("url", "")
+                    if slug.lower() in url_path.lower() and name:
+                        return name
+                return data[0].get("name", short_name).strip()
+            elif resp.status_code == 429:
+                time.sleep(2)
     except Exception as e:
-        print(f"    ⚠️  Could not fetch name for {slug}: {e}")
-        return ""
+        pass
+    return short_name
 
 # ═══════════════════════════════════════════════════════════
 # LOAD / STANDARDISE EXPORTED CSV
@@ -411,12 +415,14 @@ try:
     new_rows = diff_new_rows(df_today, df_master)
 
     if not new_rows.empty:
-        print(f"\n🔍 Fetching names for {len(new_rows)} new stocks...")
+        print(f"\n🔍 Fetching names for {len(new_rows)} new stocks via API...")
         full_names = []
         for i, (_, row) in enumerate(new_rows.iterrows(), 1):
-            name = fetch_full_name(driver, wait, row["NSE_Code"], row["BSE_Code"])
+            name = fetch_full_name(session, row.get("NSE_Code", ""), row.get("BSE_Code", ""), row.get("Screener_Name", ""))
             full_names.append(name or row["Screener_Name"])
-            print(f"  [{i}/{len(new_rows)}] {row['Screener_Name']} → '{name}'")
+            if i % 50 == 0 or i == len(new_rows):
+                print(f"  [{i}/{len(new_rows)}] Processed {i} stocks ({row.get('Screener_Name', '')} → '{name}')")
+            time.sleep(0.05)
         new_rows = new_rows.copy()
         new_rows["Full_Company_Name"] = full_names
         new_rows["First_Seen"]        = TODAY
