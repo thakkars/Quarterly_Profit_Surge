@@ -27,7 +27,8 @@ IS_GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS", "false").lower() == "true"
 
 USERNAME   = os.environ.get("SCREENER_USERNAME", "deepak.khatwani2712@gmail.com")
 PASSWORD   = os.environ.get("SCREENER_PASSWORD", "gaurav23")
-SCREEN_URL = os.environ.get("SCREEN_URL") or os.environ.get("SCREENER_SCREEN_URL") or "https://www.screener.in/screens/3650931/all-nse-bse-stocks/"
+SCREEN_URL = os.environ.get("SCREEN_URL") or os.environ.get("SCREENER_SCREEN_URL") or "https://www.screener.in/screens/3647191/equity-research-github/"
+
 
 if IS_GITHUB_ACTIONS:
     FOLDER_PATH = "/tmp/screener_data"
@@ -714,9 +715,19 @@ def extract_operating_profit():
         return {}
 
 def collect_all_company_data():
+    print(f"🌐 Loading Screener screen URL: {SCREEN_URL}")
     if not safe_get(SCREEN_URL):
         print(f"[WARN] Could not load screen URL: {SCREEN_URL}")
         return []
+
+    # If redirected to login, re-authenticate and reload screen
+    if "login" in driver.current_url.lower():
+        print("ℹ️ Login required for custom screen. Re-authenticating...")
+        if login():
+            safe_get(SCREEN_URL)
+            time.sleep(2.0)
+
+    print(f"  Current URL: {driver.current_url} | Title: {driver.title}")
     company_list, seen_urls = [], set()
     page_num = 1
     while True:
