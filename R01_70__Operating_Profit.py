@@ -15,7 +15,9 @@ import json
 from openpyxl import load_workbook
 from openpyxl.styles import Alignment, Border, Side
 import urllib.request
+import urllib.error
 import html
+
 
 if os.environ.get("GITHUB_ACTIONS", "false").lower() != "true":
     from webdriver_manager.chrome import ChromeDriverManager
@@ -175,8 +177,12 @@ def send_telegram_message(message):
             )
             with urllib.request.urlopen(req, timeout=15) as response:
                 print(f"[OK] Telegram notification sent successfully to chat_id: {cid}")
+        except urllib.error.HTTPError as e:
+            err_body = e.read().decode('utf-8', errors='ignore')
+            print(f"[WARN] Telegram notification HTTP {e.code} error for chat_id {cid}: {err_body}")
         except Exception as e:
             print(f"[WARN] Telegram notification error for chat_id {cid}: {e}")
+
 
 
 def to_qtr_code(col_name):
