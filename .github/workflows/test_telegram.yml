@@ -1,0 +1,58 @@
+name: Test Telegram Alert
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-telegram:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Send Test Telegram Notification
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python -c "
+          import os, json, urllib.request
+
+          token = os.environ.get('TELEGRAM_BOT_TOKEN')
+          raw_chat_ids = os.environ.get('TELEGRAM_CHAT_ID')
+
+          if not token or not raw_chat_ids:
+              print('[ERROR] TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is not configured in GitHub Secrets!')
+              exit(1)
+
+          chat_id_str = raw_chat_ids.replace(';', ',').replace('\n', ',')
+          chat_ids = [c.strip() for c in chat_id_str.split(',') if c.strip()]
+
+          if not chat_ids:
+              print('[ERROR] No valid chat IDs found in TELEGRAM_CHAT_ID.')
+              exit(1)
+
+          url = f'https://api.telegram.org/bot{token}/sendMessage'
+          has_error = False
+
+          for cid in chat_ids:
+              payload = {
+                  'chat_id': cid,
+                  'text': '🚀 <b>Stock Screener — Telegram Alert Test</b>\n\n✅ <b>Status:</b> Connection successful!\n🔔 Your GitHub Actions secrets are configured correctly.',
+                  'parse_mode': 'HTML'
+              }
+              req = urllib.request.Request(
+                  url,
+                  data=json.dumps(payload).encode('utf-8'),
+                  headers={'Content-Type': 'application/json'},
+                  method='POST'
+              )
+              try:
+                  with urllib.request.urlopen(req, timeout=15) as res:
+                      print(f'[OK] Test message sent successfully to chat_id: {cid}')
+              except Exception as e:
+                  print(f'[ERROR] Failed to send Telegram message to chat_id {cid}: {e}')
+                  has_error = True
+
+          if has_error:
+              exit(1)
+          "
+

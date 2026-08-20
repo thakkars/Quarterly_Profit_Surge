@@ -144,29 +144,40 @@ def r2_upload_progress():
 # ═══════════════════════════════════════════════════════════
 def send_telegram_message(message):
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
-    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
-    if not token or not chat_id:
+    raw_chat_ids = os.environ.get("TELEGRAM_CHAT_ID")
+    if not token or not raw_chat_ids:
         print("[WARN] TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not set — skipping notification.")
         return
-    try:
-        url = f"https://api.telegram.org/bot{token}/sendMessage"
-        payload = {
-            "chat_id": chat_id,
-            "text": message,
-            "parse_mode": "HTML",
-            "disable_web_page_preview": True
-        }
-        data = json.dumps(payload).encode('utf-8')
-        req = urllib.request.Request(
-            url,
-            data=data,
-            headers={'Content-Type': 'application/json'},
-            method='POST'
-        )
-        with urllib.request.urlopen(req, timeout=15) as response:
-            print("[OK] Telegram notification sent successfully.")
-    except Exception as e:
-        print(f"[WARN] Telegram notification error: {e}")
+    
+    # Support multiple comma, semicolon, or newline separated chat IDs (e.g. personal chat + group/channel)
+    chat_id_str = raw_chat_ids.replace(";", ",").replace("\n", ",")
+    chat_ids = [c.strip() for c in chat_id_str.split(",") if c.strip()]
+
+    if not chat_ids:
+        print("[WARN] No valid chat IDs found in TELEGRAM_CHAT_ID.")
+        return
+
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    for cid in chat_ids:
+        try:
+            payload = {
+                "chat_id": cid,
+                "text": message,
+                "parse_mode": "HTML",
+                "disable_web_page_preview": True
+            }
+            data = json.dumps(payload).encode('utf-8')
+            req = urllib.request.Request(
+                url,
+                data=data,
+                headers={'Content-Type': 'application/json'},
+                method='POST'
+            )
+            with urllib.request.urlopen(req, timeout=15) as response:
+                print(f"[OK] Telegram notification sent successfully to chat_id: {cid}")
+        except Exception as e:
+            print(f"[WARN] Telegram notification error for chat_id {cid}: {e}")
+
 
 def to_qtr_code(col_name):
     if not col_name:
