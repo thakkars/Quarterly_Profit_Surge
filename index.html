@@ -4221,8 +4221,7 @@
                 if (!response.ok) throw new Error('Data not found');
                 rawData = await response.json();
 
-                // Remove duplicate companies - keep only the most recent entry for each company
-                if (rawData && rawData.length > 0) {
+                    // Remove duplicate companies - keep only the most recent entry for each company
                     const seen = new Map();
                     rawData.forEach(row => {
                         const companyName = row['Company (Page)'] || row['Name'] || '';
@@ -4238,8 +4237,31 @@
 
                     // Replace rawData with deduplicated data
                     rawData = Array.from(seen.values()).map(item => item.row);
-                }
 
+                    // Filter to show only companies from the LATEST QUARTER
+                    // This ensures dashboard shows only current quarter results (e.g., Jun 2026)
+                    if (rawData.length > 0) {
+                        // Detect which quarters are present in the data
+                        const allCols = Object.keys(rawData[0]);
+                        const qtrCols = allCols.filter(c => /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{2,4}$/.test(c.trim()));
+
+                        if (qtrCols.length > 0) {
+                            // Sort quarters to find the most recent one
+                            const latestQtr = qtrCols[0]; // They're already in chronological order (newest first)
+
+                            console.log(`📊 Filtering to show only companies with ${latestQtr} results`);
+
+                            // Keep only companies that have data in the latest quarter
+                            rawData = rawData.filter(row => {
+                                const qtrValue = row[latestQtr];
+                                // Include if quarter has a non-empty value
+                                return qtrValue !== null && qtrValue !== undefined && qtrValue !== '' && String(qtrValue).trim() !== '';
+                            });
+
+                            console.log(`✅ Showing ${rawData.length} companies with ${latestQtr} results`);
+                        }
+                    }
+                }
                 if (rawData && rawData.length > 0) {
                     allColumns = Object.keys(rawData[0]).filter(col => col !== 'Name' && col !== 'NSE Code Exact' && col !== 'Screener Name Exact' && col !== 'Investing Name Exact');
                     quarterlyColumns = detectQuarterlyColumns(allColumns);
