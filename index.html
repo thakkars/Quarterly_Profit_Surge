@@ -4213,6 +4213,26 @@
                 const response = await fetch(`${DATA_URL}?t=${new Date().getTime()}`);
                 if (!response.ok) throw new Error('Data not found');
                 rawData = await response.json();
+
+                // Remove duplicate companies - keep only the most recent entry for each company
+                if (rawData && rawData.length > 0) {
+                    const seen = new Map();
+                    rawData.forEach(row => {
+                        const companyName = row['Company (Page)'] || row['Name'] || '';
+                        const dateStr = row['date'] || '';
+
+                        if (companyName) {
+                            const existing = seen.get(companyName);
+                            if (!existing || dateStr > existing.date) {
+                                seen.set(companyName, { row, date: dateStr });
+                            }
+                        }
+                    });
+
+                    // Replace rawData with deduplicated data
+                    rawData = Array.from(seen.values()).map(item => item.row);
+                }
+
                 if (rawData && rawData.length > 0) {
                     allColumns = Object.keys(rawData[0]).filter(col => col !== 'Name' && col !== 'NSE Code Exact' && col !== 'Screener Name Exact' && col !== 'Investing Name Exact');
                     quarterlyColumns = detectQuarterlyColumns(allColumns);
