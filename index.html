@@ -4236,9 +4236,29 @@
                         ...filteredAllColumns,
                         ...yoyIds
                     ];
-                    
-                    visibleColumns = new Set(columnOrder);
-                    
+
+                    // Set default visible columns (only the ones user wants to see)
+                    const defaultVisibleCols = [
+                        'Sr no',
+                        'date',
+                        'Company (Page)',
+                        COL_DECISION,
+                        COL_NSE,
+                        'Industry',
+                        COL_SURGE_QTR,
+                        'Pledged %',
+                        'Promoter Holding',
+                        'WC Days'
+                    ];
+
+                    // Add the 13 quarterly columns (Jun 2026 back to Jun 2023)
+                    quarterlyColumns.slice(0, 13).forEach(col => defaultVisibleCols.push(col));
+
+                    // Add the 9 YoY comparison columns
+                    yoyIds.slice(0, 9).forEach(col => defaultVisibleCols.push(col));
+
+                    visibleColumns = new Set(defaultVisibleCols);
+
                     try {
                         await loadDecisionsAndMerge();
                     } catch(e) {
