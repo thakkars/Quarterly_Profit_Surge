@@ -3194,8 +3194,15 @@
         function calcYoY(row, newCol, oldCol) {
             const nv = parseFloat(String(row[newCol] || '').replace(/,/g, ''));
             const ov = parseFloat(String(row[oldCol] || '').replace(/,/g, ''));
-            if (isNaN(nv) || isNaN(ov) || ov === 0) return null;
-            return ((nv - ov) / Math.abs(ov)) * 100;
+
+            // Treat negative values as zero
+            const newVal = isNaN(nv) ? 0 : Math.max(0, nv);
+            const oldVal = isNaN(ov) ? 0 : Math.max(0, ov);
+
+            // If old value is zero, return null (can't calculate growth from zero)
+            if (oldVal === 0) return null;
+
+            return ((newVal - oldVal) / oldVal) * 100;
         }
 
         function formatYoY(val) {
