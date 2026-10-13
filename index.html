@@ -4261,7 +4261,6 @@
                             console.log(`✅ Showing ${rawData.length} companies with ${latestQtr} results`);
                         }
                     }
-                }
                 if (rawData && rawData.length > 0) {
                     allColumns = Object.keys(rawData[0]).filter(col => col !== 'Name' && col !== 'NSE Code Exact' && col !== 'Screener Name Exact' && col !== 'Investing Name Exact');
                     quarterlyColumns = detectQuarterlyColumns(allColumns);
