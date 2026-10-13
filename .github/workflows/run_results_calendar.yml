@@ -6,6 +6,9 @@ on:
     - cron: '0 1 * * *'   # 06:30 IST
     - cron: '0 14 * * *'  # 19:30 IST
 
+permissions:
+  contents: write
+
 jobs:
   fetch-results-calendar:
     runs-on: ubuntu-latest
@@ -14,6 +17,8 @@ jobs:
     steps:
     - name: Checkout repo
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -26,21 +31,27 @@ jobs:
         chrome-version: stable
 
     - name: Install Python dependencies
-      run: pip install selenium requests pandas openpyxl boto3
+      run: pip install selenium requests pandas openpyxl
 
     - name: Run NSE Results Calendar Scraper
       env:
-        R2_ACCESS_KEY_ID:     ${{ secrets.R2_ACCESS_KEY_ID }}
-        R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-        R2_ENDPOINT_URL:      ${{ secrets.R2_ENDPOINT_URL }}
-        R2_BUCKET_NAME:       quarterly-profit-surge
-        GITHUB_ACTIONS:       "true"
+        GITHUB_ACTIONS: "true"
       run: python R02_NSE_Results_Calendar.py
+
+    - name: Commit and push updated results calendar
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git add nse_results_calendar.json nse_results_calendar.csv || true
+        git commit -m "Auto-update NSE results calendar [skip ci]" || echo "No changes to commit"
+        git push origin main || echo "Git push skipped or failed"
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       if: always()
       with:
         name: nse-results-calendar-${{ github.run_number }}
-        path: /tmp/screener_data/
+        path: |
+          nse_results_calendar.json
+          nse_results_calendar.csv
         retention-days: 30

@@ -5,37 +5,54 @@ on:
   schedule:
     - cron: '30 14 * * *' # Runs at 14:30 UTC, which is 8:00 PM IST daily
 
+permissions:
+  contents: write
+
 jobs:
   scrape:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
     - uses: actions/setup-python@v5
       with:
         python-version: '3.11'
+
     - name: Install Chrome and ChromeDriver
       uses: browser-actions/setup-chrome@v1
       with:
         chrome-version: stable
+
     - name: Install Python dependencies
-      run: pip install selenium pandas numpy openpyxl boto3 google-auth google-auth-httplib2 google-api-python-client gspread
+      run: pip install selenium pandas numpy openpyxl requests
+
     - name: Run Stock Screener
       env:
         SCREENER_USERNAME: ${{ secrets.SCREENER_USERNAME }}
         SCREENER_PASSWORD: ${{ secrets.SCREENER_PASSWORD }}
-        R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-        R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-        R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL }}
-        R2_BUCKET_NAME: quarterly-profit-surge
         GITHUB_ACTIONS: "true"
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       run: python R01_70__Operating_Profit.py
+
+    - name: Commit and push updated data to repository
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git add rawdata.json "Raw Data.xlsx" "Master File.xlsx" "Screener_Industry_Data.xlsx" progress.json || true
+        git commit -m "Auto-update stock screener data [skip ci]" || echo "No changes to commit"
+        git push origin main || echo "Git push skipped or failed"
+
     - name: Upload Excel files as artifacts
       uses: actions/upload-artifact@v4
       if: always()
       with:
         name: screener-results-${{ github.run_number }}
-        path: /tmp/screener_data/
+        path: |
+          rawdata.json
+          Raw Data.xlsx
+          Master File.xlsx
         retention-days: 30

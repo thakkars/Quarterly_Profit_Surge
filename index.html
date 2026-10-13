@@ -2918,7 +2918,7 @@
         const GITHUB_REPO = "Quarterly_Profit_Surge";
         const WORKFLOW_FILE = "run_screener.yml";
         const BRANCH = "main";
-        const DATA_URL = "https://pub-9afc232687c44eebbb8cae359c7ac460.r2.dev/rawdata.json";
+        const DATA_URL = "./rawdata.json";
         const CHAT_API_URL = "https://terminal-api.deepakkhatwani.workers.dev/api/comments";
         
         const COL_NSE = "__col_nse__";
@@ -3702,10 +3702,10 @@
                     const res = await fetch(`${decUrl}?t=${new Date().getTime()}`);
                     if (res.ok) {
                         fetchedEvals = await res.json();
-                        console.log("Decisions loaded from R2 bucket");
+                        console.log("Decisions loaded from repository file");
                     }
                 } catch(e) {
-                    console.warn("Failed to load decisions from R2 bucket:", e);
+                    console.warn("Failed to load decisions from repository file:", e);
                 }
             }
             

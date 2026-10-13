@@ -4,7 +4,6 @@ import glob
 import shutil
 import requests
 import pandas as pd
-import boto3
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
@@ -22,50 +21,15 @@ USERNAME   = os.environ.get("SCREENER_USERNAME", "")
 PASSWORD   = os.environ.get("SCREENER_PASSWORD", "")
 SCREEN_URL = "https://www.screener.in/screens/3650931/all-nse-bse-stocks/"
 
-DOWNLOAD_DIR = "/tmp/nse_bse_data" if IS_GITHUB_ACTIONS else \
-               r"D:\Investment Research\Python Projects\Operating Profit more than 70% jump"
+LOCAL_REPO_DIR = os.path.dirname(os.path.abspath(__file__))
+DOWNLOAD_DIR   = os.path.join(LOCAL_REPO_DIR, "downloads") if IS_GITHUB_ACTIONS else \
+                 r"D:\Investment Research\Python Projects\Operating Profit more than 70% jump"
 
-FRESH_CSV    = os.path.join(DOWNLOAD_DIR, "screener_fresh.csv")
-R2_EXCEL_KEY = "All NSE BSE Stocks.xlsx"
-LOCAL_R2     = os.path.join(DOWNLOAD_DIR, R2_EXCEL_KEY)
+FRESH_CSV      = os.path.join(DOWNLOAD_DIR, "screener_fresh.csv")
+MASTER_EXCEL_FILENAME = "All NSE BSE Stocks.xlsx"
+LOCAL_MASTER   = os.path.join(LOCAL_REPO_DIR, MASTER_EXCEL_FILENAME)
 
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
-
-# ─── R2 CONFIG ────────────────────────────────────────────
-R2_BUCKET     = os.environ.get("R2_BUCKET_NAME",       "")
-R2_ACCESS_KEY = os.environ.get("R2_ACCESS_KEY_ID",     "")
-R2_SECRET_KEY = os.environ.get("R2_SECRET_ACCESS_KEY", "")
-R2_ENDPOINT   = os.environ.get("R2_ENDPOINT_URL",      "")
-
-# ═══════════════════════════════════════════════════════════
-# R2 HELPERS
-# ═══════════════════════════════════════════════════════════
-def get_r2_client():
-    return boto3.client(
-        "s3",
-        endpoint_url          = R2_ENDPOINT,
-        aws_access_key_id     = R2_ACCESS_KEY,
-        aws_secret_access_key = R2_SECRET_KEY,
-        region_name           = "auto",
-    )
-
-def r2_download(r2_key, local_path):
-    try:
-        get_r2_client().download_file(R2_BUCKET, r2_key, local_path)
-        print(f"⬇️  Downloaded from R2: {r2_key}")
-        return True
-    except Exception as e:
-        print(f"⚠️  R2 download failed: {e}")
-        return False
-
-def r2_upload(local_path, r2_key):
-    try:
-        get_r2_client().upload_file(local_path, R2_BUCKET, r2_key)
-        print(f"⬆️  Uploaded to R2: {r2_key}")
-        return True
-    except Exception as e:
-        print(f"⚠️  R2 upload failed: {e}")
-        return False
 
 # ═══════════════════════════════════════════════════════════
 # DRIVER INIT
@@ -119,7 +83,7 @@ def wait_for_download(download_dir, final_path, timeout=30):
             continue
         files = glob.glob(os.path.join(download_dir, "*.csv")) + \
                 glob.glob(os.path.join(download_dir, "*.xlsx"))
-        files = [f for f in files if os.path.basename(f) != R2_EXCEL_KEY]
+        files = [f for f in files if os.path.basename(f) != MASTER_EXCEL_FILENAME]
         if files:
             latest = max(files, key=os.path.getmtime)
             if time.time() - os.path.getmtime(latest) < 60:
@@ -237,15 +201,14 @@ def find_new_stocks(df_fresh, df_r2):
 # MAIN
 # ═══════════════════════════════════════════════════════════
 def main():
-    # ── Step 1: Download master file from R2 ───────────────────────
-    print("\n📥 Step 1: Downloading master file from R2...")
-    r2_ok = r2_download(R2_EXCEL_KEY, LOCAL_R2)
-    if not r2_ok or not os.path.exists(LOCAL_R2):
-        print("❌ Could not download master file from R2 — aborting")
+    # ── Step 1: Load master file from repository ───────────────────
+    print("\n📥 Step 1: Loading master file from repository...")
+    if not os.path.exists(LOCAL_MASTER):
+        print(f"❌ Master file not found at {LOCAL_MASTER} — aborting")
         return
 
-    df_r2 = pd.read_excel(LOCAL_R2)
-    print(f"   → R2 master has {len(df_r2)} stocks")
+    df_master = pd.read_excel(LOCAL_MASTER)
+    print(f"   → Master has {len(df_master)} stocks")
 
     # ── Step 2: Login + Export fresh CSV ────────────────────────────
     print("\n🌐 Step 2: Scraping fresh data from Screener...")
@@ -274,8 +237,8 @@ def main():
         driver.quit()
 
     # ── Step 3: Compare ───────────────────────────────────────────
-    print("\n🔍 Step 3: Comparing R2 master vs fresh data...")
-    df_new = find_new_stocks(df_fresh, df_r2)
+    print("\n🔍 Step 3: Comparing repository master vs fresh data...")
+    df_new = find_new_stocks(df_fresh, df_master)
 
     if df_new.empty:
         print("✅ No new stocks found — nothing to update. Done!")
@@ -300,21 +263,19 @@ def main():
     df_new = df_new.copy()
     df_new["Company"] = full_names
 
-    # ── Step 5: Append & upload to R2 ─────────────────────────────
+    # ── Step 5: Append & save to master file ───────────────────────
     print(f"\n💾 Step 5: Appending {len(df_new)} new row(s) to master file...")
 
-    # Align columns to match R2 master exactly
-    for col in df_r2.columns:
+    # Align columns to match master exactly
+    for col in df_master.columns:
         if col not in df_new.columns:
             df_new[col] = ""
-    df_new = df_new[df_r2.columns]
+    df_new = df_new[df_master.columns]
 
-    df_updated = pd.concat([df_r2, df_new], ignore_index=True)
-    df_updated.to_excel(LOCAL_R2, index=False)
+    df_updated = pd.concat([df_master, df_new], ignore_index=True)
+    df_updated.to_excel(LOCAL_MASTER, index=False)
     print(f"   → Master now has {len(df_updated)} stocks")
-
-    r2_upload(LOCAL_R2, R2_EXCEL_KEY)
-    print(f"\n✅ Done! {len(df_new)} new stock(s) added to R2 master.")
+    print(f"\n✅ Done! {len(df_new)} new stock(s) added to master file.")
 
 if __name__ == "__main__":
     main()

@@ -24,63 +24,20 @@ SCREEN_ID  = "3650931"
 SCREEN_URL = f"https://www.screener.in/screens/{SCREEN_ID}/all-nse-bse-stocks/"
 EXPORT_URL = f"https://www.screener.in/screens/{SCREEN_ID}/export/"
 
-TMP_DIR      = "/tmp/screener_export" if IS_GITHUB_ACTIONS else "."
+LOCAL_REPO_DIR = os.path.dirname(os.path.abspath(__file__))
+TMP_DIR        = os.path.join(LOCAL_REPO_DIR, "downloads") if IS_GITHUB_ACTIONS else "."
 os.makedirs(TMP_DIR, exist_ok=True)
-DOWNLOAD_DIR = os.path.join(TMP_DIR, "downloads")
+DOWNLOAD_DIR   = os.path.join(TMP_DIR, "downloads")
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
 TODAY           = datetime.utcnow().strftime("%Y-%m-%d")
-RAW_CSV_KEY     = f"raw/query-results-{TODAY}.csv"
-MASTER_CSV_KEY  = "master/exchange_codes_fullnames.csv"
-MASTER_XLSX_KEY = "master/exchange_codes_fullnames.xlsx"
 
-MASTER_CSV_PATH  = os.path.join(TMP_DIR, "exchange_codes_fullnames.csv")
-MASTER_XLSX_PATH = os.path.join(TMP_DIR, "exchange_codes_fullnames.xlsx")
-
-R2_BUCKET     = os.environ.get("R2_BUCKET_NAME",       "") or "quarterly-profit-surge"
-R2_ACCESS_KEY = os.environ.get("R2_ACCESS_KEY_ID",     "")
-R2_SECRET_KEY = os.environ.get("R2_SECRET_ACCESS_KEY", "")
-R2_ENDPOINT   = os.environ.get("R2_ENDPOINT_URL",      "")
+MASTER_CSV_PATH  = os.path.join(LOCAL_REPO_DIR, "exchange_codes_fullnames.csv")
+MASTER_XLSX_PATH = os.path.join(LOCAL_REPO_DIR, "exchange_codes_fullnames.xlsx")
 
 HEADLESS  = IS_GITHUB_ACTIONS
 PAGE_DELAY = 8.0
 NAME_DELAY = 1.2
-
-# ═══════════════════════════════════════════════════════════
-# R2 HELPERS
-# ═══════════════════════════════════════════════════════════
-def get_r2_client():
-    import boto3
-    return boto3.client(
-        "s3",
-        endpoint_url=R2_ENDPOINT,
-        aws_access_key_id=R2_ACCESS_KEY,
-        aws_secret_access_key=R2_SECRET_KEY,
-        region_name="auto",
-    )
-
-def r2_download(r2_key, local_path):
-    try:
-        get_r2_client().download_file(R2_BUCKET, r2_key, local_path)
-        print(f"⬇️  Downloaded R2:{r2_key} → {local_path}")
-        return True
-    except Exception as e:
-        print(f"ℹ️  R2 download skipped ({r2_key}): {e}")
-        return False
-
-def r2_upload(local_path, r2_key, content_type="text/csv"):
-    try:
-        print(f"ℹ️  Uploading → bucket='{R2_BUCKET}'  key='{r2_key}'")
-        get_r2_client().upload_file(
-            local_path, R2_BUCKET, r2_key,
-            ExtraArgs={"ContentType": content_type,
-                       "CacheControl": "no-cache, no-store, must-revalidate"},
-        )
-        print(f"⬆️  Uploaded {local_path} → R2:{r2_key}")
-        return True
-    except Exception as e:
-        print(f"⚠️  R2 upload failed ({r2_key}): {e}")
-        return False
 
 # ═══════════════════════════════════════════════════════════
 # SELENIUM DRIVER
@@ -384,9 +341,6 @@ print(f"   Date (UTC) : {TODAY}")
 print(f"   Download   : {DOWNLOAD_DIR}")
 
 try:
-    if IS_GITHUB_ACTIONS:
-        r2_download(MASTER_CSV_KEY, MASTER_CSV_PATH)
-
     df_master = pd.DataFrame(columns=["Key", "Full_Company_Name", "Screener_Name",
                                        "NSE_Code", "BSE_Code", "ISIN_Code",
                                        "First_Seen", "Last_Seen", "Source_URL"])
@@ -446,16 +400,6 @@ try:
 
     df_final = save_master(df_master)
     print(df_final.head(10).to_string())
-
-    if IS_GITHUB_ACTIONS:
-        dated_raw = os.path.join(DOWNLOAD_DIR, f"query-results-{TODAY}.csv")
-        shutil.copy(downloaded_csv, dated_raw)
-        r2_upload(dated_raw,        RAW_CSV_KEY,     "text/csv")
-        r2_upload(MASTER_CSV_PATH,  MASTER_CSV_KEY,  "text/csv")
-        r2_upload(MASTER_XLSX_PATH, MASTER_XLSX_KEY,
-                  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    else:
-        print("ℹ️  Not in GitHub Actions — skipping R2 upload.")
 
     print(f"\n✅ Done. Total master rows: {len(df_final)}")
 

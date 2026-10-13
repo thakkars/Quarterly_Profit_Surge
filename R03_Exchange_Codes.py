@@ -18,61 +18,11 @@ USERNAME   = os.environ.get("SCREENER_USERNAME", "")
 PASSWORD   = os.environ.get("SCREENER_PASSWORD", "")
 SCREEN_URL = "https://www.screener.in/screens/3650931/all-nse-bse-stocks/"
 
-FOLDER_PATH    = "/tmp/exchange_codes" if IS_GITHUB_ACTIONS else "."
-os.makedirs(FOLDER_PATH, exist_ok=True)
-
-CSV_LOCAL_PATH = os.path.join(FOLDER_PATH, "exchange_codes.csv")
-
-# R2 CONFIG
-# Use 'or' so that an empty-string secret also falls back to the hardcoded default
-R2_BUCKET     = os.environ.get("R2_BUCKET_NAME",       "") or "quarterly-profit-surge"
-R2_ACCESS_KEY = os.environ.get("R2_ACCESS_KEY_ID",     "")
-R2_SECRET_KEY = os.environ.get("R2_SECRET_ACCESS_KEY", "")
-R2_ENDPOINT   = os.environ.get("R2_ENDPOINT_URL",      "")
-R2_CSV_KEY    = "exchange_codes.csv"
+LOCAL_REPO_DIR = os.path.dirname(os.path.abspath(__file__))
+CSV_LOCAL_PATH = os.path.join(LOCAL_REPO_DIR, "exchange_codes.csv")
 
 HEADLESS   = IS_GITHUB_ACTIONS
 PAGE_DELAY  = 3.0
-
-# ═══════════════════════════════════════════════════════════
-# R2 HELPERS
-# ═══════════════════════════════════════════════════════════
-def get_r2_client():
-    import boto3
-    return boto3.client(
-        "s3",
-        endpoint_url          = R2_ENDPOINT,
-        aws_access_key_id     = R2_ACCESS_KEY,
-        aws_secret_access_key = R2_SECRET_KEY,
-        region_name           = "auto",
-    )
-
-def r2_download_existing():
-    try:
-        client = get_r2_client()
-        client.download_file(R2_BUCKET, R2_CSV_KEY, CSV_LOCAL_PATH)
-        print(f"⬇️  Downloaded existing exchange_codes.csv from R2")
-        return True
-    except Exception as e:
-        print(f"ℹ️  No existing CSV on R2 (will create fresh): {e}")
-        return False
-
-def r2_upload(local_path, r2_key):
-    try:
-        print(f"ℹ️  R2 upload → bucket='{R2_BUCKET}'  key='{r2_key}'  endpoint='{R2_ENDPOINT}'")
-        client = get_r2_client()
-        client.upload_file(
-            local_path, R2_BUCKET, r2_key,
-            ExtraArgs={
-                'ContentType': 'text/csv',
-                'CacheControl': 'no-cache, no-store, must-revalidate'
-            }
-        )
-        print(f"⬆️  Uploaded {local_path} → R2:{r2_key}")
-        return True
-    except Exception as e:
-        print(f"⚠️  R2 upload failed: {e}")
-        return False
 
 # ═══════════════════════════════════════════════════════════
 # SELENIUM DRIVER
@@ -295,13 +245,9 @@ def merge_with_existing(new_rows):
 # ═══════════════════════════════════════════════════════════
 print("\n🚀 R03_Exchange_Codes.py starting...")
 print(f"   Screen URL : {SCREEN_URL}")
-print(f"   R2 Bucket  : '{R2_BUCKET}'")
-print(f"   R2 Endpoint: '{R2_ENDPOINT}'")
 print(f"   Timestamp  : {datetime.utcnow().isoformat()}Z")
 
 try:
-    if IS_GITHUB_ACTIONS:
-        r2_download_existing()
 
     driver = init_driver()
     wait   = WebDriverWait(driver, 25)
@@ -325,11 +271,6 @@ try:
     df_final.to_csv(CSV_LOCAL_PATH, index=False)
     print(f"\n💾 Saved: {CSV_LOCAL_PATH}  ({len(df_final)} rows)")
     print(df_final.head(10).to_string())
-
-    if IS_GITHUB_ACTIONS:
-        r2_upload(CSV_LOCAL_PATH, R2_CSV_KEY)
-    else:
-        print("ℹ️  Not in GitHub Actions — skipping R2 upload.")
 
     print("\n✅ R03_Exchange_Codes.py completed successfully.")
 

@@ -6,6 +6,9 @@ on:
     - cron: '30 12 * * *'
   workflow_dispatch:   # Manual trigger from GitHub Actions tab
 
+permissions:
+  contents: write
+
 jobs:
   screener-export-master:
     runs-on: ubuntu-latest
@@ -14,6 +17,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -22,7 +27,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install selenium pandas boto3 openpyxl
+          pip install selenium pandas requests openpyxl
 
       - name: Set up Chrome + ChromeDriver
         uses: browser-actions/setup-chrome@v1
@@ -31,10 +36,15 @@ jobs:
 
       - name: Run Screener Export Master
         env:
-          SCREENER_USERNAME:    ${{ secrets.SCREENER_USERNAME }}
-          SCREENER_PASSWORD:    ${{ secrets.SCREENER_PASSWORD }}
-          R2_BUCKET_NAME:       ${{ secrets.R2_BUCKET_NAME }}
-          R2_ACCESS_KEY_ID:     ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_ENDPOINT_URL:      ${{ secrets.R2_ENDPOINT_URL }}
+          SCREENER_USERNAME: ${{ secrets.SCREENER_USERNAME }}
+          SCREENER_PASSWORD: ${{ secrets.SCREENER_PASSWORD }}
+          GITHUB_ACTIONS:    "true"
         run: python R04_Screener_Export_Master.py
+
+      - name: Commit and push updated master export files
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add exchange_codes_fullnames.csv exchange_codes_fullnames.xlsx || true
+          git commit -m "Auto-update Screener Export Master [skip ci]" || echo "No changes to commit"
+          git push origin main || echo "Git push skipped or failed"

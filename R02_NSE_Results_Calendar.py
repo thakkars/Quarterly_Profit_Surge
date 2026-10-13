@@ -17,64 +17,21 @@ if os.environ.get("GITHUB_ACTIONS", "false").lower() != "true":
 # ═══════════════════════════════════════════════════════════
 # CONFIG
 # ═══════════════════════════════════════════════════════════
-IS_GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS", "false").lower() == "true"
-
-FOLDER_PATH = "/tmp/screener_data" if IS_GITHUB_ACTIONS else \
-    r"D:\Investment Research\Python Projects\Operating Profit more than 70% jump"
-
-os.makedirs(FOLDER_PATH, exist_ok=True)
+LOCAL_REPO_DIR = os.path.dirname(os.path.abspath(__file__))
+LEGACY_DIR = r"D:\Investment Research\Python Projects\Operating Profit more than 70% jump"
+if IS_GITHUB_ACTIONS:
+    FOLDER_PATH = LOCAL_REPO_DIR
+elif os.path.exists(os.path.join(LOCAL_REPO_DIR, "nse_results_calendar.csv")):
+    FOLDER_PATH = LOCAL_REPO_DIR
+elif os.path.exists(LEGACY_DIR):
+    FOLDER_PATH = LEGACY_DIR
+else:
+    FOLDER_PATH = LOCAL_REPO_DIR
 
 CSV_PATH  = os.path.join(FOLDER_PATH, "nse_results_calendar.csv")
 JSON_PATH = os.path.join(FOLDER_PATH, "nse_results_calendar.json")
 
-R2_BUCKET     = os.environ.get("R2_BUCKET_NAME",       "quarterly-profit-surge")
-R2_ACCESS_KEY = os.environ.get("R2_ACCESS_KEY_ID",     "")
-R2_SECRET_KEY = os.environ.get("R2_SECRET_ACCESS_KEY", "")
-R2_ENDPOINT   = os.environ.get("R2_ENDPOINT_URL",      "")
-
-R2_CSV_KEY  = "nse_results_calendar.csv"
-R2_JSON_KEY = "nse_results_calendar.json"
-
 NSE_XBRL_URL = "https://www.nseindia.com/companies-listing/corporate-filings-announcements-xbrl"
-
-# ═══════════════════════════════════════════════════════════
-# R2
-# ═══════════════════════════════════════════════════════════
-def get_r2():
-    import boto3
-    return boto3.client("s3",
-        endpoint_url=R2_ENDPOINT,
-        aws_access_key_id=R2_ACCESS_KEY,
-        aws_secret_access_key=R2_SECRET_KEY,
-        region_name="auto")
-
-def r2_download(key, path):
-    try:
-        get_r2().download_file(R2_BUCKET, key, path)
-        print(f"⬇️  R2 download OK: {key}")
-        return True
-    except Exception as e:
-        print(f"⚠️  R2 download failed ({key}): {e}")
-        return False
-
-def r2_upload(path, key):
-    try:
-        if not os.path.exists(path):
-            print(f"⚠️  Upload skipped — not found: {path}")
-            return False
-        extra = {}
-        if key.endswith(".json"):
-            extra = {"ContentType": "application/json",
-                     "CacheControl": "no-cache, no-store, must-revalidate"}
-        elif key.endswith(".csv"):
-            extra = {"ContentType": "text/csv",
-                     "CacheControl": "no-cache, no-store, must-revalidate"}
-        get_r2().upload_file(path, R2_BUCKET, key, ExtraArgs=extra or None)
-        print(f"⬆️  R2 upload OK: {key}")
-        return True
-    except Exception as e:
-        print(f"⚠️  R2 upload failed ({key}): {e}")
-        return False
 
 # ═══════════════════════════════════════════════════════════
 # DRIVER
@@ -256,10 +213,7 @@ def main():
     print(f"  Run time (IST): {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("="*60)
 
-    if IS_GITHUB_ACTIONS:
-        r2_download(R2_CSV_KEY, CSV_PATH)
-
-    print("\n[1/3] Scraping NSE XBRL page...")
+    print("\n[1/2] Scraping NSE XBRL page...")
     new_rows = scrape_xbrl_page()
 
     if not new_rows:
@@ -292,16 +246,11 @@ def main():
     else:
         df_final = df_new
 
-    print(f"\n[2/3] Saving {len(df_final)} rows...")
+    print(f"\n[2/2] Saving {len(df_final)} rows...")
     df_final.to_csv(CSV_PATH, index=False)
     print(f"✅ CSV: {CSV_PATH}")
     df_final.fillna("").to_json(JSON_PATH, orient="records")
     print(f"✅ JSON: {JSON_PATH}")
-
-    print("\n[3/3] Uploading to Cloudflare R2...")
-    if IS_GITHUB_ACTIONS:
-        r2_upload(CSV_PATH,  R2_CSV_KEY)
-        r2_upload(JSON_PATH, R2_JSON_KEY)
 
     print("\n✅ Done!")
 

@@ -32,10 +32,16 @@ PASSWORD   = os.environ.get("SCREENER_PASSWORD", "gaurav23")
 SCREEN_URL = os.environ.get("SCREEN_URL") or os.environ.get("SCREENER_SCREEN_URL") or "https://www.screener.in/screens/3647191/equity-research-github/"
 
 
+LOCAL_REPO_DIR = os.path.dirname(os.path.abspath(__file__))
+LEGACY_DIR = r"D:\Investment Research\Python Projects\Operating Profit more than 70% jump"
 if IS_GITHUB_ACTIONS:
-    FOLDER_PATH = "/tmp/screener_data"
+    FOLDER_PATH = LOCAL_REPO_DIR
+elif os.path.exists(os.path.join(LOCAL_REPO_DIR, "Master File.xlsx")):
+    FOLDER_PATH = LOCAL_REPO_DIR
+elif os.path.exists(LEGACY_DIR):
+    FOLDER_PATH = LEGACY_DIR
 else:
-    FOLDER_PATH = r"D:\Investment Research\Python Projects\Operating Profit more than 70% jump"
+    FOLDER_PATH = LOCAL_REPO_DIR
 
 MASTER_FILE_PATH   = os.path.join(FOLDER_PATH, "Master File.xlsx")
 RAW_FILE_PATH      = os.path.join(FOLDER_PATH, "Raw Data.xlsx")
@@ -47,18 +53,6 @@ os.makedirs(FOLDER_PATH, exist_ok=True)
 
 HEADLESS   = IS_GITHUB_ACTIONS
 PAGE_DELAY = 1.0
-
-# ─── R2 CONFIG ─────────────────────────────────────────────
-R2_BUCKET     = os.environ.get("R2_BUCKET_NAME",       "quarterly-profit-surge")
-R2_ACCESS_KEY = os.environ.get("R2_ACCESS_KEY_ID",     "")
-R2_SECRET_KEY = os.environ.get("R2_SECRET_ACCESS_KEY", "")
-R2_ENDPOINT   = os.environ.get("R2_ENDPOINT_URL",      "")
-
-R2_MASTER_KEY    = "Master File.xlsx"
-R2_RAW_KEY       = "Raw Data.xlsx"
-R2_RAW_JSON_KEY  = "rawdata.json"
-R2_INDUSTRY_KEY  = "Screener_Industry_Data.xlsx"
-R2_PROGRESS_KEY  = "progress.json"
 
 # ─── MSI CONFIG (guest mode scraping) ──────────────────────
 MSI_ENABLED   = os.environ.get("MSI_ENABLED", "false").lower() == "true"
@@ -74,14 +68,11 @@ MSI_COLS      = [
 # ═══════════════════════════════════════════════════════════
 # PROGRESS TELEMETRY
 # ═══════════════════════════════════════════════════════════
-_last_progress_upload = 0.0
-
 def push_progress(phase, completed, total, current_company="", status="running", elapsed_sec=0, force_r2=False):
     """
-    Write progress.json locally and upload to R2 (throttled to avoid network overhead).
+    Write progress.json locally.
     phase: 'initialising' | 'collecting' | 'scraping' | 'enriching' | 'finalising' | 'complete' | 'failed'
     """
-    global _last_progress_upload
     pct = round((completed / total * 100)) if total > 0 else 0
     eta_sec = 0
     if completed > 0 and total > completed and elapsed_sec > 0:
@@ -102,44 +93,8 @@ def push_progress(phase, completed, total, current_company="", status="running",
     try:
         with open(PROGRESS_JSON_PATH, "w") as f:
             json.dump(payload, f)
-        
-        now = time.time()
-        # Upload to R2 if forced, on status changes, or at least 15s apart
-        should_upload = (
-            force_r2
-            or status in ("complete", "failed")
-            or phase in ("initialising", "collecting", "finalising")
-            or (now - _last_progress_upload >= 15.0)
-            or completed == total
-        )
-        if IS_GITHUB_ACTIONS and should_upload:
-            _last_progress_upload = now
-            r2_upload_progress()
     except Exception as e:
         print(f"[WARN]  Progress push failed: {e}")
-
-def r2_upload_progress():
-    """Lightweight upload of just progress.json."""
-    try:
-        if not R2_ENDPOINT or not R2_ACCESS_KEY:
-            return
-        import boto3
-        client = boto3.client(
-            "s3",
-            endpoint_url          = R2_ENDPOINT,
-            aws_access_key_id     = R2_ACCESS_KEY,
-            aws_secret_access_key = R2_SECRET_KEY,
-            region_name           = "auto",
-        )
-        client.upload_file(
-            PROGRESS_JSON_PATH, R2_BUCKET, R2_PROGRESS_KEY,
-            ExtraArgs={
-                'ContentType': 'application/json',
-                'CacheControl': 'no-cache, no-store, must-revalidate'
-            }
-        )
-    except Exception as e:
-        print(f"[WARN]  R2 progress upload failed: {e}")
 
 # ═══════════════════════════════════════════════════════════
 # TELEGRAM ALERTS
@@ -304,54 +259,6 @@ def passes_strict_filters(row):
         return False
         
     return True
-
-# ═══════════════════════════════════════════════════════════
-# R2 HELPERS
-# ═══════════════════════════════════════════════════════════
-def get_r2_client():
-    import boto3
-    return boto3.client(
-        "s3",
-        endpoint_url          = R2_ENDPOINT,
-        aws_access_key_id     = R2_ACCESS_KEY,
-        aws_secret_access_key = R2_SECRET_KEY,
-        region_name           = "auto",
-    )
-
-def r2_download(r2_key, local_path):
-    try:
-        client = get_r2_client()
-        client.download_file(R2_BUCKET, r2_key, local_path)
-        print(f"[DOWN]  Downloaded from R2: {r2_key} -> {local_path}")
-        return True
-    except Exception as e:
-        print(f"[WARN]  R2 download failed for {r2_key}: {e}")
-        return False
-
-def r2_upload(local_path, r2_key):
-    try:
-        if not os.path.exists(local_path):
-            print(f"[WARN]  Skipping R2 upload - file not found: {local_path}")
-            return False
-        client = get_r2_client()
-        extra_args = {}
-        if r2_key.endswith('.json'):
-            extra_args = {
-                'ContentType': 'application/json',
-                'CacheControl': 'no-cache, no-store, must-revalidate'
-            }
-        client.upload_file(local_path, R2_BUCKET, r2_key, ExtraArgs=extra_args)
-        print(f"[UP]  Uploaded to R2 : {local_path} -> {r2_key}")
-        return True
-    except Exception as e:
-        print(f"[WARN]  R2 upload failed for {r2_key}: {e}")
-        return False
-
-if IS_GITHUB_ACTIONS:
-    print("\n[DOWN] Downloading existing files from Cloudflare R2...")
-    r2_download(R2_MASTER_KEY,   MASTER_FILE_PATH)
-    r2_download(R2_RAW_KEY,      RAW_FILE_PATH)
-    r2_download(R2_INDUSTRY_KEY, INDUSTRY_FILE_PATH)
 
 # ═══════════════════════════════════════════════════════════
 # MAPPING & ENRICHMENT
@@ -1036,20 +943,10 @@ try:
         if pending_rows:
             append_rows_to_raw_excel(pending_rows, target_sheet)
 
-        push_progress("finalising", total, total, "Serialising dataset & committing to R2...", force_r2=True)
+        push_progress("finalising", total, total, "Serialising dataset...")
         generate_raw_json(target_sheet)
 
-        if IS_GITHUB_ACTIONS:
-            r2_upload(RAW_FILE_PATH,    R2_RAW_KEY)
-            r2_upload(RAW_JSON_PATH,    R2_RAW_JSON_KEY)
-            r2_upload(MASTER_FILE_PATH, R2_MASTER_KEY)
-            dec_paths = ["decisions.json", os.path.join(FOLDER_PATH, "decisions.json")]
-            for p in dec_paths:
-                if os.path.exists(p):
-                    r2_upload(p, "decisions.json")
-                    break
-
-        push_progress("complete", total, total, "Dataset refreshed successfully.", status="complete", elapsed_sec=time.time()-run_start, force_r2=True)
+        push_progress("complete", total, total, "Dataset refreshed successfully.", status="complete", elapsed_sec=time.time()-run_start)
 
         # Send Success Telegram notification
         run_duration_min = round((time.time() - run_start) / 60, 1)
