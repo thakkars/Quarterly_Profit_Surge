@@ -1,0 +1,63 @@
+name: Quarterly Archive and Refresh
+
+on:
+  schedule:
+    # Runs at 18:00 UTC (11:30 PM IST - EOD) on the 3rd of January, April, July, and October
+    - cron: '0 18 3 1,4,7,10 *'
+  workflow_dispatch:
+    inputs:
+      quarter:
+        description: 'Quarter to archive (e.g. Mar26, Jun26, Sep26, Dec26, or "auto")'
+        required: false
+        default: 'auto'
+      reset_rawdata:
+        description: 'Reset rawdata.json for the new quarter'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  archive-quarter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install pandas openpyxl requests
+
+      - name: Run Quarterly Archive and Reset
+        env:
+          QUARTER: ${{ github.event.inputs.quarter || 'auto' }}
+          RESET_RAWDATA: ${{ (github.event.inputs.reset_rawdata != false) && 'true' || 'false' }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python R06_Quarterly_Archive_And_Reset.py
+
+      - name: Commit and push quarterly records to repository
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add Records/ rawdata.json || true
+          git commit -m "Quarterly archive: save results and refresh rawdata [skip ci]" || echo "No changes to commit"
+          git push origin main || echo "Git push skipped or failed"
+
+      - name: Upload Quarterly Archive as artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: quarterly-records-${{ github.run_number }}
+          path: Records/
+          retention-days: 90

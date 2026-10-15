@@ -64,3 +64,23 @@ For GitHub Actions to automatically commit and push updated data back to your re
 - Click **"Run Stock Screener"** → **Run workflow**.
 - When complete, an HTML summary with matched breakout stocks will be sent directly to your Telegram, and the updated `rawdata.json` is committed automatically.
 - You can also test Telegram notifications instantly anytime via the **"Test Telegram Alert"** workflow.
+
+---
+
+## Quarterly Results Records & Refresh
+At the end of every quarter (on the **3rd at EOD** of April, July, October, and January), an automated workflow (`Quarterly Archive and Refresh`) runs:
+- **3 April (EOD):** Archives Q4 (Mar quarter, e.g. `Mar26`)
+- **3 July (EOD):** Archives Q1 (Jun quarter, e.g. `Jun26`)
+- **3 October (EOD):** Archives Q2 (Sep quarter, e.g. `Sep26`)
+- **3 January (EOD):** Archives Q3 (Dec quarter, e.g. `Dec26`)
+
+### Output & Behavior:
+1. **Excel Record:** Creates `Records/Results_<Quarter>.xlsx` with 3 separate styled tabs:
+   - **`Accepted`** (Stocks marked Accepted in `decisions.json`)
+   - **`Rejected`** (Stocks marked Rejected in `decisions.json`)
+   - **`No action`** (Stocks pending review or with no decision)
+   *(All financial columns from `rawdata.json` are retained).*
+2. **JSON Backup:** Saves full raw backup in `Records/rawdata_<Quarter>.json`.
+3. **Fresh Start:** Cleanses / resets `rawdata.json` so the dashboard starts fresh for incoming quarter results.
+4. **Telegram Notification:** Alerts you on Telegram with total count and breakdown.
+5. **Manual Run:** Can be triggered anytime via **Actions** → **"Quarterly Archive and Refresh"** with a custom quarter name or auto-detection.

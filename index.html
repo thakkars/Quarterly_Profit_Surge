@@ -2580,6 +2580,49 @@
             transform: translateY(-1px);
             box-shadow: 0 4px 10px rgba(239, 68, 68, 0.2);
         }
+
+        /* Toast Notification System */
+        .app-toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+        .app-toast {
+            pointer-events: auto;
+            background: #1e293b;
+            color: #f8fafc;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            border-radius: var(--radius-md);
+            padding: 12px 18px;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateY(20px);
+            opacity: 0;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .app-toast.visible {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        .app-toast.success { border-color: rgba(16, 185, 129, 0.4); background: #064e3b; color: #ecfdf5; }
+        .app-toast.error { border-color: rgba(239, 68, 68, 0.4); background: #450a0a; color: #fef2f2; }
+        .app-toast.info { border-color: rgba(59, 130, 246, 0.4); background: #1e293b; color: #f8fafc; }
+        body.light-theme .app-toast {
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
+            border: 1px solid var(--border-subtle);
+        }
+        body.light-theme .app-toast.success { background: #d1fae5; color: #065f46; border-color: #34d399; }
+        body.light-theme .app-toast.error { background: #fee2e2; color: #991b1b; border-color: #f87171; }
+        body.light-theme .app-toast.info { background: #e0f2fe; color: #0369a1; border-color: #38bdf8; }
     </style>
     <base target="_blank">
 </head>
@@ -2597,7 +2640,7 @@
                 <button id="run-btn" class="btn btn-primary" onclick="triggerWorkflow()">
                     <span>▶</span> Run Scraper
                 </button>
-                <button class="btn btn-ghost" onclick="resetToken()" title="Reset GitHub Token">🔄</button>
+                <button class="btn btn-ghost" onclick="openTokenModal()" title="GitHub Token Settings (PAT)" id="token-settings-btn">🔑</button>
                 <button class="btn btn-danger" onclick="openExceptionsModal()">⚙️ VIP</button>
                 <button class="btn btn-secondary" onclick="openDecisionsModal()">📁 Decisions</button>
                 <button class="btn btn-secondary" onclick="exportToCSV()">📥 Export</button>
@@ -2877,6 +2920,38 @@
         </div>
     </div>
 
+    <!-- GitHub Token Settings Modal -->
+    <div class="modal-overlay" id="token-modal">
+        <div class="modal-content" style="max-width: 520px;">
+            <div class="modal-header">
+                <span>🔑 GitHub Personal Access Token (PAT)</span>
+                <button class="modal-close" onclick="closeTokenModal()">&#215;</button>
+            </div>
+            <div class="modal-body" style="padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+                <p style="font-size: 13px; line-height: 1.5; color: var(--text-secondary); margin: 0;">
+                    Your GitHub Personal Access Token triggers the scraper runner and syncs decisions. It is stored securely in your browser so clicking <strong>Run Scraper</strong> runs smoothly with zero popups.
+                </p>
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 12px; font-weight: 600; color: var(--text-muted);" for="modal-gh-token-input">GitHub Token</label>
+                    <div style="position: relative; display: flex; align-items: center;">
+                        <input type="password" id="modal-gh-token-input" placeholder="Paste ghp_... or github_pat_..." style="width: 100%; padding: 10px 42px 10px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); background: rgba(0, 0, 0, 0.2); color: var(--text-primary); font-family: monospace; font-size: 13px; outline: none; box-sizing: border-box;" onkeydown="if(event.key==='Enter') saveTokenFromModal()">
+                        <button type="button" onclick="toggleTokenVisibility()" style="position: absolute; right: 8px; background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 16px; padding: 4px;" title="Show/Hide Token" id="toggle-token-vis-btn">👁️</button>
+                    </div>
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); line-height: 1.5; background: rgba(59, 130, 246, 0.08); padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid rgba(59, 130, 246, 0.2);">
+                    💡 <strong>Quick Setup:</strong> Create a token with <code style="color:var(--accent-blue);">workflow</code> and <code style="color:var(--accent-blue);">repo</code> scopes at <a href="https://github.com/settings/tokens" target="_blank" style="color: var(--accent-blue); text-decoration: underline;">github.com/settings/tokens</a>.
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                <button type="button" class="btn btn-ghost" onclick="clearTokenFromModal()" style="color: var(--accent-red); font-size: 12px;">Clear Token</button>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeTokenModal()">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveTokenFromModal()" id="token-save-btn">Save & Continue</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         function formatDate(dateStr) {
             if (!dateStr) return '-';
@@ -2918,6 +2993,8 @@
         const GITHUB_REPO = "Quarterly_Profit_Surge";
         const WORKFLOW_FILE = "run_screener.yml";
         const BRANCH = "main";
+        // Optional default PAT: If set here, the scraper runs completely hands-free with no setup needed
+        const GITHUB_PAT = "";
         const DATA_URL = "./rawdata.json";
         const CHAT_API_URL = "https://terminal-api.deepakkhatwani.workers.dev/api/comments";
         
@@ -3555,16 +3632,112 @@
             btn.innerText = 'Post Note';
         }
 
-        function resetToken() {
+        function showToast(message, type = 'info', duration = 3500) {
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                container.className = 'app-toast-container';
+                document.body.appendChild(container);
+            }
+            const toast = document.createElement('div');
+            toast.className = `app-toast ${type}`;
+            let icon = 'ℹ️';
+            if (type === 'success') icon = '✅';
+            if (type === 'error') icon = '❌';
+            toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('visible'), 10);
+            setTimeout(() => {
+                toast.classList.remove('visible');
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
+
+        function getGitHubToken() {
+            if (typeof GITHUB_PAT !== 'undefined' && GITHUB_PAT && GITHUB_PAT.trim() !== '') {
+                return GITHUB_PAT.trim();
+            }
+            return (localStorage.getItem('gh_token') || '').trim();
+        }
+
+        let _tokenModalCallback = null;
+        function openTokenModal(callback) {
+            _tokenModalCallback = typeof callback === 'function' ? callback : null;
+            const input = document.getElementById('modal-gh-token-input');
+            const existing = getGitHubToken();
+            if (input) {
+                input.value = existing;
+                input.type = 'password';
+            }
+            const visBtn = document.getElementById('toggle-token-vis-btn');
+            if (visBtn) visBtn.textContent = '👁️';
+            const modal = document.getElementById('token-modal');
+            if (modal) modal.classList.add('open');
+            if (input) setTimeout(() => input.focus(), 150);
+        }
+
+        function closeTokenModal() {
+            const modal = document.getElementById('token-modal');
+            if (modal) modal.classList.remove('open');
+            _tokenModalCallback = null;
+        }
+
+        function toggleTokenVisibility() {
+            const input = document.getElementById('modal-gh-token-input');
+            const btn = document.getElementById('toggle-token-vis-btn');
+            if (!input) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                if (btn) btn.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                if (btn) btn.textContent = '👁️';
+            }
+        }
+
+        function saveTokenFromModal() {
+            const input = document.getElementById('modal-gh-token-input');
+            const val = input ? input.value.trim() : '';
+            if (!val) {
+                showToast('Please paste a valid GitHub token', 'error');
+                return;
+            }
+            localStorage.setItem('gh_token', val);
+            showToast('GitHub Token saved! 1-click scraper is ready.', 'success');
+            closeTokenModal();
+            updateGitHubSyncStatus();
+            if (_tokenModalCallback) {
+                const cb = _tokenModalCallback;
+                _tokenModalCallback = null;
+                cb(val);
+            }
+        }
+
+        function clearTokenFromModal() {
             localStorage.removeItem('gh_token');
-            alert("GitHub Token wiped! Click 'Run Backend Scraper' to enter a fresh PAT.");
+            const input = document.getElementById('modal-gh-token-input');
+            if (input) input.value = '';
+            showToast('GitHub Token cleared', 'info');
+            updateGitHubSyncStatus();
             setTelemetry('Idle (Token Cleared)', '', null, '');
+        }
+
+        function resetToken() {
+            openTokenModal();
         }
 
         async function triggerWorkflow() {
             const btn = document.getElementById('run-btn');
-            let token = localStorage.getItem('gh_token');
-            if (!token) { token = prompt('Paste your GitHub Personal Access Token (PAT):'); if (!token) return; localStorage.setItem('gh_token', token.trim()); }
+            const token = getGitHubToken();
+            if (!token) {
+                openTokenModal(function(savedToken) {
+                    if (savedToken) {
+                        triggerWorkflow();
+                    }
+                });
+                return;
+            }
             try {
                 btn.disabled = true;
                 _scrapeStartTime = Date.now();
@@ -3575,12 +3748,18 @@
                     body: JSON.stringify({ ref: BRANCH })
                 });
                 if (!dispatchRes.ok) {
-                    if (dispatchRes.status === 401 || dispatchRes.status === 404) { localStorage.removeItem('gh_token'); throw new Error('Invalid Token. Wiped. Click Run to retry.'); }
-                    throw new Error(`API Error ${dispatchRes.status}`);
+                    let errMsg = `API Error ${dispatchRes.status}`;
+                    if (dispatchRes.status === 401) errMsg = 'Authentication failed (401). Check PAT permissions (needs workflow & repo scope).';
+                    if (dispatchRes.status === 404) errMsg = 'Workflow/Repo not found (404). Check PAT permissions.';
+                    throw new Error(errMsg);
                 }
                 setTelemetry('<span class="spinner"></span> Engine online — awaiting telemetry...', 'GitHub runner is spinning up', null, 'running');
                 setTimeout(() => pollWorkflowStatus(token), 6000);
-            } catch (error) { setTelemetry(`❌ ${error.message}`, '', null, 'error'); btn.disabled = false; }
+            } catch (error) { 
+                setTelemetry(`❌ ${error.message}`, 'Click 🔑 to check token', null, 'error'); 
+                showToast(error.message, 'error', 5000);
+                btn.disabled = false; 
+            }
         }
 
         async function pollWorkflowStatus(token) {
@@ -3676,7 +3855,7 @@
 
         async function loadDecisionsAndMerge() {
             let fetchedEvals = {};
-            const token = localStorage.getItem('gh_token');
+            const token = getGitHubToken();
             if (token) {
                 try {
                     const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/decisions.json`, {
@@ -3734,7 +3913,7 @@
         }
 
         function updateGitHubSyncStatus() {
-            const token = localStorage.getItem('gh_token');
+            const token = getGitHubToken();
             const statusText = document.getElementById('github-sync-status-text');
             const authBtn = document.getElementById('github-auth-btn');
             const actionsDiv = document.getElementById('github-sync-actions');
@@ -3751,17 +3930,12 @@
         }
 
         function setupGitHubToken() {
-            const token = prompt('Paste your GitHub Personal Access Token (PAT) to enable auto-sync for decisions:');
-            if (token === null) return; // cancelled
-            if (token.trim() === '') {
-                localStorage.removeItem('gh_token');
-                alert('GitHub Token cleared. Auto-sync disabled.');
-            } else {
-                localStorage.setItem('gh_token', token.trim());
-                alert('GitHub Token saved! Testing auto-sync...');
-                forcePushDecisionsToGitHub();
-            }
-            updateGitHubSyncStatus();
+            openTokenModal(function(token) {
+                if (token) {
+                    forcePushDecisionsToGitHub();
+                }
+                updateGitHubSyncStatus();
+            });
         }
 
         function downloadDecisionsBackup() {
@@ -3804,13 +3978,13 @@
                     });
                     
                     localStorage.setItem('quarterly_evaluations', JSON.stringify(merged));
-                    alert('Decisions backup restored and merged successfully!');
+                    showToast('Decisions backup restored and merged successfully!', 'success');
                     applyFiltersAndRender();
                     
                     // Trigger sync to GitHub if logged in
                     queueGitHubSync();
                 } catch(err) {
-                    alert('Failed to parse file. Please upload a valid decisions.json backup file.');
+                    showToast('Failed to parse file. Please upload a valid decisions.json backup file.', 'error');
                 }
             };
             reader.readAsText(file);
@@ -3819,8 +3993,13 @@
         }
 
         async function forcePushDecisionsToGitHub() {
-            const token = localStorage.getItem('gh_token');
-            if (!token) { alert('GitHub Token not found. Click Setup Sync first.'); return; }
+            const token = getGitHubToken();
+            if (!token) { 
+                openTokenModal(function(t) {
+                    if (t) forcePushDecisionsToGitHub();
+                });
+                return; 
+            }
             
             const allEvals = localStorage.getItem('quarterly_evaluations') || '{}';
             const statusText = document.getElementById('github-sync-status-text');
@@ -3862,13 +4041,13 @@
                 });
                 
                 if (putRes.ok) {
-                    alert('Decisions successfully synced to GitHub!');
+                    showToast('Decisions successfully synced to GitHub!', 'success');
                 } else {
                     const errData = await putRes.json().catch(() => ({}));
-                    alert(`Failed to sync to GitHub: ${errData.message || putRes.statusText || putRes.status}`);
+                    showToast(`Failed to sync to GitHub: ${errData.message || putRes.statusText || putRes.status}`, 'error', 5000);
                 }
             } catch(e) {
-                alert(`Error during GitHub sync: ${e.message}`);
+                showToast(`Error during GitHub sync: ${e.message}`, 'error', 5000);
             }
             updateGitHubSyncStatus();
         }
@@ -3880,14 +4059,14 @@
             if (statusText) statusText.innerHTML = '<span class="spinner"></span> Pulling from cloud...';
             
             await loadDecisionsAndMerge();
-            alert('Decisions pulled and merged from cloud successfully!');
+            showToast('Decisions pulled and merged from cloud successfully!', 'success');
             applyFiltersAndRender();
             updateGitHubSyncStatus();
         }
 
         let gitHubSyncTimeout = null;
         function queueGitHubSync() {
-            const token = localStorage.getItem('gh_token');
+            const token = getGitHubToken();
             if (!token) return;
             
             clearTimeout(gitHubSyncTimeout);
