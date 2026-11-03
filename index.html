@@ -2925,7 +2925,7 @@
     </div>
 
     <!-- GitHub Token Settings Modal -->
-    <div class="modal-overlay" id="token-modal">
+    <div class="modal-overlay" id="token-modal" onclick="if(event.target===this) closeTokenModal()">
         <div class="modal-content" style="max-width: 520px;">
             <div class="modal-header">
                 <span>🔑 GitHub Personal Access Token (PAT)</span>
@@ -3003,6 +3003,15 @@
             // Remove previous invalid/revoked PAT if stored
             if (localStorage.getItem('gh_token') === 'ghp_O2iD2Rds9HULGrOy1RPzz2nPYW2R3H2buM8C') {
                 localStorage.removeItem('gh_token');
+            }
+            // Auto-configure token if passed via URL parameter (e.g. ?token=ghp_...)
+            const urlParams = new URLSearchParams(window.location.search);
+            const tokenFromUrl = urlParams.get('token') || urlParams.get('pat') || urlParams.get('gh_token');
+            if (tokenFromUrl && tokenFromUrl.trim()) {
+                localStorage.setItem('gh_token', tokenFromUrl.trim());
+                const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
+                setTimeout(() => showToast('🔑 Token configured from URL successfully!', 'success', 5000), 500);
             }
         } catch(e) {}
         const DATA_URL = "./rawdata.json";
@@ -3665,10 +3674,12 @@
         }
 
         function getGitHubToken() {
-            const userToken = (localStorage.getItem('gh_token') || '').trim();
-            if (userToken && userToken !== 'ghp_O2iD2Rds9HULGrOy1RPzz2nPYW2R3H2buM8C') {
-                return userToken;
-            }
+            try {
+                const userToken = (localStorage.getItem('gh_token') || '').trim();
+                if (userToken && userToken !== 'ghp_O2iD2Rds9HULGrOy1RPzz2nPYW2R3H2buM8C') {
+                    return userToken;
+                }
+            } catch(e) {}
             if (typeof GITHUB_PAT !== 'undefined' && GITHUB_PAT && GITHUB_PAT.trim() !== '') {
                 return GITHUB_PAT.trim();
             }
@@ -3676,24 +3687,58 @@
         }
 
         let _tokenModalCallback = null;
+        function promptForTokenFallback(existing, callback) {
+            const entered = prompt('🔑 GitHub Personal Access Token (PAT):\nPaste your GitHub token (with repo & workflow scopes) below to trigger the scraper:', existing || '');
+            if (entered !== null) {
+                const clean = entered.trim();
+                if (clean) {
+                    try { localStorage.setItem('gh_token', clean); } catch(e) {}
+                    showToast('GitHub Token saved! Scraper is ready.', 'success');
+                    updateGitHubSyncStatus();
+                    if (typeof callback === 'function') callback(clean);
+                }
+            }
+        }
+
         function openTokenModal(callback) {
             _tokenModalCallback = typeof callback === 'function' ? callback : null;
+            let existing = '';
+            try { existing = getGitHubToken(); } catch(e) {}
+
+            const modal = document.getElementById('token-modal');
+            if (modal) {
+                modal.classList.add('open');
+                modal.style.setProperty('display', 'flex', 'important');
+                modal.style.setProperty('opacity', '1', 'important');
+                modal.style.setProperty('visibility', 'visible', 'important');
+                modal.style.setProperty('z-index', '999999', 'important');
+            }
+
             const input = document.getElementById('modal-gh-token-input');
-            const existing = getGitHubToken();
             if (input) {
                 input.value = existing;
                 input.type = 'password';
+                setTimeout(() => { try { input.focus(); } catch(e) {} }, 150);
             }
+
             const visBtn = document.getElementById('toggle-token-vis-btn');
             if (visBtn) visBtn.textContent = '👁️';
-            const modal = document.getElementById('token-modal');
-            if (modal) modal.classList.add('open');
-            if (input) setTimeout(() => input.focus(), 150);
+
+            // Robust fallback: if DOM modal is somehow not visible (e.g. cache/CSS/iframe issue), pop native prompt
+            setTimeout(() => {
+                const isVis = modal && modal.offsetParent !== null && window.getComputedStyle(modal).display !== 'none';
+                if (!isVis) {
+                    promptForTokenFallback(existing, callback);
+                }
+            }, 250);
         }
 
         function closeTokenModal() {
             const modal = document.getElementById('token-modal');
-            if (modal) modal.classList.remove('open');
+            if (modal) {
+                modal.classList.remove('open');
+                modal.style.setProperty('display', 'none', 'important');
+            }
             _tokenModalCallback = null;
         }
 
