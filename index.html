@@ -3785,15 +3785,25 @@
         async function pollWorkflowStatus(token) {
             const btn = document.getElementById('run-btn');
             try {
-                const runsRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/runs?per_page=1`, { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' } });
+                const runsRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/runs?per_page=5`, { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' } });
                 const runsData = await runsRes.json();
-                const run = runsData.workflow_runs?.[0];
-                if (!run) { setTelemetry('<span class="spinner"></span> Waiting for runner...', '', null, 'running'); setTimeout(() => pollWorkflowStatus(token), 5000); return; }
+                const runs = runsData.workflow_runs || [];
+                const run = runs.find(r => new Date(r.created_at).getTime() >= _scrapeStartTime - 30000) || runs[0];
+                if (!run || new Date(run.created_at).getTime() < _scrapeStartTime - 30000) {
+                    setTelemetry('<span class="spinner"></span> Waiting for runner to initialize...', 'Starting GitHub Action...', null, 'running');
+                    setTimeout(() => pollWorkflowStatus(token), 4000);
+                    return;
+                }
                 const elapsed = Math.round((Date.now() - _scrapeStartTime) / 1000);
                 const pct = Math.min(90, (elapsed / 180) * 100);
                 if (run.status === 'completed') {
-                    if (run.conclusion === 'success') { setTelemetry('✅ Scrape complete! Reloading data...', `Finished in ${elapsed}s`, 100, 'success'); setTimeout(() => { fetchData(); btn.disabled = false; }, 3000); }
-                    else { setTelemetry(`❌ Run failed (${run.conclusion})`, '', null, 'error'); btn.disabled = false; }
+                    if (run.conclusion === 'success') {
+                        setTelemetry('✅ Scrape complete! Reloading data...', `Finished in ${elapsed}s`, 100, 'success');
+                        setTimeout(() => { fetchData(); btn.disabled = false; }, 3000);
+                    } else {
+                        setTelemetry(`❌ Run failed (${run.conclusion})`, '', null, 'error');
+                        btn.disabled = false;
+                    }
                 } else {
                     setTelemetry(`<span class="spinner"></span> ${run.status === 'in_progress' ? '⚙️ Scraping in progress...' : '⏳ Queued...'}`, `Elapsed: ${elapsed}s`, pct, 'running');
                     setTimeout(() => pollWorkflowStatus(token), 5000);
