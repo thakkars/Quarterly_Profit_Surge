@@ -2646,6 +2646,10 @@
                 <button class="btn btn-secondary" onclick="openTokenModal()" title="GitHub Token Settings (PAT)" id="token-settings-btn">🔑 Set Token</button>
                 <button class="btn btn-danger" onclick="openExceptionsModal()">⚙️ VIP</button>
                 <button class="btn btn-secondary" onclick="openDecisionsModal()">📁 Decisions</button>
+                <button class="btn btn-secondary" onclick="openDecisionsModal()" title="Cross-Device Cloud Sync Status" id="sync-pill" style="gap: 5px;">
+                    <span id="sync-icon">☁️</span>
+                    <span id="sync-text">Cloud Sync</span>
+                </button>
                 <button class="btn btn-secondary" onclick="exportToCSV()">📥 Export</button>
                 <button id="theme-btn" class="btn btn-secondary" onclick="toggleTheme()">☀️ Light</button>
                 <button id="landscape-btn" class="btn btn-accent mobile-only-btn" onclick="toggleLandscape()">📱 Flip</button>
@@ -2908,6 +2912,22 @@
                     </div>
                 </div>
                 
+                <!-- Mobile Device Pairing Panel -->
+                <div class="global-overrides-panel" id="mobile-sync-panel" style="margin-bottom: 0;">
+                    <h4 style="margin-bottom: 8px; font-size: 14px; font-weight: 700; color: #10b981;">📱 Sync to Mobile / Other Devices</h4>
+                    <p style="margin-bottom: 12px; font-size: 12px; line-height: 1.5; color: var(--text-secondary);">
+                        Scan this QR code with your phone camera or copy the link below. Opening it on your phone will automatically install your token, sync all accepted & rejected stocks, and keep both devices in sync in real time!
+                    </p>
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; background: rgba(0,0,0,0.25); padding: 16px; border-radius: 8px; border: 1px solid var(--border-subtle);">
+                        <div id="mobile-qr-container" style="background: white; padding: 10px; border-radius: 8px; display: inline-block;">
+                            <img id="mobile-sync-qr" src="" alt="Mobile Sync QR Code" style="width: 160px; height: 160px; display: block;">
+                        </div>
+                        <div style="display: flex; gap: 8px; width: 100%;">
+                            <button class="btn btn-primary" onclick="copyMobileSyncLink()" style="flex: 1; font-size: 12px; padding: 8px; font-weight: 600;">📋 Copy Mobile Sync Link</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="global-overrides-panel" style="margin-bottom: 0;">
                     <h4 style="margin-bottom: 8px; font-size: 14px; font-weight: 700; color: var(--accent-blue);">Local Backups</h4>
                     <p style="margin-bottom: 12px; font-size: 12px; line-height: 1.5; color: var(--text-secondary);">Save decisions as a local file or restore from a previous backup file.</p>
@@ -3928,39 +3948,79 @@
             document.getElementById('exceptions-modal').classList.remove('open');
         }
 
+        function updateSyncIndicator(status, message) {
+            const icon = document.getElementById('sync-icon');
+            const text = document.getElementById('sync-text');
+            if (!icon || !text) return;
+            const token = getGitHubToken();
+            if (!token) {
+                icon.textContent = '☁️';
+                text.textContent = 'Connect Phone';
+                text.style.color = 'var(--accent-orange)';
+                return;
+            }
+            if (status === 'saving') {
+                icon.innerHTML = '<span class="spinner" style="width:11px;height:11px;border-width:2px;display:inline-block;vertical-align:middle;"></span>';
+                text.textContent = 'Saving...';
+                text.style.color = 'var(--accent-blue)';
+            } else if (status === 'synced') {
+                icon.textContent = '✅';
+                text.textContent = message || 'Cloud Synced';
+                text.style.color = '#10b981';
+            } else if (status === 'error') {
+                icon.textContent = '⚠️';
+                text.textContent = 'Sync Retry';
+                text.style.color = 'var(--accent-red)';
+            } else {
+                icon.textContent = '☁️';
+                text.textContent = 'Cloud Sync';
+                text.style.color = '';
+            }
+        }
+
         async function loadDecisionsAndMerge() {
             let fetchedEvals = {};
             const token = getGitHubToken();
-            if (token) {
-                try {
-                    const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/decisions.json`, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Accept': 'application/vnd.github.v3+json'
-                        }
-                    });
-                    if (res.ok) {
-                        const data = await res.json();
+            const headers = { 'Accept': 'application/vnd.github.v3+json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+            
+            // 1. Fetch real-time from GitHub API (works with or without token)
+            try {
+                const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/decisions.json`, { headers });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.content) {
                         const decodedContent = decodeURIComponent(escape(atob(data.content.replace(/\s/g, ''))));
                         fetchedEvals = JSON.parse(decodedContent);
                         console.log("Decisions loaded from GitHub contents API");
                     }
-                } catch(e) {
-                    console.warn("Failed to load decisions from GitHub:", e);
                 }
+            } catch(e) {
+                console.warn("Failed to load decisions from GitHub API:", e);
             }
             
+            // 2. Fallback to raw githubusercontent if rate limited
+            if (Object.keys(fetchedEvals).length === 0) {
+                try {
+                    const rawUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${BRANCH}/decisions.json?t=${Date.now()}`;
+                    const res = await fetch(rawUrl);
+                    if (res.ok) {
+                        fetchedEvals = await res.json();
+                        console.log("Decisions loaded from raw.githubusercontent");
+                    }
+                } catch(e) {}
+            }
+            
+            // 3. Fallback to local repository file
             if (Object.keys(fetchedEvals).length === 0) {
                 try {
                     const decUrl = DATA_URL.replace('rawdata.json', 'decisions.json');
-                    const res = await fetch(`${decUrl}?t=${new Date().getTime()}`);
+                    const res = await fetch(`${decUrl}?t=${Date.now()}`);
                     if (res.ok) {
                         fetchedEvals = await res.json();
                         console.log("Decisions loaded from repository file");
                     }
-                } catch(e) {
-                    console.warn("Failed to load decisions from repository file:", e);
-                }
+                } catch(e) {}
             }
             
             const localEvalsStr = localStorage.getItem('quarterly_evaluations');
@@ -3969,6 +4029,7 @@
                 try { localEvals = JSON.parse(localEvalsStr); } catch(e) {}
             }
             
+            // Smart two-way merge: combine both without losing either device's decisions
             const merged = {};
             const quarters = new Set([...Object.keys(fetchedEvals), ...Object.keys(localEvals)]);
             quarters.forEach(qtr => {
@@ -3976,6 +4037,8 @@
             });
             
             localStorage.setItem('quarterly_evaluations', JSON.stringify(merged));
+            updateSyncIndicator('synced');
+            return merged;
         }
 
         function openDecisionsModal() {
@@ -3992,16 +4055,39 @@
             const statusText = document.getElementById('github-sync-status-text');
             const authBtn = document.getElementById('github-auth-btn');
             const actionsDiv = document.getElementById('github-sync-actions');
+            const mobilePanel = document.getElementById('mobile-sync-panel');
             
             if (token) {
-                statusText.innerHTML = '<span style="color:#10b981;font-weight:600;">Active</span> (Connected to GitHub)';
-                authBtn.textContent = 'Change Token';
-                actionsDiv.style.display = 'flex';
+                if (statusText) statusText.innerHTML = '<span style="color:#10b981;font-weight:600;">Active</span> (Connected to GitHub)';
+                if (authBtn) authBtn.textContent = 'Change Token';
+                if (actionsDiv) actionsDiv.style.display = 'flex';
+                if (mobilePanel) {
+                    mobilePanel.style.display = 'block';
+                    const mobileUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}?token=${encodeURIComponent(token)}`;
+                    const qrImg = document.getElementById('mobile-sync-qr');
+                    if (qrImg) qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(mobileUrl)}`;
+                }
             } else {
-                statusText.innerHTML = '<span style="color:var(--text-muted);">Inactive</span> (No Token)';
-                authBtn.textContent = 'Setup Sync';
-                actionsDiv.style.display = 'none';
+                if (statusText) statusText.innerHTML = '<span style="color:var(--text-muted);">Inactive</span> (No Token)';
+                if (authBtn) authBtn.textContent = 'Setup Sync';
+                if (actionsDiv) actionsDiv.style.display = 'none';
+                if (mobilePanel) mobilePanel.style.display = 'none';
             }
+            updateSyncIndicator();
+        }
+
+        function copyMobileSyncLink() {
+            const token = getGitHubToken();
+            if (!token) {
+                showToast('Please set your GitHub token first', 'error');
+                return;
+            }
+            const mobileUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}?token=${encodeURIComponent(token)}`;
+            navigator.clipboard.writeText(mobileUrl).then(() => {
+                showToast('📱 Mobile sync link copied! Send to your phone via WhatsApp or email to sync instantly.', 'success', 6000);
+            }).catch(() => {
+                prompt('Copy this link to open on mobile:', mobileUrl);
+            });
         }
 
         function setupGitHubToken() {
@@ -4142,17 +4228,24 @@
         let gitHubSyncTimeout = null;
         function queueGitHubSync() {
             const token = getGitHubToken();
-            if (!token) return;
+            updateSyncIndicator('saving');
+            
+            if (!token) {
+                updateSyncIndicator('offline');
+                return;
+            }
             
             clearTimeout(gitHubSyncTimeout);
             gitHubSyncTimeout = setTimeout(async () => {
-                const allEvals = localStorage.getItem('quarterly_evaluations');
-                if (!allEvals) return;
+                const allEvalsStr = localStorage.getItem('quarterly_evaluations');
+                if (!allEvalsStr) return;
                 
                 try {
                     const path = 'decisions.json';
                     let sha = null;
+                    let remoteEvals = {};
                     
+                    // 1. Fetch current remote decisions and sha
                     try {
                         const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}`, {
                             headers: {
@@ -4163,11 +4256,31 @@
                         if (res.ok) {
                             const data = await res.json();
                             sha = data.sha;
+                            if (data.content) {
+                                const decoded = decodeURIComponent(escape(atob(data.content.replace(/\s/g, ''))));
+                                remoteEvals = JSON.parse(decoded);
+                            }
                         }
-                    } catch(e) {}
+                    } catch(e) {
+                        console.warn('Failed to fetch remote decisions for merge:', e);
+                    }
                     
-                    const content = btoa(unescape(encodeURIComponent(allEvals)));
-                    await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}`, {
+                    // 2. Merge local evaluations into remote evaluations so no device loses decisions!
+                    let localEvals = {};
+                    try { localEvals = JSON.parse(allEvalsStr); } catch(e) {}
+                    
+                    const merged = {};
+                    const allQtrs = new Set([...Object.keys(remoteEvals), ...Object.keys(localEvals)]);
+                    allQtrs.forEach(q => {
+                        merged[q] = Object.assign({}, remoteEvals[q] || {}, localEvals[q] || {});
+                    });
+                    
+                    const mergedJson = JSON.stringify(merged);
+                    try { localStorage.setItem('quarterly_evaluations', mergedJson); } catch(e) {}
+                    
+                    // 3. Push merged decisions to GitHub
+                    const b64Content = btoa(unescape(encodeURIComponent(mergedJson)));
+                    const putRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}`, {
                         method: 'PUT',
                         headers: {
                             'Authorization': `Bearer ${token}`,
@@ -4176,16 +4289,55 @@
                         },
                         body: JSON.stringify({
                             message: 'Auto-sync decisions via dashboard',
-                            content: content,
+                            content: b64Content,
                             sha: sha || undefined,
                             branch: BRANCH
                         })
                     });
+                    
+                    if (putRes.ok) {
+                        updateSyncIndicator('synced', 'Synced just now');
+                        setTimeout(() => updateSyncIndicator('synced'), 4000);
+                    } else {
+                        console.warn('GitHub decisions auto-sync returned status:', putRes.status);
+                        updateSyncIndicator('error');
+                    }
                 } catch(err) {
                     console.error("Auto-sync error:", err);
+                    updateSyncIndicator('error');
                 }
-            }, 5000);
+            }, 1200);
         }
+
+        // Silent automatic sync when switching between devices (tab focus / visibility)
+        let _lastCloudSyncTime = 0;
+        async function refreshDecisionsFromCloudSilently() {
+            if (Date.now() - _lastCloudSyncTime < 8000) return;
+            _lastCloudSyncTime = Date.now();
+            try {
+                const prev = localStorage.getItem('quarterly_evaluations') || '{}';
+                const merged = await loadDecisionsAndMerge();
+                const now = JSON.stringify(merged);
+                if (prev !== now) {
+                    applyFiltersAndRender();
+                    showToast('☁️ Synced latest evaluations from cloud!', 'info', 2500);
+                }
+            } catch(e) {}
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                refreshDecisionsFromCloudSilently();
+            }
+        });
+        window.addEventListener('focus', () => {
+            refreshDecisionsFromCloudSilently();
+        });
+        setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                refreshDecisionsFromCloudSilently();
+            }
+        }, 30000);
 
         function toggleDropdown() {
             const dd = document.getElementById('column-dropdown');
