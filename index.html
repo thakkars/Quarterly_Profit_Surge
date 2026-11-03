@@ -2878,6 +2878,7 @@
             <div class="modal-footer">
                 <span style="font-size:13px;color:var(--text-muted);font-weight:600;" id="vip-count-label">0 industries selected</span>
                 <button onclick="closeExceptionsModal()" class="btn btn-primary">Done</button>
+            </div>
         </div>
     </div>
 
@@ -3247,7 +3248,7 @@
             const dot = document.getElementById('status-dot');
             dot.className = 'status-dot' + (state ? ' ' + state : '');
             h.innerHTML = headline;
-            d.textContent = detail || '';
+            d.innerHTML = detail || '';
             if (pct !== null && pct !== undefined) {
                 wrap.classList.add('active');
                 bar.style.width = Math.min(100, Math.max(0, pct)) + '%';
@@ -3775,7 +3776,7 @@
                 setTelemetry('<span class="spinner"></span> Engine online — awaiting telemetry...', 'GitHub runner is spinning up', null, 'running');
                 setTimeout(() => pollWorkflowStatus(token), 6000);
             } catch (error) { 
-                setTelemetry(`❌ ${error.message}`, 'Click 🔑 to check token', null, 'error'); 
+                setTelemetry(`❌ ${error.message}`, '<span onclick="openTokenModal()" style="text-decoration:underline;cursor:pointer;">Click 🔑 to set token</span>', null, 'error'); 
                 showToast(error.message, 'error', 5000);
                 btn.disabled = false; 
             }
