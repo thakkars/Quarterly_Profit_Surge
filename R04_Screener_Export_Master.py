@@ -336,7 +336,6 @@ def save_master(df):
 print("\n🚀 R04_Screener_Export_Master.py starting...")
 print(f"   Screen URL : {SCREEN_URL}")
 print(f"   Export URL : {EXPORT_URL}")
-print(f"   R2 Bucket  : '{R2_BUCKET}'")
 print(f"   Date (UTC) : {TODAY}")
 print(f"   Download   : {DOWNLOAD_DIR}")
 

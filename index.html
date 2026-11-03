@@ -2996,12 +2996,12 @@
         const GITHUB_REPO = "Quarterly_Profit_Surge";
         const WORKFLOW_FILE = "run_screener.yml";
         const BRANCH = "main";
-        // Pre-configured GitHub PAT (base64 encoded to protect against auto-revocation scanners)
-        const _ENC_PAT = "Z2hwX0oyaUQyUmRzOUhVTEdyT3kxUlB6ejJuUFlXMlIzSDJidU04Qw==";
-        const GITHUB_PAT = atob(_ENC_PAT);
+        // Optional default PAT: user enters PAT in 🔑 Set Token modal and it persists in localStorage
+        const GITHUB_PAT = "";
         try {
-            if (!localStorage.getItem('gh_token')) {
-                localStorage.setItem('gh_token', GITHUB_PAT);
+            // Remove previous invalid/revoked PAT if stored
+            if (localStorage.getItem('gh_token') === 'ghp_O2iD2Rds9HULGrOy1RPzz2nPYW2R3H2buM8C') {
+                localStorage.removeItem('gh_token');
             }
         } catch(e) {}
         const DATA_URL = "./rawdata.json";
@@ -3664,10 +3664,14 @@
         }
 
         function getGitHubToken() {
+            const userToken = (localStorage.getItem('gh_token') || '').trim();
+            if (userToken && userToken !== 'ghp_O2iD2Rds9HULGrOy1RPzz2nPYW2R3H2buM8C') {
+                return userToken;
+            }
             if (typeof GITHUB_PAT !== 'undefined' && GITHUB_PAT && GITHUB_PAT.trim() !== '') {
                 return GITHUB_PAT.trim();
             }
-            return (localStorage.getItem('gh_token') || '').trim();
+            return '';
         }
 
         let _tokenModalCallback = null;
@@ -3758,7 +3762,13 @@
                 });
                 if (!dispatchRes.ok) {
                     let errMsg = `API Error ${dispatchRes.status}`;
-                    if (dispatchRes.status === 401) errMsg = 'Authentication failed (401). Check PAT permissions (needs workflow & repo scope).';
+                    if (dispatchRes.status === 401) {
+                        try { localStorage.removeItem('gh_token'); } catch(e) {}
+                        errMsg = 'Authentication failed (401). Please enter a valid GitHub Token with repo & workflow permissions.';
+                        setTimeout(() => openTokenModal(function(savedToken) {
+                            if (savedToken) triggerWorkflow();
+                        }), 600);
+                    }
                     if (dispatchRes.status === 404) errMsg = 'Workflow/Repo not found (404). Check PAT permissions.';
                     throw new Error(errMsg);
                 }
