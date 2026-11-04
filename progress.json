@@ -1,11 +1,1 @@
-{
-  "phase": "complete",
-  "status": "complete",
-  "completed": 8,
-  "total": 8,
-  "pct": 100,
-  "current_company": "MSI Refresh Complete",
-  "elapsed_sec": 44,
-  "eta_sec": 0,
-  "ts": "2026-11-04T18:14:33.329739Z"
-}
+{"phase": "complete", "status": "complete", "completed": 0, "total": 0, "pct": 0, "current_company": "No equities identified.", "elapsed_sec": 9, "eta_sec": 0, "ts": "2026-11-04T18:44:31.634283Z"}
