@@ -1,0 +1,60 @@
+name: Update Accepted MSI Metrics
+
+on:
+  workflow_dispatch:
+    inputs:
+      quarter:
+        description: 'Quarter to update (leave blank for active quarter)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  update-msi:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install Chrome and ChromeDriver
+      uses: browser-actions/setup-chrome@v1
+      with:
+        chrome-version: stable
+
+    - name: Install Python dependencies
+      run: pip install selenium pandas numpy openpyxl requests
+
+    - name: Run Accepted MSI Metrics Updater
+      env:
+        GITHUB_ACTIONS: "true"
+        TARGET_QUARTER: ${{ github.event.inputs.quarter }}
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      run: python R07_Update_Accepted_MSI.py --quarter "${{ github.event.inputs.quarter }}"
+
+    - name: Commit and push updated MSI data
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git add rawdata.json "Raw Data.xlsx" "Master File.xlsx" progress.json || true
+        git commit -m "Update MSI metrics for accepted stocks [skip ci]" || echo "No changes to commit"
+        git push origin main || echo "Git push skipped or failed"
+
+    - name: Upload updated datasets
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: msi-updated-data-${{ github.run_number }}
+        path: |
+          rawdata.json
+          Raw Data.xlsx
+          Master File.xlsx
+        retention-days: 14

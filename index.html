@@ -2643,6 +2643,9 @@
                 <button id="run-btn" class="btn btn-primary" onclick="triggerWorkflow()">
                     <span>▶</span> Run Scraper
                 </button>
+                <button id="msi-btn" class="btn btn-secondary" onclick="triggerMsiUpdate()" title="Update MSI Price Strength from MarketSmith India for accepted stocks">
+                    <span>📈</span> Update MSI price trend
+                </button>
                 <button class="btn btn-secondary" onclick="openTokenModal()" title="GitHub Token Settings (PAT)" id="token-settings-btn">🔑 Set Token</button>
                 <button class="btn btn-danger" onclick="openExceptionsModal()">⚙️ VIP</button>
                 <button class="btn btn-secondary" onclick="openDecisionsModal()">📁 Decisions</button>
@@ -2689,6 +2692,7 @@
             </div>
             <div class="bucket-actions">
                 <span class="bucket-info-text">Active Quarter: <strong id="bucket-active-quarter">-</strong></span>
+                <button id="bucket-msi-btn" class="btn btn-secondary btn-bulk-accept" style="padding: 4px 10px; font-size: 11px; background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #10b981;" onclick="triggerMsiUpdate()" title="Update MSI Price Strength from MarketSmith India for accepted stocks in this quarter">📈 Update MSI price trend</button>
                 <button class="btn btn-secondary btn-bulk-accept" style="padding: 4px 10px; font-size: 11px;" onclick="bulkEvaluateFiltered('accepted')" title="Accept all currently filtered visible stocks">🟢 Accept All Filtered</button>
                 <button class="btn btn-secondary btn-bulk-reject" style="padding: 4px 10px; font-size: 11px;" onclick="bulkEvaluateFiltered('rejected')" title="Reject all currently filtered visible stocks">🔴 Reject All Filtered</button>
                 <button class="btn btn-danger btn-ghost" style="padding: 4px 10px; font-size: 11px;" onclick="clearQuarterDecisions()" title="Clear all accept/reject decisions for this quarter">🗑️ Clear Decisions</button>
@@ -3016,6 +3020,8 @@
         const GITHUB_OWNER = "thakkars";
         const GITHUB_REPO = "Quarterly_Profit_Surge";
         const WORKFLOW_FILE = "run_screener.yml";
+        const MSI_WORKFLOW_FILE = "update_msi.yml";
+        let _msiStartTime = 0;
         const BRANCH = "main";
         // Optional default PAT: user enters PAT in 🔑 Set Token modal and it persists in localStorage
         const GITHUB_PAT = "";
@@ -3876,6 +3882,115 @@
             } catch (e) { setTelemetry('❌ Poll error', e.message, null, 'error'); btn.disabled = false; }
         }
 
+        async function triggerMsiUpdate() {
+            const btn = document.getElementById('msi-btn');
+            const bucketBtn = document.getElementById('bucket-msi-btn');
+            const token = getGitHubToken();
+            if (!token) {
+                openTokenModal(function(savedToken) {
+                    if (savedToken) {
+                        triggerMsiUpdate();
+                    }
+                });
+                return;
+            }
+
+            const activeQuarter = quarterlyColumns[0] || getCurrentQuarterCode();
+            const evals = getQuarterEvaluations(activeQuarter);
+            const acceptedTickers = Object.keys(evals).filter(t => evals[t] === 'accepted');
+
+            if (acceptedTickers.length === 0) {
+                showToast(`No stocks marked as Accepted for quarter ${activeQuarter}. Please mark stocks as Accepted first.`, 'warning', 5000);
+                alert(`No stocks are marked as Accepted for quarter ${activeQuarter}.\n\nPlease mark some stocks as Accepted before updating MSI price trend.`);
+                return;
+            }
+
+            if (!confirm(`Update MSI price trend for ${acceptedTickers.length} accepted stock(s) for quarter ${activeQuarter} from MarketSmith India?`)) {
+                return;
+            }
+
+            try {
+                if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Updating MSI...'; }
+                if (bucketBtn) { bucketBtn.disabled = true; bucketBtn.innerHTML = '<span class="spinner"></span> Updating...'; }
+                _msiStartTime = Date.now();
+                setTelemetry('<span class="spinner"></span> Dispatching MSI Update...', `Targeting ${acceptedTickers.length} accepted stocks (${activeQuarter})`, null, 'running');
+
+                const dispatchRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${MSI_WORKFLOW_FILE}/dispatches`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ ref: BRANCH, inputs: { quarter: activeQuarter } })
+                });
+
+                if (!dispatchRes.ok) {
+                    let errMsg = `API Error ${dispatchRes.status}`;
+                    if (dispatchRes.status === 401) {
+                        errMsg = 'Authentication failed (401). Check GitHub PAT permissions (needs repo & workflow scope).';
+                        setTimeout(() => openTokenModal(function(savedToken) {
+                            if (savedToken) triggerMsiUpdate();
+                        }), 600);
+                    }
+                    if (dispatchRes.status === 404) errMsg = 'MSI Workflow/Repo not found (404). Ensure update_msi.yml exists on main.';
+                    throw new Error(errMsg);
+                }
+
+                setTelemetry('<span class="spinner"></span> Runner spinning up...', `Updating MarketSmith metrics for ${acceptedTickers.length} stocks`, null, 'running');
+                setTimeout(() => pollMsiWorkflowStatus(token, activeQuarter, acceptedTickers.length), 5000);
+            } catch (error) {
+                setTelemetry(`❌ ${error.message}`, '<span onclick="openTokenModal()" style="text-decoration:underline;cursor:pointer;">Check Token</span>', null, 'error');
+                showToast(error.message, 'error', 5000);
+                if (btn) { btn.disabled = false; btn.innerHTML = '<span>📈</span> Update MSI price trend'; }
+                if (bucketBtn) { bucketBtn.disabled = false; bucketBtn.innerHTML = '📈 Update MSI price trend'; }
+            }
+        }
+
+        async function pollMsiWorkflowStatus(token, targetQuarter, totalCount) {
+            const btn = document.getElementById('msi-btn');
+            const bucketBtn = document.getElementById('bucket-msi-btn');
+            try {
+                const runsRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${MSI_WORKFLOW_FILE}/runs?per_page=5`, {
+                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+                });
+                const runsData = await runsRes.json();
+                const runs = runsData.workflow_runs || [];
+                const run = runs.find(r => new Date(r.created_at).getTime() >= _msiStartTime - 30000) || runs[0];
+                if (!run || new Date(run.created_at).getTime() < _msiStartTime - 30000) {
+                    setTelemetry('<span class="spinner"></span> Waiting for runner...', 'Initiating MSI update action...', null, 'running');
+                    setTimeout(() => pollMsiWorkflowStatus(token, targetQuarter, totalCount), 4000);
+                    return;
+                }
+                const elapsed = Math.round((Date.now() - _msiStartTime) / 1000);
+                const pct = Math.min(95, Math.round((elapsed / Math.max(30, totalCount * 4)) * 100));
+
+                if (run.status === 'completed') {
+                    if (run.conclusion === 'success') {
+                        setTelemetry('✅ MSI Price Trend updated! Reloading data...', `Finished in ${elapsed}s`, 100, 'success');
+                        showToast(`✅ Successfully updated MSI price trend for ${totalCount} accepted stock(s)!`, 'success', 5000);
+                        setTimeout(async () => {
+                            await fetchData();
+                            if (btn) { btn.disabled = false; btn.innerHTML = '<span>📈</span> Update MSI price trend'; }
+                            if (bucketBtn) { bucketBtn.disabled = false; bucketBtn.innerHTML = '📈 Update MSI price trend'; }
+                        }, 2500);
+                    } else {
+                        setTelemetry(`❌ MSI update run failed (${run.conclusion})`, '', null, 'error');
+                        showToast(`MSI update failed: ${run.conclusion}`, 'error', 5000);
+                        if (btn) { btn.disabled = false; btn.innerHTML = '<span>📈</span> Update MSI price trend'; }
+                        if (bucketBtn) { bucketBtn.disabled = false; bucketBtn.innerHTML = '📈 Update MSI price trend'; }
+                    }
+                } else {
+                    setTelemetry(`<span class="spinner"></span> ${run.status === 'in_progress' ? '📈 Updating MSI metrics...' : '⏳ Queued...'}`, `Target: ${totalCount} accepted stocks (${elapsed}s elapsed)`, pct, 'running');
+                    setTimeout(() => pollMsiWorkflowStatus(token, targetQuarter, totalCount), 4000);
+                }
+            } catch (e) {
+                setTelemetry('❌ Poll error', e.message, null, 'error');
+                if (btn) { btn.disabled = false; btn.innerHTML = '<span>📈</span> Update MSI price trend'; }
+                if (bucketBtn) { bucketBtn.disabled = false; bucketBtn.innerHTML = '📈 Update MSI price trend'; }
+            }
+        }
+
         function toggleGlobalOverride(key, filterId, checkbox) {
             globalOverrides[key] = checkbox.checked;
             syncBypassLabels();
@@ -4461,6 +4576,13 @@
                     if (col === 'Current Quarter Surge') return `<td>${row[col] === 'Yes' ? '<span class="badge badge-yes">Yes</span>' : (row[col]||'-')}</td>`;
                     if (col === 'Peak Quarter') return `<td>${row[col] === 'Yes' ? '<span class="badge badge-peak">Peak</span>' : (row[col]||'-')}</td>`;
                     const val = row[col];
+                    if (col === 'MSI Price Strength') {
+                        const num = parseFloat(String(val).replace(/,/g, ''));
+                        if (!isNaN(num) && num > 0) {
+                            const color = num >= 80 ? '#10b981' : num >= 70 ? '#3b82f6' : num >= 50 ? '#f59e0b' : '#ef4444';
+                            return `<td><span style="font-weight:700;color:${color};">${val}</span></td>`;
+                        }
+                    }
                     return `<td>${val !== undefined && val !== null && val !== '' ? val : '-'}</td>`;
                 }).join('');
                 return `<tr id="${rowId}">${cells}</tr>`;
