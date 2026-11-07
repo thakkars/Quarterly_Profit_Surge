@@ -3905,9 +3905,7 @@
                 return;
             }
 
-            if (!confirm(`Update MSI price trend for ${acceptedTickers.length} accepted stock(s) for quarter ${activeQuarter} from MarketSmith India?`)) {
-                return;
-            }
+            showToast(`🚀 Updating MSI price trend for ${acceptedTickers.length} accepted stock(s)...`, 'info', 3500);
 
             try {
                 if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Updating MSI...'; }
@@ -3981,8 +3979,26 @@
                         if (bucketBtn) { bucketBtn.disabled = false; bucketBtn.innerHTML = '📈 Update MSI price trend'; }
                     }
                 } else {
-                    setTelemetry(`<span class="spinner"></span> ${run.status === 'in_progress' ? '📈 Updating MSI metrics...' : '⏳ Queued...'}`, `Target: ${totalCount} accepted stocks (${elapsed}s elapsed)`, pct, 'running');
-                    setTimeout(() => pollMsiWorkflowStatus(token, targetQuarter, totalCount), 4000);
+                    let liveHeadline = `<span class="spinner"></span> ${run.status === 'in_progress' ? '📈 Scraping MSI Price Strength...' : '⏳ Queued in GitHub runner...'}`;
+                    let liveDetail = `Target: ${totalCount} accepted stocks (${elapsed}s elapsed)`;
+                    let livePct = pct;
+
+                    try {
+                        const progUrl = (typeof DATA_URL !== 'undefined' ? DATA_URL.replace('rawdata.json', 'progress.json') : 'progress.json') + `?t=${Date.now()}`;
+                        const progRes = await fetch(progUrl);
+                        if (progRes.ok) {
+                            const prog = await progRes.json();
+                            if (prog && prog.status === 'running') {
+                                liveHeadline = `<span class="spinner"></span> ${prog.current_company || 'Scraping MarketSmith India...'}`;
+                                liveDetail = `Scraped: ${prog.completed}/${prog.total} (${prog.pct}%) · Elapsed: ${prog.elapsed_sec || elapsed}s`;
+                                if (prog.pct !== undefined) livePct = prog.pct;
+                            }
+                        }
+                    } catch(pe) {}
+
+                    setTelemetry(liveHeadline, liveDetail, livePct, 'running');
+                    setTimeout(() => pollMsiWorkflowStatus(token, targetQuarter, totalCount), 3500);
+                    return;
                 }
             } catch (e) {
                 setTelemetry('❌ Poll error', e.message, null, 'error');
