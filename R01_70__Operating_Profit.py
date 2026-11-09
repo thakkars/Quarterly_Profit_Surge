@@ -639,23 +639,31 @@ def extract_operating_profit():
         return {}
 
 def collect_all_company_data():
-    print(f"🌐 Loading Screener screen URL: {SCREEN_URL}")
-    if not safe_get(SCREEN_URL):
-        print(f"[WARN] Could not load screen URL: {SCREEN_URL}")
+    clean_base_url = SCREEN_URL.split('?')[0].rstrip('/')
+    print(f"🌐 Loading Screener screen URL: {clean_base_url}")
+    if not safe_get(clean_base_url):
+        print(f"[WARN] Could not load screen URL: {clean_base_url}")
         return []
 
     # If redirected to login, re-authenticate and reload screen
     if "login" in driver.current_url.lower():
         print("ℹ️ Login required for custom screen. Re-authenticating...")
         if login():
-            safe_get(SCREEN_URL)
+            safe_get(clean_base_url)
             time.sleep(2.0)
 
     print(f"  Current URL: {driver.current_url} | Title: {driver.title}")
     company_list, seen_urls = [], set()
     page_num = 1
     while True:
-        time.sleep(1.0)
+        page_url = f"{clean_base_url}/?page={page_num}"
+        if page_num > 1:
+            if not safe_get(page_url):
+                break
+            time.sleep(1.2)
+        else:
+            time.sleep(1.0)
+
         # Target table links directly
         links = driver.find_elements(By.CSS_SELECTOR, "table.data-table a[href*='/company/'], .results-table a[href*='/company/'], a[href*='/company/']")
         page_added = 0
@@ -671,22 +679,14 @@ def collect_all_company_data():
                 continue
         print(f"  [PAGE {page_num}] Identified {page_added} equities (Total: {len(company_list)})")
         
-        try:
-            next_btns = driver.find_elements(By.XPATH, "//a[contains(., 'Next')] | //a[contains(@href, 'page=')]")
-            next_btn = next((b for b in next_btns if "next" in b.text.lower() or "next" in (b.get_attribute("innerText") or "").lower()), None)
-            if not next_btn or "disabled" in (next_btn.get_attribute("class") or "").lower():
-                break
-            prev_url = driver.current_url
-            driver.execute_script("arguments[0].scrollIntoView(true);", next_btn)
-            driver.execute_script("arguments[0].click();", next_btn)
-            time.sleep(1.5)
-            if driver.current_url == prev_url and page_added == 0:
-                break
-            page_num += 1
-            if page_num > 50:
-                break
-        except Exception:
+        # If no new companies found on this page, we reached the end
+        if page_added == 0:
             break
+            
+        page_num += 1
+        if page_num > 50:
+            break
+
     return company_list
 
 def scrape_company(company_info):
