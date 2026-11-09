@@ -28,7 +28,7 @@ if os.environ.get("GITHUB_ACTIONS", "false").lower() != "true":
 IS_GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS", "false").lower() == "true"
 
 USERNAME   = os.environ.get("SCREENER_USERNAME", "deepak.khatwani2712@gmail.com")
-PASSWORD   = os.environ.get("SCREENER_PASSWORD", "gaurav23")
+PASSWORD   = os.environ.get("SCREENER_PASSWORD", "Chinu.22")
 SCREEN_URL = os.environ.get("SCREEN_URL") or os.environ.get("SCREENER_SCREEN_URL") or "https://www.screener.in/screens/3647191/equity-research-github/"
 
 
