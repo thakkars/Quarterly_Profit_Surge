@@ -1325,12 +1325,12 @@
     "Pledged %": 0.0,
     "Promoter Holding": 67.3,
     "WC Days": 63.7,
-    "MSI EPS Strength": "",
-    "MSI Price Strength": "",
-    "MSI Buyer Demand": "",
-    "MSI Group Rank": "",
-    "MSI Master Score": "",
-    "MSI Updated At": "2026-11-11 05:37"
+    "MSI EPS Strength": 68,
+    "MSI Price Strength": 71,
+    "MSI Buyer Demand": "C",
+    "MSI Group Rank": 58,
+    "MSI Master Score": "C",
+    "MSI Updated At": "2026-11-11 05:41"
   },
   {
     "Sr no": 19,
@@ -1770,12 +1770,12 @@
     "Pledged %": 0.0,
     "Promoter Holding": 71.0,
     "WC Days": 100.0,
-    "MSI EPS Strength": 35,
-    "MSI Price Strength": 69,
-    "MSI Buyer Demand": "B-",
-    "MSI Group Rank": 105,
+    "MSI EPS Strength": "",
+    "MSI Price Strength": "",
+    "MSI Buyer Demand": "",
+    "MSI Group Rank": "",
     "MSI Master Score": "C",
-    "MSI Updated At": "2026-11-11 05:38"
+    "MSI Updated At": "2026-11-11 05:41"
   },
   {
     "Sr no": 25,
@@ -3404,7 +3404,7 @@
     "MSI Buyer Demand": "B-",
     "MSI Group Rank": 45,
     "MSI Master Score": "B",
-    "MSI Updated At": "2026-11-11 05:38"
+    "MSI Updated At": "2026-11-11 05:41"
   },
   {
     "Sr no": 47,
@@ -3696,12 +3696,12 @@
     "Pledged %": 0.0,
     "Promoter Holding": 44.4,
     "WC Days": 63.6,
-    "MSI EPS Strength": "",
-    "MSI Price Strength": "",
-    "MSI Buyer Demand": "",
-    "MSI Group Rank": "",
+    "MSI EPS Strength": 91,
+    "MSI Price Strength": 97,
+    "MSI Buyer Demand": "A+",
+    "MSI Group Rank": 149,
     "MSI Master Score": "C",
-    "MSI Updated At": "2026-11-11 05:38"
+    "MSI Updated At": "2026-11-11 05:42"
   },
   {
     "Sr no": 51,
@@ -4067,12 +4067,12 @@
     "Pledged %": 0.0,
     "Promoter Holding": 58.1,
     "WC Days": 63.8,
-    "MSI EPS Strength": 10,
-    "MSI Price Strength": 82,
-    "MSI Buyer Demand": "A",
-    "MSI Group Rank": 27,
-    "MSI Master Score": "C",
-    "MSI Updated At": "2026-11-11 05:38"
+    "MSI EPS Strength": "",
+    "MSI Price Strength": "",
+    "MSI Buyer Demand": "",
+    "MSI Group Rank": "",
+    "MSI Master Score": "",
+    "MSI Updated At": "2026-11-11 05:42"
   },
   {
     "Sr no": 56,
@@ -5252,12 +5252,12 @@
     "Pledged %": 0.0,
     "Promoter Holding": 50.4,
     "WC Days": 37.2,
-    "MSI EPS Strength": 72,
-    "MSI Price Strength": 55,
-    "MSI Buyer Demand": "C-",
-    "MSI Group Rank": 58,
-    "MSI Master Score": "B",
-    "MSI Updated At": "2026-11-11 05:38"
+    "MSI EPS Strength": "",
+    "MSI Price Strength": "",
+    "MSI Buyer Demand": "",
+    "MSI Group Rank": "",
+    "MSI Master Score": "",
+    "MSI Updated At": "2026-11-11 05:42"
   },
   {
     "Sr no": 72,
@@ -7034,7 +7034,7 @@
     "MSI Buyer Demand": "",
     "MSI Group Rank": "",
     "MSI Master Score": "",
-    "MSI Updated At": "2026-11-11 05:38"
+    "MSI Updated At": "2026-11-11 05:42"
   },
   {
     "Sr no": 96,
@@ -8441,7 +8441,7 @@
     "MSI Buyer Demand": "C+",
     "MSI Group Rank": 119,
     "MSI Master Score": "B",
-    "MSI Updated At": "2026-11-11 05:38"
+    "MSI Updated At": "2026-11-11 05:42"
   },
   {
     "Sr no": 115,
