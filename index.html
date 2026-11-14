@@ -4812,7 +4812,7 @@
                     const yoyIds = yoyDescs.map(d => d.id);
                     
                     const filteredAllColumns = allColumns.filter(c => 
-                        !['Sr no', 'date', 'Company (Page)', 'Industry', 'Industry Group'].includes(c)
+                        !['Sr no', 'date', 'Company (Page)', 'MSI Price Strength', 'Industry', 'Industry Group'].includes(c)
                     );
 
                     columnOrder = [
@@ -4820,6 +4820,7 @@
                         'date',
                         'Company (Page)',
                         COL_DECISION,
+                        'MSI Price Strength',
                         COL_NSE,
                         COL_BSE,
                         'Industry',
@@ -4835,6 +4836,7 @@
                         'date',
                         'Company (Page)',
                         COL_DECISION,
+                        'MSI Price Strength',
                         COL_NSE,
                         'Industry',
                         COL_SURGE_QTR,
