@@ -36,8 +36,6 @@ jobs:
       env:
         GITHUB_ACTIONS: "true"
         TARGET_QUARTER: ${{ github.event.inputs.quarter }}
-        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       run: python R07_Update_Accepted_MSI.py --quarter "${{ github.event.inputs.quarter }}"
 
     - name: Commit and push updated MSI data

@@ -88,29 +88,11 @@ def push_progress(phase, completed, total, current_company="", status="running",
         print(f"[WARN] Progress push failed: {e}")
 
 # ─────────────────────────────────────────────────────────────
-# TELEGRAM NOTIFICATION
+# TELEGRAM NOTIFICATION (DISABLED FOR MSI UPDATES)
 # ─────────────────────────────────────────────────────────────
 def send_telegram_notification(msg):
-    token = os.environ.get("TELEGRAM_BOT_TOKEN")
-    chat_ids_raw = os.environ.get("TELEGRAM_CHAT_ID")
-    if not token or not chat_ids_raw:
-        return
-    import urllib.request
-    import urllib.parse
-    chat_ids = [c.strip() for c in chat_ids_raw.replace(";", ",").replace("\n", ",").split(",") if c.strip()]
-    for cid in chat_ids:
-        try:
-            url = f"https://api.telegram.org/bot{token}/sendMessage"
-            payload = urllib.parse.urlencode({
-                "chat_id": cid,
-                "text": msg,
-                "parse_mode": "HTML"
-            }).encode("utf-8")
-            req = urllib.request.Request(url, data=payload, method="POST")
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                pass
-        except Exception as e:
-            print(f"[WARN] Telegram message to {cid} failed: {e}")
+    # Telegram notifications disabled for MSI updates per user preference
+    pass
 
 # ─────────────────────────────────────────────────────────────
 # CHROME DRIVER INIT
@@ -505,13 +487,6 @@ def main():
 
     # 10. Update progress.json
     push_progress("complete", updated_count, len(accepted_rows), "MSI Refresh Complete", "complete", total_elapsed)
-
-    # 11. Send Telegram Notification
-    summary_lines = [f"<b>📈 MSI Price Strength Updated ({target_quarter})</b>\n"]
-    for res in scrape_results:
-        summary_lines.append(f"• <b>{res['name']}</b> ({res['symbol']}): Price Strength = <b>{res['price_strength']}</b> | EPS = {res['eps_strength']} | Master = {res['master_score']}")
-    summary_lines.append(f"\n⏱️ Completed in {total_elapsed}s for {updated_count} accepted stock(s).")
-    send_telegram_notification("\n".join(summary_lines))
 
     return 0
 
