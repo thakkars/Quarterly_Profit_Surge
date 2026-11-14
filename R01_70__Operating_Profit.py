@@ -858,8 +858,40 @@ def generate_raw_json(sheet_name):
         df = df.fillna(0)
         df.to_json(RAW_JSON_PATH, orient="records")
         print(f"[OK] Saved rawdata.json for Dashboard (Sheet: {sheet_name})")
+        sync_support_resistance_json()
     except Exception as e:
         print(f"[WARN]  Error saving JSON: {e}")
+
+def sync_support_resistance_json():
+    excel_path = os.path.join(FOLDER_PATH, "input", "Support and resistance.xlsx")
+    out_json = os.path.join(FOLDER_PATH, "support_resistance.json")
+    if not os.path.exists(excel_path):
+        return
+    try:
+        df = pd.read_excel(excel_path)
+        records = []
+        for _, r in df.iterrows():
+            level = r.get("Weekly Inception")
+            monthly = r.get("Monthly")
+            times_hit = r.get("no of times hit")
+            distance = r.get("Distance")
+            timeframe = r.get("Timeframe")
+            weight = r.get("Weight")
+            strength = r.get("Strength")
+            records.append({
+                "level": int(level) if pd.notnull(level) else None,
+                "monthly_level": int(monthly) if pd.notnull(monthly) else None,
+                "times_hit": int(times_hit) if pd.notnull(times_hit) else 0,
+                "distance": int(distance) if pd.notnull(distance) else 0,
+                "timeframe": str(timeframe) if pd.notnull(timeframe) else "Weekly",
+                "weight": int(weight) if pd.notnull(weight) else 1,
+                "strength": int(strength) if pd.notnull(strength) else 0
+            })
+        with open(out_json, "w", encoding="utf-8") as f:
+            json.dump(records, f, indent=2)
+        print(f"[OK] Synced support_resistance.json from input/Support and resistance.xlsx ({len(records)} levels)")
+    except Exception as e:
+        print(f"[WARN] Error syncing support_resistance.json: {e}")
 
 # ═══════════════════════════════════════════════════════════
 # MAIN

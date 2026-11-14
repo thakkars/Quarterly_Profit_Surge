@@ -2649,6 +2649,7 @@
                 <button class="btn btn-secondary" onclick="openTokenModal()" title="GitHub Token Settings (PAT)" id="token-settings-btn">🔑 Set Token</button>
                 <button class="btn btn-danger" onclick="openExceptionsModal()">⚙️ VIP</button>
                 <button class="btn btn-secondary" onclick="openDecisionsModal()">📁 Decisions</button>
+                <button class="btn btn-secondary" onclick="openSupportResistanceModal()" title="View Nifty Support and Resistance Key Levels">🎯 S & R Levels</button>
                 <button class="btn btn-secondary" onclick="openDecisionsModal()" title="Cross-Device Cloud Sync Status" id="sync-pill" style="gap: 5px;">
                     <span id="sync-icon">☁️</span>
                     <span id="sync-text">Cloud Sync</span>
@@ -2944,6 +2945,56 @@
             </div>
             <div class="modal-footer">
                 <button onclick="closeDecisionsModal()" class="btn btn-primary">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Support & Resistance Modal -->
+    <div class="modal-overlay" id="sr-modal" onclick="if(event.target===this) closeSupportResistanceModal()">
+        <div class="modal-content" style="max-width: 780px;">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 20px;">🎯</span>
+                    <div>
+                        <div style="font-weight: 700; font-size: 15px;">Support & Resistance Levels</div>
+                        <div style="font-size: 11px; font-weight: normal; color: var(--text-muted);">Nifty Monthly & Weekly Key Inception Zones</div>
+                    </div>
+                </div>
+                <button class="modal-close" onclick="closeSupportResistanceModal()">&#215;</button>
+            </div>
+            <div class="modal-body" style="padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                        <button class="bucket-btn active" id="sr-filter-all" onclick="filterSRTable('all')">All (<span id="sr-count-all">33</span>)</button>
+                        <button class="bucket-btn" id="sr-filter-monthly" onclick="filterSRTable('Monthly')">🟣 Monthly (<span id="sr-count-monthly">8</span>)</button>
+                        <button class="bucket-btn" id="sr-filter-weekly" onclick="filterSRTable('Weekly')">🔵 Weekly (<span id="sr-count-weekly">25</span>)</button>
+                        <button class="bucket-btn" id="sr-filter-strong" onclick="filterSRTable('strong')">⚡ Strong (≥5) (<span id="sr-count-strong">10</span>)</button>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-muted); background: rgba(255,255,255,0.03); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-subtle);">
+                        📁 Source: <span style="font-family: monospace; color: var(--accent-blue);">Support and resistance.xlsx</span>
+                    </div>
+                </div>
+
+                <div style="overflow-x: auto; border: 1px solid var(--border-subtle); border-radius: 8px;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px;" id="sr-table">
+                        <thead>
+                            <tr style="background: rgba(255,255,255,0.03); border-bottom: 2px solid var(--accent-blue);">
+                                <th style="padding: 10px 14px; text-align: left; cursor: pointer;" onclick="sortSRTable('level')">Level (Pts) ↕</th>
+                                <th style="padding: 10px 14px; text-align: left; cursor: pointer;" onclick="sortSRTable('timeframe')">Timeframe ↕</th>
+                                <th style="padding: 10px 14px; text-align: center; cursor: pointer;" onclick="sortSRTable('times_hit')">Times Hit ↕</th>
+                                <th style="padding: 10px 14px; text-align: right; cursor: pointer;" onclick="sortSRTable('distance')">Distance ↕</th>
+                                <th style="padding: 10px 14px; text-align: center; cursor: pointer;" onclick="sortSRTable('strength')">Strength ↕</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sr-table-body">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle);">
+                <span style="font-size: 12px; color: var(--text-muted);" id="sr-summary-footer">Showing 33 levels</span>
+                <button onclick="closeSupportResistanceModal()" class="btn btn-primary" style="padding: 6px 20px;">Done</button>
             </div>
         </div>
     </div>
@@ -4873,8 +4924,178 @@
             }
         }
 
+        // ─────────────────────────────────────────────────────────────
+        // SUPPORT & RESISTANCE (NIFTY KEY INCEPTION LEVELS)
+        // ─────────────────────────────────────────────────────────────
+        let srData = [
+            {"level": 26373, "monthly_level": 26373, "times_hit": 2, "distance": 704, "timeframe": "Monthly", "weight": 2, "strength": 4},
+            {"level": 25669, "monthly_level": 24774, "times_hit": 1, "distance": 221, "timeframe": "Weekly", "weight": 1, "strength": 1},
+            {"level": 25448, "monthly_level": 21964, "times_hit": 3, "distance": 370, "timeframe": "Weekly", "weight": 1, "strength": 3},
+            {"level": 25078, "monthly_level": 18604, "times_hit": 2, "distance": 304, "timeframe": "Weekly", "weight": 1, "strength": 2},
+            {"level": 24774, "monthly_level": 16828, "times_hit": 5, "distance": 292, "timeframe": "Monthly", "weight": 2, "strength": 10},
+            {"level": 24482, "monthly_level": 15183, "times_hit": 5, "distance": 675, "timeframe": "Weekly", "weight": 1, "strength": 5},
+            {"level": 23807, "monthly_level": 12430, "times_hit": 2, "distance": 201, "timeframe": "Weekly", "weight": 1, "strength": 2},
+            {"level": 23606, "monthly_level": 7511, "times_hit": 1, "distance": 536, "timeframe": "Weekly", "weight": 1, "strength": 1},
+            {"level": 23070, "monthly_level": null, "times_hit": 5, "distance": 295, "timeframe": "Weekly", "weight": 1, "strength": 5},
+            {"level": 22775, "monthly_level": null, "times_hit": 3, "distance": 512, "timeframe": "Weekly", "weight": 1, "strength": 3},
+            {"level": 22263, "monthly_level": null, "times_hit": 4, "distance": 299, "timeframe": "Weekly", "weight": 1, "strength": 4},
+            {"level": 21964, "monthly_level": null, "times_hit": 3, "distance": 254, "timeframe": "Monthly", "weight": 2, "strength": 6},
+            {"level": 21710, "monthly_level": null, "times_hit": 6, "distance": 573, "timeframe": "Weekly", "weight": 1, "strength": 6},
+            {"level": 21137, "monthly_level": null, "times_hit": 2, "distance": 915, "timeframe": "Weekly", "weight": 1, "strength": 2},
+            {"level": 20222, "monthly_level": null, "times_hit": 2, "distance": 231, "timeframe": "Weekly", "weight": 1, "strength": 2},
+            {"level": 19991, "monthly_level": null, "times_hit": 2, "distance": 762, "timeframe": "Weekly", "weight": 1, "strength": 2},
+            {"level": 19229, "monthly_level": null, "times_hit": 4, "distance": 342, "timeframe": "Weekly", "weight": 1, "strength": 4},
+            {"level": 18887, "monthly_level": null, "times_hit": 3, "distance": 283, "timeframe": "Weekly", "weight": 1, "strength": 3},
+            {"level": 18604, "monthly_level": null, "times_hit": 2, "distance": 254, "timeframe": "Monthly", "weight": 2, "strength": 4},
+            {"level": 18350, "monthly_level": null, "times_hit": 2, "distance": 236, "timeframe": "Weekly", "weight": 1, "strength": 2},
+            {"level": 18114, "monthly_level": null, "times_hit": 5, "distance": 761, "timeframe": "Weekly", "weight": 1, "strength": 5},
+            {"level": 17353, "monthly_level": null, "times_hit": 6, "distance": 525, "timeframe": "Weekly", "weight": 1, "strength": 6},
+            {"level": 16828, "monthly_level": null, "times_hit": 5, "distance": 418, "timeframe": "Monthly", "weight": 2, "strength": 10},
+            {"level": 16410, "monthly_level": null, "times_hit": 2, "distance": 448, "timeframe": "Weekly", "weight": 1, "strength": 2},
+            {"level": 15962, "monthly_level": null, "times_hit": 5, "distance": 291, "timeframe": "Weekly", "weight": 1, "strength": 5},
+            {"level": 15671, "monthly_level": null, "times_hit": 2, "distance": 233, "timeframe": "Weekly", "weight": 1, "strength": 2},
+            {"level": 15438, "monthly_level": null, "times_hit": 4, "distance": 255, "timeframe": "Weekly", "weight": 1, "strength": 4},
+            {"level": 15183, "monthly_level": null, "times_hit": 2, "distance": 1032, "timeframe": "Monthly", "weight": 2, "strength": 4},
+            {"level": 14151, "monthly_level": null, "times_hit": 3, "distance": 555, "timeframe": "Weekly", "weight": 1, "strength": 3},
+            {"level": 13596, "monthly_level": null, "times_hit": 1, "distance": 1166, "timeframe": "Weekly", "weight": 1, "strength": 1},
+            {"level": 12430, "monthly_level": null, "times_hit": 2, "distance": 2545, "timeframe": "Monthly", "weight": 2, "strength": 4},
+            {"level": 9885, "monthly_level": null, "times_hit": 1, "distance": 2374, "timeframe": "Weekly", "weight": 1, "strength": 1},
+            {"level": 7511, "monthly_level": null, "times_hit": 1, "distance": 7511, "timeframe": "Monthly", "weight": 2, "strength": 2}
+        ];
+        let srFilter = 'all';
+        let srSortCol = 'level';
+        let srSortAsc = false;
+
+        async function loadSupportResistanceData() {
+            try {
+                const resp = await fetch(`support_resistance.json?t=${new Date().getTime()}`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data && data.length > 0) srData = data;
+                }
+            } catch (e) {
+                console.log("Using embedded support & resistance data.");
+            }
+            updateSRCounts();
+        }
+
+        function updateSRCounts() {
+            if (!srData) return;
+            const monthlyCount = srData.filter(d => d.timeframe === 'Monthly').length;
+            const weeklyCount = srData.filter(d => d.timeframe === 'Weekly').length;
+            const strongCount = srData.filter(d => d.strength >= 5).length;
+            const elAll = document.getElementById('sr-count-all');
+            const elMon = document.getElementById('sr-count-monthly');
+            const elWk = document.getElementById('sr-count-weekly');
+            const elStr = document.getElementById('sr-count-strong');
+            if (elAll) elAll.textContent = srData.length;
+            if (elMon) elMon.textContent = monthlyCount;
+            if (elWk) elWk.textContent = weeklyCount;
+            if (elStr) elStr.textContent = strongCount;
+        }
+
+        function openSupportResistanceModal() {
+            loadSupportResistanceData();
+            renderSRTable();
+            document.getElementById('sr-modal').classList.add('open');
+        }
+
+        function closeSupportResistanceModal() {
+            document.getElementById('sr-modal').classList.remove('open');
+        }
+
+        function filterSRTable(filterType) {
+            srFilter = filterType;
+            ['all', 'monthly', 'weekly', 'strong'].forEach(t => {
+                const btn = document.getElementById(`sr-filter-${t}`);
+                if (btn) {
+                    if (t === filterType.toLowerCase()) btn.classList.add('active');
+                    else btn.classList.remove('active');
+                }
+            });
+            renderSRTable();
+        }
+
+        function sortSRTable(col) {
+            if (srSortCol === col) {
+                srSortAsc = !srSortAsc;
+            } else {
+                srSortCol = col;
+                srSortAsc = (col === 'level' || col === 'distance') ? false : true;
+            }
+            renderSRTable();
+        }
+
+        function renderSRTable() {
+            const tbody = document.getElementById('sr-table-body');
+            if (!tbody) return;
+
+            let filtered = [...srData];
+            if (srFilter === 'Monthly') {
+                filtered = filtered.filter(d => d.timeframe === 'Monthly');
+            } else if (srFilter === 'Weekly') {
+                filtered = filtered.filter(d => d.timeframe === 'Weekly');
+            } else if (srFilter === 'strong') {
+                filtered = filtered.filter(d => d.strength >= 5);
+            }
+
+            filtered.sort((a, b) => {
+                let vA = a[srSortCol];
+                let vB = b[srSortCol];
+                if (typeof vA === 'string') {
+                    vA = vA.toLowerCase();
+                    vB = (vB || '').toLowerCase();
+                }
+                if (vA < vB) return srSortAsc ? -1 : 1;
+                if (vA > vB) return srSortAsc ? 1 : -1;
+                return 0;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px; color: var(--text-muted);">No levels match this filter.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map((row, idx) => {
+                const isMonthly = row.timeframe === 'Monthly';
+                const tfBadge = isMonthly 
+                    ? `<span style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35); font-weight: 600; font-size: 11px; padding: 2px 8px; border-radius: 6px;">🟣 Monthly</span>`
+                    : `<span style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.35); font-weight: 600; font-size: 11px; padding: 2px 8px; border-radius: 6px;">🔵 Weekly</span>`;
+
+                const str = row.strength;
+                let strBadge = '';
+                if (str >= 10) {
+                    strBadge = `<span style="background: rgba(16, 185, 129, 0.2); color: #10b981; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 6px; padding: 2px 8px;">${str} ★★★</span>`;
+                } else if (str >= 6) {
+                    strBadge = `<span style="background: rgba(59, 130, 246, 0.2); color: #3b82f6; font-weight: 700; border: 1px solid rgba(59, 130, 246, 0.4); border-radius: 6px; padding: 2px 8px;">${str} ★★</span>`;
+                } else if (str >= 4) {
+                    strBadge = `<span style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; font-weight: 700; border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 6px; padding: 2px 8px;">${str} ★</span>`;
+                } else {
+                    strBadge = `<span style="color: var(--text-muted); font-size: 12px;">${str}</span>`;
+                }
+
+                const levelFmt = (row.level || 0).toLocaleString('en-IN');
+                const distFmt = row.distance ? `${row.distance.toLocaleString('en-IN')} pts` : '-';
+                const rowBg = idx % 2 === 1 ? 'background: rgba(255,255,255,0.015);' : '';
+
+                return `<tr style="${rowBg} border-bottom: 1px solid var(--border-subtle);">
+                    <td style="padding: 10px 14px; font-weight: 700; font-size: 14px; color: ${isMonthly ? '#c084fc' : 'var(--text-primary)'};">
+                        ${levelFmt}
+                    </td>
+                    <td style="padding: 10px 14px;">${tfBadge}</td>
+                    <td style="padding: 10px 14px; text-align: center; font-weight: 600;">${row.times_hit}</td>
+                    <td style="padding: 10px 14px; text-align: right; color: var(--text-secondary); font-family: monospace;">${distFmt}</td>
+                    <td style="padding: 10px 14px; text-align: center;">${strBadge}</td>
+                </tr>`;
+            }).join('');
+
+            const summaryEl = document.getElementById('sr-summary-footer');
+            if (summaryEl) summaryEl.textContent = `Showing ${filtered.length} of ${srData.length} levels`;
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             fetchData();
+            loadSupportResistanceData();
             const el = document.getElementById('main-table-container');
             el.addEventListener('mousedown', function(e) {
                 if (e.button !== 0) return;

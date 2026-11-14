@@ -1,0 +1,299 @@
+[
+  {
+    "level": 26373,
+    "monthly_level": 26373,
+    "times_hit": 2,
+    "distance": 704,
+    "timeframe": "Monthly",
+    "weight": 2,
+    "strength": 4
+  },
+  {
+    "level": 25669,
+    "monthly_level": 24774,
+    "times_hit": 1,
+    "distance": 221,
+    "timeframe": "Weekly",
+    "weight": 1,
+    "strength": 1
+  },
+  {
+    "level": 25448,
+    "monthly_level": 21964,
+    "times_hit": 3,
+    "distance": 370,
+    "timeframe": "Weekly",
+    "weight": 1,
+    "strength": 3
+  },
+  {
+    "level": 25078,
+    "monthly_level": 18604,
+    "times_hit": 2,
+    "distance": 304,
+    "timeframe": "Weekly",
+    "weight": 1,
+    "strength": 2
+  },
+  {
+    "level": 24774,
+    "monthly_level": 16828,
+    "times_hit": 5,
+    "distance": 292,
+    "timeframe": "Monthly",
+    "weight": 2,
+    "strength": 10
+  },
+  {
+    "level": 24482,
+    "monthly_level": 15183,
+    "times_hit": 5,
+    "distance": 675,
+    "timeframe": "Weekly",
+    "weight": 1,
+    "strength": 5
+  },
+  {
+    "level": 23807,
+    "monthly_level": 12430,
+    "times_hit": 2,
+    "distance": 201,
+    "timeframe": "Weekly",
+    "weight": 1,
+    "strength": 2
+  },
+  {
+    "level": 23606,
+    "monthly_level": 7511,
+    "times_hit": 1,
+    "distance": 536,
+    "timeframe": "Weekly",
+    "weight": 1,
+    "strength": 1
+  },
+  {
+    "level": 23070,
+    "monthly_level": null,
+    "times_hit": 5,
+    "distance": 295,
+    "timeframe": "Weekly",
+    "weight": 1,
+    "strength": 5
+  },
+  {
+    "level": 22775,
+    "monthly_level": null,
+    "times_hit": 3,
+    "distance": 512,
+    "timeframe": "Weekly",
+    "weight": 1,
+    "strength": 3
+  },
+  {
+    "level": 22263,
+    "monthly_level": null,
+    "times_hit": 4,
+    "distance": 299,
+    "timeframe": "Weekly",
+    "weight": 1,
+    "strength": 4
+  },
+  {
+    "level": 21964,
+    "monthly_level": null,
+    "times_hit": 3,
+    "distance": 254,
+    "timeframe": "Monthly",
+    "weight": 2,
+    "strength": 6
+  },
+  {
+    "level": 21710,
+    "monthly_level": null,
+    "times_hit": 6,
+    "distance": 573,
+    "timeframe": "Weekly",
+    "weight": 1,
+    "strength": 6
+  },
+  {
+    "level": 21137,
+    "monthly_level": null,
+    "times_hit": 2,
+    "distance": 915,
+    "timeframe": "Weekly",
+    "weight": 1,
+    "strength": 2
+  },
+  {
+    "level": 20222,
+    "monthly_level": null,
+    "times_hit": 2,
+    "distance": 231,
+    "timeframe": "Weekly",
+    "weight": 1,
+    "strength": 2
+  },
+  {
+    "level": 19991,
+    "monthly_level": null,
+    "times_hit": 2,
+    "distance": 762,
+    "timeframe": "Weekly",
+    "weight": 1,
+    "strength": 2
+  },
+  {
+    "level": 19229,
+    "monthly_level": null,
+    "times_hit": 4,
+    "distance": 342,
+    "timeframe": "Weekly",
+    "weight": 1,
+    "strength": 4
+  },
+  {
+    "level": 18887,
+    "monthly_level": null,
+    "times_hit": 3,
+    "distance": 283,
+    "timeframe": "Weekly",
+    "weight": 1,
+    "strength": 3
+  },
+  {
+    "level": 18604,
+    "monthly_level": null,
+    "times_hit": 2,
+    "distance": 254,
+    "timeframe": "Monthly",
+    "weight": 2,
+    "strength": 4
+  },
+  {
+    "level": 18350,
+    "monthly_level": null,
+    "times_hit": 2,
+    "distance": 236,
+    "timeframe": "Weekly",
+    "weight": 1,
+    "strength": 2
+  },
+  {
+    "level": 18114,
+    "monthly_level": null,
+    "times_hit": 5,
+    "distance": 761,
+    "timeframe": "Weekly",
+    "weight": 1,
+    "strength": 5
+  },
+  {
+    "level": 17353,
+    "monthly_level": null,
+    "times_hit": 6,
+    "distance": 525,
+    "timeframe": "Weekly",
+    "weight": 1,
+    "strength": 6
+  },
+  {
+    "level": 16828,
+    "monthly_level": null,
+    "times_hit": 5,
+    "distance": 418,
+    "timeframe": "Monthly",
+    "weight": 2,
+    "strength": 10
+  },
+  {
+    "level": 16410,
+    "monthly_level": null,
+    "times_hit": 2,
+    "distance": 448,
+    "timeframe": "Weekly",
+    "weight": 1,
+    "strength": 2
+  },
+  {
+    "level": 15962,
+    "monthly_level": null,
+    "times_hit": 5,
+    "distance": 291,
+    "timeframe": "Weekly",
+    "weight": 1,
+    "strength": 5
+  },
+  {
+    "level": 15671,
+    "monthly_level": null,
+    "times_hit": 2,
+    "distance": 233,
+    "timeframe": "Weekly",
+    "weight": 1,
+    "strength": 2
+  },
+  {
+    "level": 15438,
+    "monthly_level": null,
+    "times_hit": 4,
+    "distance": 255,
+    "timeframe": "Weekly",
+    "weight": 1,
+    "strength": 4
+  },
+  {
+    "level": 15183,
+    "monthly_level": null,
+    "times_hit": 2,
+    "distance": 1032,
+    "timeframe": "Monthly",
+    "weight": 2,
+    "strength": 4
+  },
+  {
+    "level": 14151,
+    "monthly_level": null,
+    "times_hit": 3,
+    "distance": 555,
+    "timeframe": "Weekly",
+    "weight": 1,
+    "strength": 3
+  },
+  {
+    "level": 13596,
+    "monthly_level": null,
+    "times_hit": 1,
+    "distance": 1166,
+    "timeframe": "Weekly",
+    "weight": 1,
+    "strength": 1
+  },
+  {
+    "level": 12430,
+    "monthly_level": null,
+    "times_hit": 2,
+    "distance": 2545,
+    "timeframe": "Monthly",
+    "weight": 2,
+    "strength": 4
+  },
+  {
+    "level": 9885,
+    "monthly_level": null,
+    "times_hit": 1,
+    "distance": 2374,
+    "timeframe": "Weekly",
+    "weight": 1,
+    "strength": 1
+  },
+  {
+    "level": 7511,
+    "monthly_level": null,
+    "times_hit": 1,
+    "distance": 7511,
+    "timeframe": "Monthly",
+    "weight": 2,
+    "strength": 2
+  }
+]
