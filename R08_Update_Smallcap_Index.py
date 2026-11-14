@@ -88,36 +88,43 @@ def compute_nearest_sr(cmp, sr_records):
         "monthly_support": [fmt_item(x) for x in m_sup],
     }
 
-def fetch_tradingview_quote():
-    """Fetches real-time / latest quote and EMAs from TradingView Scanner API."""
+def fetch_tradingview_quotes():
+    """Fetches real-time / latest quotes and EMAs for Smallcap 100 and Nifty 50 from TradingView Scanner API."""
     url = "https://scanner.tradingview.com/india/scan"
     headers = {"User-Agent": "Mozilla/5.0"}
     payload = {
-        "symbols": {"tickers": ["NSE:CNXSMALLCAP"]},
+        "symbols": {"tickers": ["NSE:CNXSMALLCAP", "NSE:NIFTY"]},
         "columns": [
             "open", "high", "low", "close", "change",
             "volume", "EMA10", "EMA20"
         ]
     }
+    result = {"smallcap": None, "nifty": None}
     try:
         req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
         with urllib.request.urlopen(req, timeout=8) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             if data and data.get("data"):
-                d = data["data"][0]["d"]
-                return {
-                    "open": round(float(d[0]), 2) if d[0] is not None else None,
-                    "high": round(float(d[1]), 2) if d[1] is not None else None,
-                    "low": round(float(d[2]), 2) if d[2] is not None else None,
-                    "close": round(float(d[3]), 2) if d[3] is not None else None,
-                    "change_pct": round(float(d[4]), 2) if d[4] is not None else None,
-                    "volume": int(d[5]) if d[5] is not None else 0,
-                    "ema10": round(float(d[6]), 2) if d[6] is not None else None,
-                    "ema20": round(float(d[7]), 2) if d[7] is not None else None,
-                }
+                for row in data["data"]:
+                    ticker = row.get("s")
+                    d = row.get("d", [])
+                    item = {
+                        "open": round(float(d[0]), 2) if d[0] is not None else None,
+                        "high": round(float(d[1]), 2) if d[1] is not None else None,
+                        "low": round(float(d[2]), 2) if d[2] is not None else None,
+                        "close": round(float(d[3]), 2) if d[3] is not None else None,
+                        "change_pct": round(float(d[4]), 2) if d[4] is not None else None,
+                        "volume": int(d[5]) if d[5] is not None else 0,
+                        "ema10": round(float(d[6]), 2) if d[6] is not None else None,
+                        "ema20": round(float(d[7]), 2) if d[7] is not None else None,
+                    }
+                    if ticker == "NSE:CNXSMALLCAP":
+                        result["smallcap"] = item
+                    elif ticker == "NSE:NIFTY":
+                        result["nifty"] = item
     except Exception as e:
-        print(f"[WARN] TradingView quote fetch failed: {e}")
-    return None
+        print(f"[WARN] TradingView quotes fetch failed: {e}")
+    return result
 
 def fetch_nse_historical_bars(days_back=90):
     """Fetches daily index archive records from NSE India."""
@@ -168,8 +175,8 @@ def fetch_nse_historical_bars(days_back=90):
     records.sort(key=parse_dt)
     return records
 
-def calculate_emas_and_rules(records, live_tv=None, sr_records=None):
-    """Calculates 10 EMA, 20 EMA, evaluates entry rules for each bar, and attaches nearest S/R."""
+def calculate_emas_and_rules(records, live_tv=None, sr_records=None, nifty_quote=None):
+    """Calculates 10 EMA, 20 EMA, evaluates entry rules for Smallcap 100, and calculates Nifty 50 Key S&R."""
     if not records:
         return {}
 
@@ -202,9 +209,23 @@ def calculate_emas_and_rules(records, live_tv=None, sr_records=None):
             "entry_allowed": bool(entry_allowed)
         })
 
-    # Latest bar evaluation
+    # Latest bar evaluation for Smallcap 100
     latest = history[-1] if history else {}
     
+    # Calculate Nifty 50 Key Support & Resistance (from Support and resistance.xlsx)
+    nifty_cmp = (nifty_quote and nifty_quote.get("close")) or 25144.30
+    nifty_sr = compute_nearest_sr(nifty_cmp, sr_records) if sr_records else {}
+    nifty_payload = {
+        "symbol": "NSE:NIFTY",
+        "index_name": "NIFTY 50",
+        "cmp": nifty_cmp,
+        "change_pct": (nifty_quote and nifty_quote.get("change_pct")) or 0.0,
+        "open": nifty_quote and nifty_quote.get("open"),
+        "high": nifty_quote and nifty_quote.get("high"),
+        "low": nifty_quote and nifty_quote.get("low"),
+        "nearest_sr": nifty_sr
+    }
+
     # If live TradingView data is available, override latest with live price & indicators
     if live_tv and live_tv.get("close"):
         cmp = live_tv["close"]
@@ -213,8 +234,6 @@ def calculate_emas_and_rules(records, live_tv=None, sr_records=None):
         rule1 = (cmp > ema10) and (cmp > ema20) if (ema10 and ema20) else False
         rule2 = (ema10 > ema20) if (ema10 and ema20) else False
         entry_allowed = rule1 and rule2
-
-        nearest_sr = compute_nearest_sr(cmp, sr_records) if sr_records else {}
 
         latest_payload = {
             "index_name": "NIFTY SMALLCAP 100",
@@ -235,7 +254,9 @@ def calculate_emas_and_rules(records, live_tv=None, sr_records=None):
             "status_text": "ENTRY ALLOWED" if entry_allowed else "NO ENTRY",
             "rule1_desc": f"CMP ({cmp:,.2f}) > 10 EMA ({ema10:,.2f}) and > 20 EMA ({ema20:,.2f})" if (ema10 and ema20) else "N/A",
             "rule2_desc": f"10 EMA ({ema10:,.2f}) > 20 EMA ({ema20:,.2f})" if (ema10 and ema20) else "N/A",
-            "nearest_sr": nearest_sr,
+            "nifty_cmp": nifty_cmp,
+            "nifty_change_pct": nifty_payload["change_pct"],
+            "nifty_nearest_sr": nifty_sr,
             "updated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
     else:
@@ -245,7 +266,6 @@ def calculate_emas_and_rules(records, live_tv=None, sr_records=None):
         rule1 = latest.get("rule1_met", False)
         rule2 = latest.get("rule2_met", False)
         entry_allowed = latest.get("entry_allowed", False)
-        nearest_sr = compute_nearest_sr(cmp, sr_records) if sr_records else {}
 
         latest_payload = {
             "index_name": "NIFTY SMALLCAP 100",
@@ -266,69 +286,81 @@ def calculate_emas_and_rules(records, live_tv=None, sr_records=None):
             "status_text": "ENTRY ALLOWED" if entry_allowed else "NO ENTRY",
             "rule1_desc": f"CMP ({cmp:,.2f}) > 10 EMA ({ema10:,.2f}) and > 20 EMA ({ema20:,.2f})",
             "rule2_desc": f"10 EMA ({ema10:,.2f}) > 20 EMA ({ema20:,.2f})",
-            "nearest_sr": nearest_sr,
+            "nifty_cmp": nifty_cmp,
+            "nifty_change_pct": nifty_payload["change_pct"],
+            "nifty_nearest_sr": nifty_sr,
             "updated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
 
     return {
         "latest": latest_payload,
+        "nifty": nifty_payload,
         "history": list(reversed(history))  # Newest bars first for table view
     }
 
 def main():
     print("=" * 60)
-    print("📊 NIFTY SMALLCAP 100 OHLC & 10/20 EMA INDICATOR UPDATER")
+    print("📊 NIFTY SMALLCAP 100 & NIFTY 50 S/R INDICATOR UPDATER")
     print("=" * 60)
 
-    print("1. Fetching live quote & indicators from TradingView...")
-    live_tv = fetch_tradingview_quote()
-    if live_tv:
-        print(f"   ✅ TradingView Live Quote: Close={live_tv['close']} | EMA10={live_tv['ema10']} | EMA20={live_tv['ema20']}")
-    else:
-        print("   ℹ️ TradingView quote unavailable, will rely on historical archives.")
+    print("1. Fetching live quotes & indicators from TradingView...")
+    tv_quotes = fetch_tradingview_quotes()
+    live_sc = tv_quotes.get("smallcap")
+    live_nifty = tv_quotes.get("nifty")
 
-    print("\n2. Fetching historical daily bars from NSE archives...")
+    if live_sc:
+        print(f"   ✅ Smallcap 100 Quote: Close={live_sc['close']} | EMA10={live_sc['ema10']} | EMA20={live_sc['ema20']}")
+    else:
+        print("   ℹ️ Smallcap 100 quote unavailable, will rely on historical archives.")
+
+    if live_nifty:
+        print(f"   ✅ Nifty 50 Quote:     Close={live_nifty['close']} | Change={live_nifty['change_pct']}%")
+
+    print("\n2. Fetching historical daily bars for Smallcap 100 from NSE archives...")
     records = fetch_nse_historical_bars(days_back=90)
     print(f"   ✅ Fetched {len(records)} trading days from NSE archives.")
 
-    if not records and live_tv:
+    if not records and live_sc:
         # Fallback if NSE archive is unreachable
         records = [{
             "date": datetime.date.today().strftime("%d-%m-%Y"),
-            "open": live_tv["open"],
-            "high": live_tv["high"],
-            "low": live_tv["low"],
-            "close": live_tv["close"],
-            "volume": live_tv["volume"]
+            "open": live_sc["open"],
+            "high": live_sc["high"],
+            "low": live_sc["low"],
+            "close": live_sc["close"],
+            "volume": live_sc["volume"]
         }]
 
-    print("\n3. Loading Support & Resistance Inception Levels...")
+    print("\n3. Loading Nifty Support & Resistance Inception Levels...")
     sr_records = load_support_resistance_records()
-    print(f"   ✅ Loaded {len(sr_records)} S/R levels.")
+    print(f"   ✅ Loaded {len(sr_records)} Nifty S/R levels from Support and resistance.xlsx.")
 
-    print("\n4. Calculating 10-day & 20-day EMAs, Entry Rules, and Nearest S/R...")
-    data = calculate_emas_and_rules(records, live_tv, sr_records)
+    print("\n4. Calculating 10-day & 20-day EMAs, Entry Rules, and Nifty 50 Nearest S/R...")
+    data = calculate_emas_and_rules(records, live_sc, sr_records, live_nifty)
 
     latest = data.get("latest", {})
-    nsr = latest.get("nearest_sr", {})
+    nifty = data.get("nifty", {})
+    nsr = nifty.get("nearest_sr", {})
+
     print("\n" + "─" * 60)
-    print(f"INDEX: {latest.get('index_name')} ({latest.get('date')})")
+    print(f"SMALLCAP 100: {latest.get('index_name')} ({latest.get('date')})")
     print(f"CMP:   {latest.get('cmp'):,.2f}")
     print(f"10 EMA: {latest.get('ema10'):,.2f} | 20 EMA: {latest.get('ema20'):,.2f}")
     print(f"RULE 1: {latest.get('rule1_desc')} -> {'✅ PASSED' if latest.get('rule1_met') else '❌ FAILED'}")
     print(f"RULE 2: {latest.get('rule2_desc')} -> {'✅ PASSED' if latest.get('rule2_met') else '❌ FAILED'}")
     print(f"SIGNAL: {'🟢 ' + latest.get('status_text') if latest.get('entry_allowed') else '🔴 ' + latest.get('status_text')}")
     
+    print("─" * 60)
+    print(f"NIFTY 50 CMP: {nifty.get('cmp'):,.2f} ({nifty.get('change_pct')}%)")
     if nsr:
         w_res = ", ".join([f"{x['level']} (+{x['diff_pct']}%)" for x in nsr.get('weekly_resistance', [])])
         w_sup = ", ".join([f"{x['level']} ({x['diff_pct']}%)" for x in nsr.get('weekly_support', [])])
         m_res = ", ".join([f"{x['level']} (+{x['diff_pct']}%)" for x in nsr.get('monthly_resistance', [])])
         m_sup = ", ".join([f"{x['level']} ({x['diff_pct']}%)" for x in nsr.get('monthly_support', [])])
-        print("─" * 60)
-        print(f"NEAREST WEEKLY RESISTANCE: {w_res or 'None'}")
-        print(f"NEAREST WEEKLY SUPPORT:    {w_sup or 'None'}")
-        print(f"NEAREST MONTHLY RESISTANCE:{m_res or 'None'}")
-        print(f"NEAREST MONTHLY SUPPORT:   {m_sup or 'None'}")
+        print(f"NEAREST WEEKLY RESISTANCE:  {w_res or 'None'}")
+        print(f"NEAREST WEEKLY SUPPORT:     {w_sup or 'None'}")
+        print(f"NEAREST MONTHLY RESISTANCE: {m_res or 'None'}")
+        print(f"NEAREST MONTHLY SUPPORT:    {m_sup or 'None'}")
     print("─" * 60)
 
     print(f"\n5. Saving results to {OUT_JSON_PATH}...")
