@@ -36,13 +36,15 @@ jobs:
         GITHUB_ACTIONS: "true"
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-      run: python R01_70__Operating_Profit.py
+      run: |
+        python R01_70__Operating_Profit.py
+        python R08_Update_Smallcap_Index.py || true
 
     - name: Commit and push updated data to repository
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git add rawdata.json "Raw Data.xlsx" "Master File.xlsx" "Screener_Industry_Data.xlsx" progress.json support_resistance.json || true
+        git add rawdata.json "Raw Data.xlsx" "Master File.xlsx" "Screener_Industry_Data.xlsx" progress.json support_resistance.json smallcap100.json || true
         git commit -m "Auto-update stock screener data [skip ci]" || echo "No changes to commit"
         git push origin main || echo "Git push skipped or failed"
 

@@ -2626,6 +2626,48 @@
         body.light-theme .app-toast.success { background: #d1fae5; color: #065f46; border-color: #34d399; }
         body.light-theme .app-toast.error { background: #fee2e2; color: #991b1b; border-color: #f87171; }
         body.light-theme .app-toast.info { background: #e0f2fe; color: #0369a1; border-color: #38bdf8; }
+
+        /* Smallcap 100 Market Regime Bar & Badges */
+        .smallcap-regime-bar {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.75), rgba(15, 23, 42, 0.95));
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 10px 18px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+        }
+        body.light-theme .smallcap-regime-bar {
+            background: linear-gradient(135deg, #ffffff, #f1f5f9);
+            border-color: var(--border-subtle);
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+        }
+        .regime-badge {
+            font-weight: 700;
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            letter-spacing: 0.3px;
+        }
+        .regime-badge.entry-allowed {
+            background: rgba(16, 185, 129, 0.18);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.45);
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
+        }
+        .regime-badge.entry-blocked {
+            background: rgba(239, 68, 68, 0.18);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.45);
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.15);
+        }
     </style>
     <base target="_blank">
 </head>
@@ -2650,6 +2692,7 @@
                 <button class="btn btn-danger" onclick="openExceptionsModal()">⚙️ VIP</button>
                 <button class="btn btn-secondary" onclick="openDecisionsModal()">📁 Decisions</button>
                 <button class="btn btn-secondary" onclick="openSupportResistanceModal()" title="View Nifty Support and Resistance Key Levels">🎯 S & R Levels</button>
+                <button class="btn btn-secondary" onclick="openSmallcapModal()" title="View Nifty Smallcap 100 Historical OHLC and 10/20 EMA">📊 Smallcap 100</button>
                 <button class="btn btn-secondary" onclick="openDecisionsModal()" title="Cross-Device Cloud Sync Status" id="sync-pill" style="gap: 5px;">
                     <span id="sync-icon">☁️</span>
                     <span id="sync-text">Cloud Sync</span>
@@ -2672,6 +2715,40 @@
     </header>
 
     <div class="container">
+        <!-- Nifty Smallcap 100 Pulse & Entry Filter Bar -->
+        <div class="smallcap-regime-bar" id="smallcap-regime-bar">
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 18px;">⚡</span>
+                    <div>
+                        <div style="font-weight: 800; font-size: 13px; color: var(--text-primary); letter-spacing: 0.5px;">NIFTY SMALLCAP 100</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">Trend Filter Rule: CMP &gt; 10 EMA &gt; 20 EMA</div>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: baseline; gap: 8px;">
+                    <span id="sc-cmp" style="font-size: 16px; font-weight: 800; color: #f8fafc;">19,656.45</span>
+                    <span id="sc-chg" style="font-size: 12px; font-weight: 700; color: #ef4444;">-0.26%</span>
+                </div>
+                <div id="sc-ohlc" style="font-size: 11px; color: var(--text-muted); background: rgba(255,255,255,0.03); padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-subtle);">
+                    O: 19,673.40 | H: 19,794.25 | L: 19,585.30
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 12px; font-size: 12px;">
+                    <div>10 EMA: <strong id="sc-ema10" style="color: #60a5fa; font-weight: 700;">19,243.28</strong></div>
+                    <div>20 EMA: <strong id="sc-ema20" style="color: #c084fc; font-weight: 700;">19,097.37</strong></div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span id="sc-rule1-badge" class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35); font-size: 11px; padding: 2px 7px; border-radius: 4px;" title="CMP > 10 EMA & 20 EMA">✅ CMP &gt; EMAs</span>
+                    <span id="sc-rule2-badge" class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35); font-size: 11px; padding: 2px 7px; border-radius: 4px;" title="10 EMA > 20 EMA">✅ 10 &gt; 20 EMA</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span id="sc-entry-pill" class="regime-badge entry-allowed">🟢 ENTRY ALLOWED</span>
+                    <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 11px;" onclick="openSmallcapModal()" title="View Nifty Smallcap 100 Daily OHLC & Moving Average History">📊 OHLC History</button>
+                </div>
+            </div>
+        </div>
         <div class="view-toggle-bar">
             <div class="stats-text" id="row-count">Loading data...</div>
             <div class="view-toggle">
@@ -2995,6 +3072,70 @@
             <div class="modal-footer" style="padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle);">
                 <span style="font-size: 12px; color: var(--text-muted);" id="sr-summary-footer">Showing 33 levels</span>
                 <button onclick="closeSupportResistanceModal()" class="btn btn-primary" style="padding: 6px 20px;">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nifty Smallcap 100 OHLC & EMAs Modal -->
+    <div class="modal-overlay" id="smallcap-modal" onclick="if(event.target===this) closeSmallcapModal()">
+        <div class="modal-content" style="max-width: 880px;">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 20px;">📊</span>
+                    <div>
+                        <div style="font-weight: 700; font-size: 15px;">NIFTY SMALLCAP 100 — Daily OHLC &amp; Moving Averages</div>
+                        <div style="font-size: 11px; font-weight: normal; color: var(--text-muted);">
+                            Rules: <strong>Rule 1</strong> (CMP &gt; 10 &amp; 20 EMA) &bull; <strong>Rule 2</strong> (10 EMA &gt; 20 EMA) &bull; <strong>Take Entry ONLY if both met</strong>
+                        </div>
+                    </div>
+                </div>
+                <button class="modal-close" onclick="closeSmallcapModal()">&#215;</button>
+            </div>
+            <div class="modal-body" style="padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto;">
+                <!-- Current Summary Card -->
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; background: rgba(255,255,255,0.02); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-subtle);">
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Current Market Regime</span>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span id="sc-modal-cmp" style="font-size: 18px; font-weight: 800; color: #f8fafc;">19,656.45</span>
+                            <span id="sc-modal-badge" class="regime-badge entry-allowed">🟢 ENTRY ALLOWED</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 16px; font-size: 12px; color: var(--text-secondary);">
+                        <div>10 EMA: <strong id="sc-modal-ema10" style="color: #60a5fa;">19,243.28</strong></div>
+                        <div>20 EMA: <strong id="sc-modal-ema20" style="color: #c084fc;">19,097.37</strong></div>
+                    </div>
+                    <div>
+                        <a href="https://in.tradingview.com/chart/?symbol=NSE:CNXSMALLCAP" target="_blank" class="pill pill-teal" style="font-size: 12px; padding: 5px 12px; text-decoration: none;">📈 Open in TradingView ↗</a>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div style="overflow-x: auto; border: 1px solid var(--border-subtle); border-radius: 8px;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 12px;" id="sc-history-table">
+                        <thead>
+                            <tr style="background: rgba(255,255,255,0.03); border-bottom: 2px solid var(--accent-blue);">
+                                <th style="padding: 10px 12px; text-align: left;">Date</th>
+                                <th style="padding: 10px 12px; text-align: right;">Open</th>
+                                <th style="padding: 10px 12px; text-align: right;">High</th>
+                                <th style="padding: 10px 12px; text-align: right;">Low</th>
+                                <th style="padding: 10px 12px; text-align: right;">Close (CMP)</th>
+                                <th style="padding: 10px 12px; text-align: right; color: #60a5fa;">10 EMA</th>
+                                <th style="padding: 10px 12px; text-align: right; color: #c084fc;">20 EMA</th>
+                                <th style="padding: 10px 12px; text-align: center;">Rule 1 (CMP &gt; EMAs)</th>
+                                <th style="padding: 10px 12px; text-align: center;">Rule 2 (10 &gt; 20 EMA)</th>
+                                <th style="padding: 10px 12px; text-align: center;">Entry Signal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sc-history-body">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle);">
+                <span style="font-size: 12px; color: var(--text-muted);" id="sc-summary-footer">Showing historical daily bars</span>
+                <button onclick="closeSmallcapModal()" class="btn btn-primary" style="padding: 6px 20px;">Done</button>
             </div>
         </div>
     </div>
@@ -5093,9 +5234,203 @@
             if (summaryEl) summaryEl.textContent = `Showing ${filtered.length} of ${srData.length} levels`;
         }
 
+        // ─────────────────────────────────────────────────────────────
+        // NIFTY SMALLCAP 100 OHLC & 10/20 EMA ENTRY SYSTEM
+        // ─────────────────────────────────────────────────────────────
+        let smallcapData = null;
+
+        async function loadSmallcapData() {
+            try {
+                const resp = await fetch(`smallcap100.json?t=${new Date().getTime()}`);
+                if (resp.ok) {
+                    smallcapData = await resp.json();
+                }
+            } catch (e) {
+                console.warn("Could not load smallcap100.json, attempting live fetch", e);
+            }
+
+            // Also attempt live tick fetch from TradingView Scanner API (supports CORS)
+            try {
+                const tvResp = await fetch("https://scanner.tradingview.com/india/scan", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        symbols: { tickers: ["NSE:CNXSMALLCAP"] },
+                        columns: ["open", "high", "low", "close", "change", "volume", "EMA10", "EMA20"]
+                    })
+                });
+                if (tvResp.ok) {
+                    const tvJson = await tvResp.json();
+                    if (tvJson && tvJson.data && tvJson.data.length > 0) {
+                        const d = tvJson.data[0].d;
+                        const cmp = parseFloat(d[3]);
+                        const ema10 = parseFloat(d[6]);
+                        const ema20 = parseFloat(d[7]);
+                        const rule1 = (cmp > ema10) && (cmp > ema20);
+                        const rule2 = (ema10 > ema20);
+                        const entryAllowed = rule1 && rule2;
+
+                        if (!smallcapData) smallcapData = { history: [] };
+                        smallcapData.latest = {
+                            index_name: "NIFTY SMALLCAP 100",
+                            symbol: "NSE:CNXSMALLCAP",
+                            date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-'),
+                            cmp: cmp,
+                            open: parseFloat(d[0]),
+                            high: parseFloat(d[1]),
+                            low: parseFloat(d[2]),
+                            close: cmp,
+                            change_pct: parseFloat(d[4]),
+                            volume: parseInt(d[5]) || 0,
+                            ema10: ema10,
+                            ema20: ema20,
+                            rule1_met: rule1,
+                            rule2_met: rule2,
+                            entry_allowed: entryAllowed,
+                            status_text: entryAllowed ? "ENTRY ALLOWED" : "NO ENTRY"
+                        };
+                    }
+                }
+            } catch (e) {
+                // Silently fallback to smallcap100.json
+            }
+
+            renderSmallcapUI();
+        }
+
+        function renderSmallcapUI() {
+            if (!smallcapData || !smallcapData.latest) return;
+            const l = smallcapData.latest;
+
+            const cmpEl = document.getElementById('sc-cmp');
+            const chgEl = document.getElementById('sc-chg');
+            const ohlcEl = document.getElementById('sc-ohlc');
+            const ema10El = document.getElementById('sc-ema10');
+            const ema20El = document.getElementById('sc-ema20');
+            const r1Badge = document.getElementById('sc-rule1-badge');
+            const r2Badge = document.getElementById('sc-rule2-badge');
+            const entryPill = document.getElementById('sc-entry-pill');
+
+            if (cmpEl) cmpEl.textContent = (l.cmp || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (chgEl) {
+                const chg = l.change_pct || 0;
+                chgEl.textContent = (chg >= 0 ? `+${chg.toFixed(2)}%` : `${chg.toFixed(2)}%`);
+                chgEl.style.color = chg >= 0 ? '#10b981' : '#ef4444';
+            }
+            if (ohlcEl) {
+                const o = (l.open || 0).toLocaleString('en-IN', { maximumFractionDigits: 1 });
+                const h = (l.high || 0).toLocaleString('en-IN', { maximumFractionDigits: 1 });
+                const low = (l.low || 0).toLocaleString('en-IN', { maximumFractionDigits: 1 });
+                ohlcEl.textContent = `O: ${o} | H: ${h} | L: ${low}`;
+            }
+            if (ema10El) ema10El.textContent = (l.ema10 || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (ema20El) ema20El.textContent = (l.ema20 || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            if (r1Badge) {
+                if (l.rule1_met) {
+                    r1Badge.textContent = '✅ CMP > EMAs';
+                    r1Badge.style.background = 'rgba(16, 185, 129, 0.15)';
+                    r1Badge.style.color = '#10b981';
+                    r1Badge.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+                } else {
+                    r1Badge.textContent = '❌ CMP ≤ EMAs';
+                    r1Badge.style.background = 'rgba(239, 68, 68, 0.15)';
+                    r1Badge.style.color = '#ef4444';
+                    r1Badge.style.borderColor = 'rgba(239, 68, 68, 0.35)';
+                }
+            }
+
+            if (r2Badge) {
+                if (l.rule2_met) {
+                    r2Badge.textContent = '✅ 10 > 20 EMA';
+                    r2Badge.style.background = 'rgba(16, 185, 129, 0.15)';
+                    r2Badge.style.color = '#10b981';
+                    r2Badge.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+                } else {
+                    r2Badge.textContent = '❌ 10 ≤ 20 EMA';
+                    r2Badge.style.background = 'rgba(239, 68, 68, 0.15)';
+                    r2Badge.style.color = '#ef4444';
+                    r2Badge.style.borderColor = 'rgba(239, 68, 68, 0.35)';
+                }
+            }
+
+            if (entryPill) {
+                if (l.entry_allowed) {
+                    entryPill.className = 'regime-badge entry-allowed';
+                    entryPill.textContent = '🟢 ENTRY ALLOWED';
+                } else {
+                    entryPill.className = 'regime-badge entry-blocked';
+                    entryPill.textContent = '🔴 NO ENTRY';
+                }
+            }
+        }
+
+        function openSmallcapModal() {
+            if (!smallcapData) loadSmallcapData();
+            renderSmallcapModalContent();
+            document.getElementById('smallcap-modal').classList.add('open');
+        }
+
+        function closeSmallcapModal() {
+            document.getElementById('smallcap-modal').classList.remove('open');
+        }
+
+        function renderSmallcapModalContent() {
+            if (!smallcapData) return;
+            const l = smallcapData.latest || {};
+
+            const modalCmp = document.getElementById('sc-modal-cmp');
+            const modalBadge = document.getElementById('sc-modal-badge');
+            const modalEma10 = document.getElementById('sc-modal-ema10');
+            const modalEma20 = document.getElementById('sc-modal-ema20');
+
+            if (modalCmp) modalCmp.textContent = (l.cmp || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (modalEma10) modalEma10.textContent = (l.ema10 || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (modalEma20) modalEma20.textContent = (l.ema20 || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            if (modalBadge) {
+                if (l.entry_allowed) {
+                    modalBadge.className = 'regime-badge entry-allowed';
+                    modalBadge.textContent = '🟢 ENTRY ALLOWED (Rules Met)';
+                } else {
+                    modalBadge.className = 'regime-badge entry-blocked';
+                    modalBadge.textContent = '🔴 NO ENTRY (Market Disqualified)';
+                }
+            }
+
+            const tbody = document.getElementById('sc-history-body');
+            if (!tbody || !smallcapData.history) return;
+
+            tbody.innerHTML = smallcapData.history.map((r, idx) => {
+                const r1Icon = r.rule1_met ? '<span style="color:#10b981;font-weight:700;">✅ Pass</span>' : '<span style="color:#ef4444;font-weight:700;">❌ Fail</span>';
+                const r2Icon = r.rule2_met ? '<span style="color:#10b981;font-weight:700;">✅ Pass</span>' : '<span style="color:#ef4444;font-weight:700;">❌ Fail</span>';
+                const sigBadge = r.entry_allowed 
+                    ? '<span style="background:rgba(16,185,129,0.15);color:#10b981;font-weight:700;padding:2px 8px;border-radius:4px;border:1px solid rgba(16,185,129,0.3);">🟢 Allowed</span>'
+                    : '<span style="background:rgba(239,68,68,0.15);color:#ef4444;font-weight:700;padding:2px 8px;border-radius:4px;border:1px solid rgba(239,68,68,0.3);">🔴 No Entry</span>';
+
+                const rowBg = idx % 2 === 1 ? 'background: rgba(255,255,255,0.015);' : '';
+                return `<tr style="${rowBg} border-bottom: 1px solid var(--border-subtle);">
+                    <td style="padding: 8px 12px; font-weight: 600;">${r.date}</td>
+                    <td style="padding: 8px 12px; text-align: right; color: var(--text-secondary);">${(r.open||0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                    <td style="padding: 8px 12px; text-align: right; color: var(--text-secondary);">${(r.high||0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                    <td style="padding: 8px 12px; text-align: right; color: var(--text-secondary);">${(r.low||0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                    <td style="padding: 8px 12px; text-align: right; font-weight: 700; color: #f8fafc;">${(r.close||0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                    <td style="padding: 8px 12px; text-align: right; font-weight: 600; color: #60a5fa;">${(r.ema10||0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                    <td style="padding: 8px 12px; text-align: right; font-weight: 600; color: #c084fc;">${(r.ema20||0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                    <td style="padding: 8px 12px; text-align: center;">${r1Icon}</td>
+                    <td style="padding: 8px 12px; text-align: center;">${r2Icon}</td>
+                    <td style="padding: 8px 12px; text-align: center;">${sigBadge}</td>
+                </tr>`;
+            }).join('');
+
+            const summaryEl = document.getElementById('sc-summary-footer');
+            if (summaryEl) summaryEl.textContent = `Showing ${smallcapData.history.length} historical trading days`;
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             fetchData();
             loadSupportResistanceData();
+            loadSmallcapData();
             const el = document.getElementById('main-table-container');
             el.addEventListener('mousedown', function(e) {
                 if (e.button !== 0) return;
