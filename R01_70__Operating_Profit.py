@@ -468,30 +468,36 @@ def msi_scrape_symbol(msi_driver, symbol):
     url = f"{MSI_BASE_URL}/{symbol.lower()}/evaluation.jsp"
     try:
         msi_driver.get(url)
-        time.sleep(1.0)
-        # Fast non-blocking evaluation of all h4 metrics in a single pass
-        h4_list = msi_driver.find_elements(By.TAG_NAME, "h4")
-        for h4 in h4_list:
-            try:
-                htext = h4.text.strip()
-                h3 = h4.find_element(By.XPATH, "following::h3[1]")
-                spans = h3.find_elements(By.TAG_NAME, "span")
-                val = ""
-                if len(spans) >= 2:
-                    val = spans[1].text.strip()
-                elif spans:
-                    val = spans[0].text.split(":")[-1].strip()
-                
-                if "EPS Strength" in htext:
-                    result["MSI EPS Strength"] = val
-                elif "Price Strength" in htext:
-                    result["MSI Price Strength"] = val
-                elif "Buyer Demand" in htext:
-                    result["MSI Buyer Demand"] = val
-                elif "Group Rank" in htext:
-                    result["MSI Group Rank"] = val
-            except Exception:
-                continue
+        # Dynamic polling: wait up to 5.0s for metrics to appear in the DOM
+        deadline = time.time() + 5.0
+        while time.time() < deadline:
+            h4_list = msi_driver.find_elements(By.TAG_NAME, "h4")
+            for h4 in h4_list:
+                try:
+                    htext = h4.text.strip()
+                    if not any(k in htext for k in ["EPS Strength", "Price Strength", "Buyer Demand", "Group Rank"]):
+                        continue
+                    h3 = h4.find_element(By.XPATH, "following::h3[1]")
+                    spans = h3.find_elements(By.TAG_NAME, "span")
+                    val = ""
+                    if len(spans) >= 2:
+                        val = spans[1].text.strip()
+                    elif spans:
+                        val = spans[0].text.split(":")[-1].strip()
+                    
+                    if "EPS Strength" in htext:
+                        result["MSI EPS Strength"] = val
+                    elif "Price Strength" in htext:
+                        result["MSI Price Strength"] = val
+                    elif "Buyer Demand" in htext:
+                        result["MSI Buyer Demand"] = val
+                    elif "Group Rank" in htext:
+                        result["MSI Group Rank"] = val
+                except Exception:
+                    continue
+            if result.get("MSI Price Strength") or result.get("MSI EPS Strength"):
+                break
+            time.sleep(0.3)
                 
         # Master Score
         try:

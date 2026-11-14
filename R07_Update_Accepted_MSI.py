@@ -18,6 +18,8 @@ import json
 import re
 import argparse
 from datetime import datetime
+import urllib.request
+import urllib.parse
 
 # Windows console UTF-8 fix
 if sys.platform == "win32":
@@ -124,59 +126,102 @@ def init_driver(max_retries=3):
                 raise RuntimeError(f"Could not launch Chrome driver: {e}")
 
 # ─────────────────────────────────────────────────────────────
-# MSI SCRAPER FOR A SINGLE SYMBOL
+# TICKER RESOLVER & MSI SCRAPER FOR A SINGLE SYMBOL
 # ─────────────────────────────────────────────────────────────
-def msi_scrape_symbol(driver, symbol):
+def resolve_ticker(symbol, comp_name=""):
+    """
+    If symbol has spaces or is not a clean ticker, try to resolve via Screener search API.
+    Handles companies where exchange code wasn't scraped properly (e.g. Adroit Industries -> ADROITIND).
+    """
+    sym = str(symbol or "").strip()
+    if sym and " " not in sym and not sym.isdigit() and len(sym) <= 20:
+        return sym
+    if sym and sym.isdigit() and len(sym) == 6:
+        return sym
+
+    query = comp_name or sym
+    if not query:
+        return sym
+    try:
+        url = f"https://www.screener.in/api/company/search/?q={urllib.parse.quote(query)}"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            if data and isinstance(data, list):
+                for item in data:
+                    url_path = item.get("url", "")
+                    m = re.search(r"/company/([^/]+)/", url_path)
+                    if m:
+                        clean = m.group(1).strip().upper()
+                        print(f"   🔎 Resolved ticker for '{query}' -> '{clean}'")
+                        return clean
+    except Exception as e:
+        print(f"   [NOTE] Screener ticker lookup failed for '{query}': {e}")
+    return sym
+
+def msi_scrape_symbol(driver, symbol, comp_name=""):
     result = {
         "MSI EPS Strength":   "",
         "MSI Price Strength": "",
         "MSI Buyer Demand":   "",
         "MSI Group Rank":     "",
         "MSI Master Score":   "",
+        "Resolved Ticker":    "",
     }
     if not symbol or not driver:
         return result
 
-    url = f"{MSI_BASE_URL}/{symbol.lower()}/evaluation.jsp"
+    target_sym = resolve_ticker(symbol, comp_name)
+    result["Resolved Ticker"] = target_sym
+    url = f"{MSI_BASE_URL}/{target_sym.lower()}/evaluation.jsp"
+
     try:
         driver.get(url)
-        time.sleep(1.2)
 
-        h4_list = driver.find_elements(By.TAG_NAME, "h4")
-        for h4 in h4_list:
-            try:
-                htext = h4.text.strip()
-                if not any(k in htext for k in ["EPS Strength", "Price Strength", "Buyer Demand", "Group Rank"]):
+        # Dynamic polling: wait up to 6.0s for metrics to appear in the DOM
+        # Prevents race conditions where MarketSmith single-page app takes 1.5-3.0s to render
+        deadline = time.time() + 6.0
+        while time.time() < deadline:
+            h4_list = driver.find_elements(By.TAG_NAME, "h4")
+            for h4 in h4_list:
+                try:
+                    htext = h4.text.strip()
+                    if not any(k in htext for k in ["EPS Strength", "Price Strength", "Buyer Demand", "Group Rank"]):
+                        continue
+                    h3 = h4.find_element(By.XPATH, "following::h3[1]")
+                    spans = h3.find_elements(By.TAG_NAME, "span")
+                    val = ""
+                    if len(spans) >= 2:
+                        val = spans[1].text.strip()
+                    elif spans:
+                        val = spans[0].text.split(":")[-1].strip()
+                    else:
+                        val = h3.text.split(":")[-1].strip()
+
+                    # Clean numeric values if possible
+                    num_val = val
+                    clean_num = re.sub(r"[^\d.]", "", val)
+                    if clean_num:
+                        try:
+                            num_val = float(clean_num) if "." in clean_num else int(clean_num)
+                        except ValueError:
+                            pass
+
+                    if "EPS Strength" in htext:
+                        result["MSI EPS Strength"] = num_val
+                    elif "Price Strength" in htext:
+                        result["MSI Price Strength"] = num_val
+                    elif "Buyer Demand" in htext:
+                        result["MSI Buyer Demand"] = val
+                    elif "Group Rank" in htext:
+                        result["MSI Group Rank"] = num_val
+                except Exception:
                     continue
-                h3 = h4.find_element(By.XPATH, "following::h3[1]")
-                spans = h3.find_elements(By.TAG_NAME, "span")
-                val = ""
-                if len(spans) >= 2:
-                    val = spans[1].text.strip()
-                elif spans:
-                    val = spans[0].text.split(":")[-1].strip()
-                else:
-                    val = h3.text.split(":")[-1].strip()
 
-                # Clean numeric values if possible
-                num_val = val
-                clean_num = re.sub(r"[^\d.]", "", val)
-                if clean_num:
-                    try:
-                        num_val = float(clean_num) if "." in clean_num else int(clean_num)
-                    except ValueError:
-                        pass
-
-                if "EPS Strength" in htext:
-                    result["MSI EPS Strength"] = num_val
-                elif "Price Strength" in htext:
-                    result["MSI Price Strength"] = num_val
-                elif "Buyer Demand" in htext:
-                    result["MSI Buyer Demand"] = val
-                elif "Group Rank" in htext:
-                    result["MSI Group Rank"] = num_val
-            except Exception:
-                continue
+            # If metrics are populated, exit wait loop early
+            if result.get("MSI Price Strength") or result.get("MSI EPS Strength"):
+                break
+            time.sleep(0.3)
 
         # Master Score
         try:
@@ -193,7 +238,7 @@ def msi_scrape_symbol(driver, symbol):
             pass
 
     except Exception as e:
-        print(f"  [WARN] MSI scrape error for {symbol}: {e}")
+        print(f"  [WARN] MSI scrape error for {symbol} ({target_sym}): {e}")
 
     return result
 
@@ -370,8 +415,25 @@ def main():
                 msi_data = scraped_cache[sym.upper()]
                 print(f"   ⚡ Using cached MSI data for {sym}")
             else:
-                msi_data = msi_scrape_symbol(driver, sym)
+                msi_data = msi_scrape_symbol(driver, sym, comp_name)
+                # If still missing Price Strength, try alternate identifiers (NSE, BSE, Screener ticker)
+                if not msi_data.get("MSI Price Strength"):
+                    for alt in [ids["nse"], ids["bse"], ids["screener"]]:
+                        if alt and alt != sym and alt != "0" and " " not in alt:
+                            print(f"   🔄 Retrying MSI with alternate symbol: {alt}...")
+                            alt_data = msi_scrape_symbol(driver, alt, comp_name)
+                            if alt_data.get("MSI Price Strength"):
+                                msi_data = alt_data
+                                break
                 scraped_cache[sym.upper()] = msi_data
+
+            # If resolved ticker exists and row had no clean ticker, populate it
+            resolved = msi_data.get("Resolved Ticker")
+            if resolved and (not row.get("NSE Code Exact") or " " in str(row.get("NSE Code Exact"))):
+                if not resolved.isdigit():
+                    row["NSE Code Exact"] = resolved
+            if resolved and (not row.get("Screener Name Exact") or " " in str(row.get("Screener Name Exact"))):
+                row["Screener Name Exact"] = resolved
 
             # Update row in raw_data
             for col in MSI_COLS:
