@@ -21,6 +21,72 @@ import pandas as pd
 
 FOLDER_PATH = os.path.dirname(os.path.abspath(__file__))
 OUT_JSON_PATH = os.path.join(FOLDER_PATH, "smallcap100.json")
+SR_EXCEL_PATH = os.path.join(FOLDER_PATH, "input", "Support and resistance.xlsx")
+SR_JSON_PATH = os.path.join(FOLDER_PATH, "support_resistance.json")
+
+def load_support_resistance_records():
+    """Loads support & resistance levels from Excel or JSON."""
+    records = []
+    if os.path.exists(SR_EXCEL_PATH):
+        try:
+            import openpyxl
+            wb = openpyxl.load_workbook(SR_EXCEL_PATH)
+            ws = wb.active
+            rows = list(ws.iter_rows(values_only=True))[1:]
+            for r in rows:
+                lvl = r[1]
+                if lvl is not None:
+                    records.append({
+                        "level": int(lvl) if float(lvl).is_integer() else round(float(lvl), 2),
+                        "monthly_level": int(r[0]) if r[0] is not None and float(r[0]).is_integer() else (round(float(r[0]), 2) if r[0] is not None else None),
+                        "times_hit": int(r[2]) if r[2] is not None else 0,
+                        "distance": int(r[3]) if r[3] is not None else 0,
+                        "timeframe": str(r[4]).strip() if r[4] else "Weekly",
+                        "weight": int(r[5]) if r[5] is not None else 1,
+                        "strength": int(r[6]) if r[6] is not None else 1
+                    })
+            if records:
+                # Also save / keep support_resistance.json updated
+                with open(SR_JSON_PATH, "w", encoding="utf-8") as f:
+                    json.dump(records, f, indent=2)
+        except Exception as e:
+            print(f"[WARN] Failed to read {SR_EXCEL_PATH}: {e}")
+
+    if not records and os.path.exists(SR_JSON_PATH):
+        try:
+            with open(SR_JSON_PATH, "r", encoding="utf-8") as f:
+                records = json.load(f)
+        except Exception as e:
+            print(f"[WARN] Failed to read {SR_JSON_PATH}: {e}")
+    return records
+
+def compute_nearest_sr(cmp, sr_records):
+    """Computes nearest 2 weekly and monthly support & resistance levels for a given CMP."""
+    if not sr_records or not cmp:
+        return {}
+
+    weekly_lvls = [r["level"] for r in sr_records if r.get("timeframe") == "Weekly"]
+    monthly_lvls = [r["level"] for r in sr_records if r.get("timeframe") == "Monthly"]
+
+    # Resistances (> cmp, ascending)
+    w_res = sorted([x for x in weekly_lvls if x > cmp])[:2]
+    # Supports (< cmp, descending)
+    w_sup = sorted([x for x in weekly_lvls if x < cmp], reverse=True)[:2]
+
+    m_res = sorted([x for x in monthly_lvls if x > cmp])[:2]
+    m_sup = sorted([x for x in monthly_lvls if x < cmp], reverse=True)[:2]
+
+    def fmt_item(lvl):
+        diff = round(lvl - cmp, 2)
+        pct = round((diff / cmp) * 100, 2)
+        return {"level": lvl, "diff_pts": diff, "diff_pct": pct}
+
+    return {
+        "weekly_resistance": [fmt_item(x) for x in w_res],
+        "weekly_support": [fmt_item(x) for x in w_sup],
+        "monthly_resistance": [fmt_item(x) for x in m_res],
+        "monthly_support": [fmt_item(x) for x in m_sup],
+    }
 
 def fetch_tradingview_quote():
     """Fetches real-time / latest quote and EMAs from TradingView Scanner API."""
