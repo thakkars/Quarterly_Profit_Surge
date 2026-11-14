@@ -168,8 +168,8 @@ def fetch_nse_historical_bars(days_back=90):
     records.sort(key=parse_dt)
     return records
 
-def calculate_emas_and_rules(records, live_tv=None):
-    """Calculates 10 EMA, 20 EMA, and evaluates entry rules for each bar."""
+def calculate_emas_and_rules(records, live_tv=None, sr_records=None):
+    """Calculates 10 EMA, 20 EMA, evaluates entry rules for each bar, and attaches nearest S/R."""
     if not records:
         return {}
 
@@ -214,6 +214,8 @@ def calculate_emas_and_rules(records, live_tv=None):
         rule2 = (ema10 > ema20) if (ema10 and ema20) else False
         entry_allowed = rule1 and rule2
 
+        nearest_sr = compute_nearest_sr(cmp, sr_records) if sr_records else {}
+
         latest_payload = {
             "index_name": "NIFTY SMALLCAP 100",
             "symbol": "NSE:CNXSMALLCAP",
@@ -233,6 +235,7 @@ def calculate_emas_and_rules(records, live_tv=None):
             "status_text": "ENTRY ALLOWED" if entry_allowed else "NO ENTRY",
             "rule1_desc": f"CMP ({cmp:,.2f}) > 10 EMA ({ema10:,.2f}) and > 20 EMA ({ema20:,.2f})" if (ema10 and ema20) else "N/A",
             "rule2_desc": f"10 EMA ({ema10:,.2f}) > 20 EMA ({ema20:,.2f})" if (ema10 and ema20) else "N/A",
+            "nearest_sr": nearest_sr,
             "updated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
     else:
@@ -242,6 +245,8 @@ def calculate_emas_and_rules(records, live_tv=None):
         rule1 = latest.get("rule1_met", False)
         rule2 = latest.get("rule2_met", False)
         entry_allowed = latest.get("entry_allowed", False)
+        nearest_sr = compute_nearest_sr(cmp, sr_records) if sr_records else {}
+
         latest_payload = {
             "index_name": "NIFTY SMALLCAP 100",
             "symbol": "NSE:CNXSMALLCAP",
@@ -261,6 +266,7 @@ def calculate_emas_and_rules(records, live_tv=None):
             "status_text": "ENTRY ALLOWED" if entry_allowed else "NO ENTRY",
             "rule1_desc": f"CMP ({cmp:,.2f}) > 10 EMA ({ema10:,.2f}) and > 20 EMA ({ema20:,.2f})",
             "rule2_desc": f"10 EMA ({ema10:,.2f}) > 20 EMA ({ema20:,.2f})",
+            "nearest_sr": nearest_sr,
             "updated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
 
@@ -296,10 +302,15 @@ def main():
             "volume": live_tv["volume"]
         }]
 
-    print("\n3. Calculating 10-day & 20-day EMAs and evaluating Entry Rules...")
-    data = calculate_emas_and_rules(records, live_tv)
+    print("\n3. Loading Support & Resistance Inception Levels...")
+    sr_records = load_support_resistance_records()
+    print(f"   ✅ Loaded {len(sr_records)} S/R levels.")
+
+    print("\n4. Calculating 10-day & 20-day EMAs, Entry Rules, and Nearest S/R...")
+    data = calculate_emas_and_rules(records, live_tv, sr_records)
 
     latest = data.get("latest", {})
+    nsr = latest.get("nearest_sr", {})
     print("\n" + "─" * 60)
     print(f"INDEX: {latest.get('index_name')} ({latest.get('date')})")
     print(f"CMP:   {latest.get('cmp'):,.2f}")
@@ -307,9 +318,20 @@ def main():
     print(f"RULE 1: {latest.get('rule1_desc')} -> {'✅ PASSED' if latest.get('rule1_met') else '❌ FAILED'}")
     print(f"RULE 2: {latest.get('rule2_desc')} -> {'✅ PASSED' if latest.get('rule2_met') else '❌ FAILED'}")
     print(f"SIGNAL: {'🟢 ' + latest.get('status_text') if latest.get('entry_allowed') else '🔴 ' + latest.get('status_text')}")
+    
+    if nsr:
+        w_res = ", ".join([f"{x['level']} (+{x['diff_pct']}%)" for x in nsr.get('weekly_resistance', [])])
+        w_sup = ", ".join([f"{x['level']} ({x['diff_pct']}%)" for x in nsr.get('weekly_support', [])])
+        m_res = ", ".join([f"{x['level']} (+{x['diff_pct']}%)" for x in nsr.get('monthly_resistance', [])])
+        m_sup = ", ".join([f"{x['level']} ({x['diff_pct']}%)" for x in nsr.get('monthly_support', [])])
+        print("─" * 60)
+        print(f"NEAREST WEEKLY RESISTANCE: {w_res or 'None'}")
+        print(f"NEAREST WEEKLY SUPPORT:    {w_sup or 'None'}")
+        print(f"NEAREST MONTHLY RESISTANCE:{m_res or 'None'}")
+        print(f"NEAREST MONTHLY SUPPORT:   {m_sup or 'None'}")
     print("─" * 60)
 
-    print(f"\n4. Saving results to {OUT_JSON_PATH}...")
+    print(f"\n5. Saving results to {OUT_JSON_PATH}...")
     with open(OUT_JSON_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
     print("   ✅ smallcap100.json updated successfully.")
