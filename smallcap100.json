@@ -18,7 +18,57 @@
     "status_text": "ENTRY ALLOWED",
     "rule1_desc": "CMP (19,656.45) > 10 EMA (19,243.28) and > 20 EMA (19,097.37)",
     "rule2_desc": "10 EMA (19,243.28) > 20 EMA (19,097.37)",
-    "updated_at": "2026-11-14 11:46:07"
+    "nearest_sr": {
+      "weekly_resistance": [
+        {
+          "level": 19991,
+          "diff_pts": 334.55,
+          "diff_pct": 1.7
+        },
+        {
+          "level": 20222,
+          "diff_pts": 565.55,
+          "diff_pct": 2.88
+        }
+      ],
+      "weekly_support": [
+        {
+          "level": 19229,
+          "diff_pts": -427.45,
+          "diff_pct": -2.17
+        },
+        {
+          "level": 18887,
+          "diff_pts": -769.45,
+          "diff_pct": -3.91
+        }
+      ],
+      "monthly_resistance": [
+        {
+          "level": 21964,
+          "diff_pts": 2307.55,
+          "diff_pct": 11.74
+        },
+        {
+          "level": 24774,
+          "diff_pts": 5117.55,
+          "diff_pct": 26.03
+        }
+      ],
+      "monthly_support": [
+        {
+          "level": 18604,
+          "diff_pts": -1052.45,
+          "diff_pct": -5.35
+        },
+        {
+          "level": 16828,
+          "diff_pts": -2828.45,
+          "diff_pct": -14.39
+        }
+      ]
+    },
+    "updated_at": "2026-11-14 19:22:10"
   },
   "history": [
     {
