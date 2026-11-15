@@ -2975,6 +2975,16 @@
                                 <input type="number" id="val-msi" value="80" min="0" max="100" step="1" class="threshold-input" onclick="event.stopPropagation()" oninput="applyFiltersAndRender()">
                             </div>
                         </div>
+                        <div class="filter-row">
+                            <label class="filter-label">
+                                <input type="checkbox" class="strict-filter-checkbox" id="filter-mcap" onchange="handleMainFilterChange('filter-mcap','global-mcap','bypassMcap'); if(this.checked && !document.getElementById('val-mcap').value) document.getElementById('val-mcap').focus();">
+                                MCap &lt;
+                            </label>
+                            <div class="threshold-wrap">
+                                <input type="number" id="val-mcap" placeholder="5000" min="0" step="100" class="threshold-input" style="width: 72px;" onclick="event.stopPropagation()" oninput="syncBypassLabels(); applyFiltersAndRender()">
+                                <span class="threshold-unit">Cr</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="filter-card collapsible-card" id="column-settings-card">
@@ -3081,6 +3091,10 @@
                     <label class="global-override-label" id="lbl-row-msi">
                         <input type="checkbox" id="global-msi" onchange="toggleGlobalOverride('bypassMsi','filter-msi',this)">
                         <span id="lbl-bypass-msi">Bypass MSI Price Strength > 80</span>
+                    </label>
+                    <label class="global-override-label" id="lbl-row-mcap">
+                        <input type="checkbox" id="global-mcap" onchange="toggleGlobalOverride('bypassMcap','filter-mcap',this)">
+                        <span id="lbl-bypass-mcap">Bypass MCap &lt; 5000 Cr</span>
                     </label>
                 </div>
                 <div class="tree-header-text">Select VIP Industries / Companies</div>
@@ -3572,7 +3586,8 @@
             bypassWc:false,
             bypassCurrentQtr:false,
             bypassPeakQtr:false,
-            bypassMsi:false
+            bypassMsi:false,
+            bypassMcap:false
         };
         let isDragging = false, dragMoved = false, startX = 0, startScrollLeft = 0;
 
@@ -3792,6 +3807,7 @@
                 bypassPledged: { lbl: 'lbl-bypass-pledged', filter: 'filter-pledged', base: 'Bypass Pledged Shares <= 10%' },
                 bypassWc: { lbl: 'lbl-bypass-wc', filter: 'filter-wc', base: 'Bypass Working Capital Days <= 150' },
                 bypassMsi: { lbl: 'lbl-bypass-msi', filter: 'filter-msi', base: 'Bypass MSI Price Strength > 80' },
+                bypassMcap: { lbl: 'lbl-bypass-mcap', filter: 'filter-mcap', base: 'Bypass MCap < ' + (document.getElementById('val-mcap')?.value || document.getElementById('val-mcap')?.placeholder || '5000') + ' Cr' },
             };
             Object.entries(map).forEach(([key, cfg]) => {
                 const filterOn = document.getElementById(cfg.filter)?.checked;
@@ -3814,6 +3830,7 @@
             globalOverrides.bypassPledged = false;
             globalOverrides.bypassWc = false;
             globalOverrides.bypassMsi = false;
+            globalOverrides.bypassMcap = false;
 
             // Force visual checkbox rendering values to match the programmatic control state
             checkboxes.forEach(cb => {
@@ -3828,6 +3845,7 @@
             const gPledged = document.getElementById('global-pledged'); if(gPledged) gPledged.checked = false;
             const gWc = document.getElementById('global-wc'); if(gWc) gWc.checked = false;
             const gMsi = document.getElementById('global-msi'); if(gMsi) gMsi.checked = false;
+            const gMcap = document.getElementById('global-mcap'); if(gMcap) gMcap.checked = false;
 
             syncBypassLabels();
             document.getElementById('strict-select-all-text').textContent = isChecked ? 'Unselect All' : 'Select All';
@@ -5035,12 +5053,15 @@
             const filterPledged = document.getElementById('filter-pledged').checked;
             const filterWc = document.getElementById('filter-wc').checked;
             const filterMsi = document.getElementById('filter-msi').checked;
+            const filterMcap = document.getElementById('filter-mcap')?.checked;
             const currentQtr = getCurrentQuarterCode();
             const threshGrowth = parseFloat(document.getElementById('val-growth').value) || 65;
             const threshPromoter = parseFloat(document.getElementById('val-promoter').value) || 50;
             const threshPledged = parseFloat(document.getElementById('val-pledged').value) || 10;
             const threshWc = parseFloat(document.getElementById('val-wc').value) || 150;
             const threshMsi = parseFloat(document.getElementById('val-msi').value) || 80;
+            const rawMcapVal = (document.getElementById('val-mcap')?.value || '').trim();
+            const threshMcap = rawMcapVal !== '' ? parseFloat(rawMcapVal) : parseFloat(document.getElementById('val-mcap')?.placeholder || '5000');
             let filteredData = rawData.filter(row => {
                 const subIndustry = row['Industry'] || 'Not Found';
                 const isVip = vipIndustries.has(subIndustry) || vipCompanies.has(row['Company (Page)'] || row['Name'] || '');
@@ -5051,6 +5072,7 @@
                 if (filterPledged) { const v = parseFloat(String(row['Pledged %']||'').replace(/,/g,'')); if (!(isVip && globalOverrides.bypassPledged) && !isNaN(v) && v > threshPledged) return false; }
                 if (filterWc) { const v = parseFloat(String(row['WC Days']||'').replace(/,/g,'')); if (!(isVip && globalOverrides.bypassWc) && !isNaN(v) && v > threshWc) return false; }
                 if (filterMsi) { const v = parseFloat(String(row['MSI']||row['MSI Price Strength']||'').replace(/,/g,'')); if (!(isVip && globalOverrides.bypassMsi) && (isNaN(v) || v <= threshMsi)) return false; }
+                if (filterMcap) { const v = parseFloat(String(row['Mcap']||'').replace(/,/g,'')); if (!(isVip && globalOverrides.bypassMcap) && (isNaN(v) || v <= 0 || v >= threshMcap)) return false; }
                 return true;
             });
 
