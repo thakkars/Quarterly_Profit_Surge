@@ -23,20 +23,23 @@ FOLDER_PATH = os.path.dirname(os.path.abspath(__file__))
 OUT_JSON_PATH = os.path.join(FOLDER_PATH, "smallcap100.json")
 SR_EXCEL_PATH = os.path.join(FOLDER_PATH, "input", "Support and resistance.xlsx")
 SR_JSON_PATH = os.path.join(FOLDER_PATH, "support_resistance.json")
+SC_SR_JSON_PATH = os.path.join(FOLDER_PATH, "smallcap_support_resistance.json")
 
 def load_support_resistance_records():
-    """Loads support & resistance levels from Excel or JSON."""
-    records = []
+    """Loads support & resistance levels from Excel or JSON for both Nifty 50 and Nifty Smallcap 100."""
+    nifty_records = []
+    smallcap_records = []
     if os.path.exists(SR_EXCEL_PATH):
         try:
             import openpyxl
             wb = openpyxl.load_workbook(SR_EXCEL_PATH)
-            ws = wb.active
+            # 1. Nifty 50 (Sheet1 or active)
+            ws = wb["Sheet1"] if "Sheet1" in wb.sheetnames else wb.active
             rows = list(ws.iter_rows(values_only=True))[1:]
             for r in rows:
                 lvl = r[1]
                 if lvl is not None:
-                    records.append({
+                    nifty_records.append({
                         "level": int(lvl) if float(lvl).is_integer() else round(float(lvl), 2),
                         "monthly_level": int(r[0]) if r[0] is not None and float(r[0]).is_integer() else (round(float(r[0]), 2) if r[0] is not None else None),
                         "times_hit": int(r[2]) if r[2] is not None else 0,
@@ -45,20 +48,45 @@ def load_support_resistance_records():
                         "weight": int(r[5]) if r[5] is not None else 1,
                         "strength": int(r[6]) if r[6] is not None else 1
                     })
-            if records:
+            if nifty_records:
                 # Also save / keep support_resistance.json updated
                 with open(SR_JSON_PATH, "w", encoding="utf-8") as f:
-                    json.dump(records, f, indent=2)
+                    json.dump(nifty_records, f, indent=2)
+
+            # 2. Nifty Smallcap 100
+            if "Nifty Smallcap 100" in wb.sheetnames:
+                ws_sc = wb["Nifty Smallcap 100"]
+                rows_sc = list(ws_sc.iter_rows(values_only=True))[1:]
+                for r in rows_sc:
+                    if r and r[0] is not None:
+                        val = r[0]
+                        lvl_int = int(val) if float(val).is_integer() else round(float(val), 2)
+                        smallcap_records.append({
+                            "level": lvl_int,
+                            "timeframe": "Monthly",
+                            "strength": 2
+                        })
+                if smallcap_records:
+                    with open(SC_SR_JSON_PATH, "w", encoding="utf-8") as f:
+                        json.dump(smallcap_records, f, indent=2)
         except Exception as e:
             print(f"[WARN] Failed to read {SR_EXCEL_PATH}: {e}")
 
-    if not records and os.path.exists(SR_JSON_PATH):
+    if not nifty_records and os.path.exists(SR_JSON_PATH):
         try:
             with open(SR_JSON_PATH, "r", encoding="utf-8") as f:
-                records = json.load(f)
+                nifty_records = json.load(f)
         except Exception as e:
             print(f"[WARN] Failed to read {SR_JSON_PATH}: {e}")
-    return records
+
+    if not smallcap_records and os.path.exists(SC_SR_JSON_PATH):
+        try:
+            with open(SC_SR_JSON_PATH, "r", encoding="utf-8") as f:
+                smallcap_records = json.load(f)
+        except Exception as e:
+            print(f"[WARN] Failed to read {SC_SR_JSON_PATH}: {e}")
+
+    return nifty_records, smallcap_records
 
 def compute_nearest_sr(cmp, sr_records):
     """Computes nearest 2 weekly and monthly support & resistance levels for a given CMP."""
@@ -175,8 +203,8 @@ def fetch_nse_historical_bars(days_back=90):
     records.sort(key=parse_dt)
     return records
 
-def calculate_emas_and_rules(records, live_tv=None, sr_records=None, nifty_quote=None):
-    """Calculates 10 EMA, 20 EMA, evaluates entry rules for Smallcap 100, and calculates Nifty 50 Key S&R."""
+def calculate_emas_and_rules(records, live_tv=None, sr_records=None, nifty_quote=None, smallcap_sr_records=None):
+    """Calculates 10 EMA, 20 EMA, evaluates entry rules for Smallcap 100, and calculates S&R for Smallcap 100 and Nifty 50."""
     if not records:
         return {}
 
@@ -235,6 +263,8 @@ def calculate_emas_and_rules(records, live_tv=None, sr_records=None, nifty_quote
         rule2 = (ema10 > ema20) if (ema10 and ema20) else False
         entry_allowed = rule1 and rule2
 
+        smallcap_sr = compute_nearest_sr(cmp, smallcap_sr_records) if smallcap_sr_records else {}
+
         latest_payload = {
             "index_name": "NIFTY SMALLCAP 100",
             "symbol": "NSE:CNXSMALLCAP",
@@ -254,6 +284,8 @@ def calculate_emas_and_rules(records, live_tv=None, sr_records=None, nifty_quote
             "status_text": "ENTRY ALLOWED" if entry_allowed else "NO ENTRY",
             "rule1_desc": f"CMP ({cmp:,.2f}) > 10 EMA ({ema10:,.2f}) and > 20 EMA ({ema20:,.2f})" if (ema10 and ema20) else "N/A",
             "rule2_desc": f"10 EMA ({ema10:,.2f}) > 20 EMA ({ema20:,.2f})" if (ema10 and ema20) else "N/A",
+            "smallcap_nearest_sr": smallcap_sr,
+            "smallcap_sr_levels": [r["level"] for r in smallcap_sr_records] if smallcap_sr_records else [],
             "nifty_cmp": nifty_cmp,
             "nifty_change_pct": nifty_payload["change_pct"],
             "nifty_nearest_sr": nifty_sr,
@@ -266,6 +298,8 @@ def calculate_emas_and_rules(records, live_tv=None, sr_records=None, nifty_quote
         rule1 = latest.get("rule1_met", False)
         rule2 = latest.get("rule2_met", False)
         entry_allowed = latest.get("entry_allowed", False)
+
+        smallcap_sr = compute_nearest_sr(cmp, smallcap_sr_records) if smallcap_sr_records else {}
 
         latest_payload = {
             "index_name": "NIFTY SMALLCAP 100",
@@ -286,6 +320,8 @@ def calculate_emas_and_rules(records, live_tv=None, sr_records=None, nifty_quote
             "status_text": "ENTRY ALLOWED" if entry_allowed else "NO ENTRY",
             "rule1_desc": f"CMP ({cmp:,.2f}) > 10 EMA ({ema10:,.2f}) and > 20 EMA ({ema20:,.2f})",
             "rule2_desc": f"10 EMA ({ema10:,.2f}) > 20 EMA ({ema20:,.2f})",
+            "smallcap_nearest_sr": smallcap_sr,
+            "smallcap_sr_levels": [r["level"] for r in smallcap_sr_records] if smallcap_sr_records else [],
             "nifty_cmp": nifty_cmp,
             "nifty_change_pct": nifty_payload["change_pct"],
             "nifty_nearest_sr": nifty_sr,
@@ -300,7 +336,7 @@ def calculate_emas_and_rules(records, live_tv=None, sr_records=None, nifty_quote
 
 def main():
     print("=" * 60)
-    print("📊 NIFTY SMALLCAP 100 & NIFTY 50 S/R INDICATOR UPDATER")
+    print("📊 NIFTY SMALLCAP 100 & S/R INDICATOR UPDATER")
     print("=" * 60)
 
     print("1. Fetching live quotes & indicators from TradingView...")
@@ -331,16 +367,18 @@ def main():
             "volume": live_sc["volume"]
         }]
 
-    print("\n3. Loading Nifty Support & Resistance Inception Levels...")
-    sr_records = load_support_resistance_records()
-    print(f"   ✅ Loaded {len(sr_records)} Nifty S/R levels from Support and resistance.xlsx.")
+    print("\n3. Loading Support & Resistance Inception Levels from Excel...")
+    sr_records, smallcap_sr_records = load_support_resistance_records()
+    print(f"   ✅ Loaded {len(sr_records)} Nifty 50 S/R levels.")
+    print(f"   ✅ Loaded {len(smallcap_sr_records)} Smallcap 100 S/R levels.")
 
-    print("\n4. Calculating 10-day & 20-day EMAs, Entry Rules, and Nifty 50 Nearest S/R...")
-    data = calculate_emas_and_rules(records, live_sc, sr_records, live_nifty)
+    print("\n4. Calculating 10-day & 20-day EMAs, Entry Rules, and Nearest S/R...")
+    data = calculate_emas_and_rules(records, live_sc, sr_records, live_nifty, smallcap_sr_records)
 
     latest = data.get("latest", {})
     nifty = data.get("nifty", {})
     nsr = nifty.get("nearest_sr", {})
+    sc_sr = latest.get("smallcap_nearest_sr", {})
 
     print("\n" + "─" * 60)
     print(f"SMALLCAP 100: {latest.get('index_name')} ({latest.get('date')})")
@@ -349,6 +387,11 @@ def main():
     print(f"RULE 1: {latest.get('rule1_desc')} -> {'✅ PASSED' if latest.get('rule1_met') else '❌ FAILED'}")
     print(f"RULE 2: {latest.get('rule2_desc')} -> {'✅ PASSED' if latest.get('rule2_met') else '❌ FAILED'}")
     print(f"SIGNAL: {'🟢 ' + latest.get('status_text') if latest.get('entry_allowed') else '🔴 ' + latest.get('status_text')}")
+    if sc_sr:
+        sc_m_res = ", ".join([f"{x['level']} (+{x['diff_pct']}%)" for x in sc_sr.get('monthly_resistance', [])])
+        sc_m_sup = ", ".join([f"{x['level']} ({x['diff_pct']}%)" for x in sc_sr.get('monthly_support', [])])
+        print(f"SMALLCAP NEAREST MONTHLY RESISTANCE: {sc_m_res or 'None'}")
+        print(f"SMALLCAP NEAREST MONTHLY SUPPORT:    {sc_m_sup or 'None'}")
     
     print("─" * 60)
     print(f"NIFTY 50 CMP: {nifty.get('cmp'):,.2f} ({nifty.get('change_pct')}%)")

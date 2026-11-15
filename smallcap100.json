@@ -18,6 +18,44 @@
     "status_text": "ENTRY ALLOWED",
     "rule1_desc": "CMP (19,656.45) > 10 EMA (19,243.28) and > 20 EMA (19,097.37)",
     "rule2_desc": "10 EMA (19,243.28) > 20 EMA (19,097.37)",
+    "smallcap_nearest_sr": {
+      "weekly_resistance": [],
+      "weekly_support": [],
+      "monthly_resistance": [
+        {
+          "level": 20187,
+          "diff_pts": 530.55,
+          "diff_pct": 2.7
+        }
+      ],
+      "monthly_support": [
+        {
+          "level": 19224,
+          "diff_pts": -432.45,
+          "diff_pct": -2.2
+        },
+        {
+          "level": 16691,
+          "diff_pts": -2965.45,
+          "diff_pct": -15.09
+        }
+      ]
+    },
+    "smallcap_sr_levels": [
+      20187,
+      19224,
+      16691,
+      14986,
+      14084,
+      12047,
+      10180,
+      9656,
+      8682,
+      7904,
+      6822,
+      6048,
+      4619
+    ],
     "nifty_cmp": 25144.3,
     "nifty_change_pct": -0.61,
     "nifty_nearest_sr": {
@@ -65,7 +103,7 @@
         }
       ]
     },
-    "updated_at": "2026-11-15 13:51:18"
+    "updated_at": "2026-11-15 22:14:34"
   },
   "nifty": {
     "symbol": "NSE:NIFTY",

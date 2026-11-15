@@ -875,10 +875,12 @@ def generate_raw_json(sheet_name):
 def sync_support_resistance_json():
     excel_path = os.path.join(FOLDER_PATH, "input", "Support and resistance.xlsx")
     out_json = os.path.join(FOLDER_PATH, "support_resistance.json")
+    out_sc_json = os.path.join(FOLDER_PATH, "smallcap_support_resistance.json")
     if not os.path.exists(excel_path):
         return
     try:
-        df = pd.read_excel(excel_path)
+        # Nifty 50 (Sheet1 or active)
+        df = pd.read_excel(excel_path, sheet_name=0)
         records = []
         for _, r in df.iterrows():
             level = r.get("Weekly Inception")
@@ -900,6 +902,27 @@ def sync_support_resistance_json():
         with open(out_json, "w", encoding="utf-8") as f:
             json.dump(records, f, indent=2)
         print(f"[OK] Synced support_resistance.json from input/Support and resistance.xlsx ({len(records)} levels)")
+
+        # Smallcap 100 ('Nifty Smallcap 100' sheet)
+        try:
+            xl = pd.ExcelFile(excel_path)
+            if "Nifty Smallcap 100" in xl.sheet_names:
+                df_sc = pd.read_excel(excel_path, sheet_name="Nifty Smallcap 100")
+                sc_records = []
+                for _, r in df_sc.iterrows():
+                    val = r.get("Monthly")
+                    if pd.notnull(val):
+                        sc_records.append({
+                            "level": int(val) if float(val).is_integer() else round(float(val), 2),
+                            "timeframe": "Monthly",
+                            "strength": 2
+                        })
+                if sc_records:
+                    with open(out_sc_json, "w", encoding="utf-8") as f:
+                        json.dump(sc_records, f, indent=2)
+                    print(f"[OK] Synced smallcap_support_resistance.json ({len(sc_records)} levels)")
+        except Exception as e_sc:
+            print(f"[WARN] Error syncing smallcap S&R sheet: {e_sc}")
     except Exception as e:
         print(f"[WARN] Error syncing support_resistance.json: {e}")
 

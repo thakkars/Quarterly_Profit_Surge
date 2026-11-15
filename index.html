@@ -2555,10 +2555,19 @@
             color: var(--text-primary);
         }
 
-        .user-btn.active {
-            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
-            color: #ffffff;
-            box-shadow: 0 0 10px rgba(59, 130, 246, 0.35);
+        body.light-theme .user-btn {
+            color: #64748b;
+        }
+
+        body.light-theme .user-btn:hover {
+            color: #0f172a;
+        }
+
+        .user-btn.active,
+        body.light-theme .user-btn.active {
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%) !important;
+            color: #ffffff !important;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35) !important;
         }
 
         .user-strip {
@@ -2591,7 +2600,9 @@
         }
 
         body.light-theme .user-switch-pill {
-            background: #ffffff;
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #cbd5e1;
         }
 
         .user-switch-pill:hover {
@@ -2599,11 +2610,18 @@
             border-color: rgba(255, 255, 255, 0.2);
         }
 
-        .user-switch-pill.active {
-            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
-            color: #ffffff;
-            border-color: transparent;
-            box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+        body.light-theme .user-switch-pill:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+            border-color: #94a3b8;
+        }
+
+        .user-switch-pill.active,
+        body.light-theme .user-switch-pill.active {
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%) !important;
+            color: #ffffff !important;
+            border-color: transparent !important;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35) !important;
         }
 
         .decision-header-container {
@@ -3011,8 +3029,46 @@
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span id="sc-entry-pill" class="regime-badge entry-allowed">🟢 ENTRY ALLOWED</span>
+                        <div class="sr-pill-box" style="padding: 3px 8px; font-size: 11px; display: inline-flex; align-items: center; gap: 6px;" title="Nearest Monthly Support & Resistance for Nifty Smallcap 100">
+                            <span class="sr-tag monthly-tag" style="font-size: 10px; padding: 1px 6px;">🟣 Smallcap S&amp;R</span>
+                            <span style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Res:</span>
+                            <span class="sr-badge res" id="sc-main-mr1-wrap" title="Monthly Resistance 1">MR1 <strong id="sc-main-mr1">20,187</strong></span>
+                            <span class="sr-sep">|</span>
+                            <span style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Sup:</span>
+                            <span class="sr-badge sup" id="sc-main-ms1-wrap" title="Monthly Support 1">MS1 <strong id="sc-main-ms1">19,224</strong></span>
+                            <span class="sr-badge sup" id="sc-main-ms2-wrap" title="Monthly Support 2">MS2 <strong id="sc-main-ms2">16,691</strong></span>
+                        </div>
                         <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 11px;" onclick="openSmallcapModal()" title="View Nifty Smallcap 100 Daily OHLC & Moving Average History">📊 OHLC History</button>
                     </div>
+                </div>
+            </div>
+
+            <!-- Nearest Monthly Support & Resistance Row for NIFTY SMALLCAP 100 -->
+            <div class="smallcap-sr-row" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px; margin-bottom: 6px;">
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <div style="display: inline-flex; align-items: baseline; gap: 6px;">
+                        <span style="font-weight: 800; font-size: 11.5px; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 4px;">
+                            <span>⚡</span> NIFTY SMALLCAP 100 S&amp;R:
+                        </span>
+                        <span id="sc-sr-cmp" style="font-size: 13px; font-weight: 800; color: var(--text-primary);">19,656.45</span>
+                        <span id="sc-sr-chg" style="font-size: 11px; font-weight: 700; color: #ef4444;">-0.26%</span>
+                    </div>
+
+                    <!-- Smallcap Monthly S/R -->
+                    <div class="sr-pill-box">
+                        <span class="sr-tag monthly-tag">🟣 Monthly</span>
+                        <span style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Res:</span>
+                        <span class="sr-badge res" id="sc-row-mr1-wrap" title="Smallcap Monthly Resistance 1 (+530.55 pts / +2.70%)">MR1 <strong id="sc-row-mr1">20,187</strong></span>
+                        <span class="sr-badge res" id="sc-row-mr2-wrap" style="display:none;" title="Smallcap Monthly Resistance 2">MR2 <strong id="sc-row-mr2">-</strong></span>
+                        <span class="sr-sep">|</span>
+                        <span style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Sup:</span>
+                        <span class="sr-badge sup" id="sc-row-ms1-wrap" title="Smallcap Monthly Support 1 (-432.45 pts / -2.20%)">MS1 <strong id="sc-row-ms1">19,224</strong></span>
+                        <span class="sr-badge sup" id="sc-row-ms2-wrap" title="Smallcap Monthly Support 2 (-2,965.45 pts / -15.09%)">MS2 <strong id="sc-row-ms2">16,691</strong></span>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button class="btn btn-secondary" style="padding: 3px 10px; font-size: 11px;" onclick="openSmallcapSRModal()" title="View full Nifty Smallcap 100 Monthly Support & Resistance Levels">⚡ All Smallcap S&amp;R Levels (13)</button>
                 </div>
             </div>
 
@@ -3370,8 +3426,14 @@
                 <button class="modal-close" onclick="closeSupportResistanceModal()">&#215;</button>
             </div>
             <div class="modal-body" style="padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto;">
+                <!-- Index Switcher Tabs -->
+                <div style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px;">
+                    <button class="bucket-btn active" id="sr-tab-nifty" onclick="switchSRTab('nifty')">🎯 Nifty 50 Levels (<span id="sr-tab-count-nifty">33</span>)</button>
+                    <button class="bucket-btn" id="sr-tab-smallcap" onclick="switchSRTab('smallcap')">⚡ Nifty Smallcap 100 Levels (<span id="sr-tab-count-smallcap">13</span>)</button>
+                </div>
+
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap;" id="sr-filter-group">
                         <button class="bucket-btn active" id="sr-filter-all" onclick="filterSRTable('all')">All (<span id="sr-count-all">33</span>)</button>
                         <button class="bucket-btn" id="sr-filter-monthly" onclick="filterSRTable('Monthly')">🟣 Monthly (<span id="sr-count-monthly">8</span>)</button>
                         <button class="bucket-btn" id="sr-filter-weekly" onclick="filterSRTable('Weekly')">🔵 Weekly (<span id="sr-count-weekly">25</span>)</button>
@@ -3379,12 +3441,12 @@
                     </div>
                     <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; flex-wrap: wrap;">
                         <div style="display: flex; align-items: baseline; gap: 6px; background: rgba(255,255,255,0.03); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-subtle);">
-                            <span style="font-weight: 700; color: var(--text-muted); text-transform: uppercase; font-size: 11px;">NIFTY 50 CMP:</span>
+                            <span id="sr-modal-cmp-label" style="font-weight: 700; color: var(--text-muted); text-transform: uppercase; font-size: 11px;">NIFTY 50 CMP:</span>
                             <strong id="sr-modal-nifty-cmp" style="color: var(--text-primary); font-size: 13px;">25,144.30</strong>
                             <span id="sr-modal-nifty-chg" style="color: #ef4444; font-weight: 700; font-size: 11px;">-0.61%</span>
                         </div>
                         <div style="font-size: 11px; color: var(--text-muted); background: rgba(255,255,255,0.03); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-subtle);">
-                            📁 Source: <span style="font-family: monospace; color: var(--accent-blue);">Support and resistance.xlsx</span>
+                            📁 Source: <span id="sr-modal-source" style="font-family: monospace; color: var(--accent-blue);">Support and resistance.xlsx</span>
                         </div>
                     </div>
                 </div>
@@ -3395,9 +3457,9 @@
                             <tr style="background: rgba(255,255,255,0.03); border-bottom: 2px solid var(--accent-blue);">
                                 <th style="padding: 10px 14px; text-align: left; cursor: pointer;" onclick="sortSRTable('level')">Level (Pts) ↕</th>
                                 <th style="padding: 10px 14px; text-align: left; cursor: pointer;" onclick="sortSRTable('timeframe')">Timeframe ↕</th>
-                                <th style="padding: 10px 14px; text-align: center; cursor: pointer;" onclick="sortSRTable('times_hit')">Times Hit ↕</th>
-                                <th style="padding: 10px 14px; text-align: right; cursor: pointer;" onclick="sortSRTable('distance')">Distance ↕</th>
-                                <th style="padding: 10px 14px; text-align: center; cursor: pointer;" onclick="sortSRTable('strength')">Strength ↕</th>
+                                <th id="sr-th-hit" style="padding: 10px 14px; text-align: center; cursor: pointer;" onclick="sortSRTable('times_hit')">Times Hit ↕</th>
+                                <th id="sr-th-distance" style="padding: 10px 14px; text-align: right; cursor: pointer;" onclick="sortSRTable('distance')">Distance ↕</th>
+                                <th id="sr-th-strength" style="padding: 10px 14px; text-align: center; cursor: pointer;" onclick="sortSRTable('strength')">Strength ↕</th>
                             </tr>
                         </thead>
                         <tbody id="sr-table-body">
@@ -3444,6 +3506,32 @@
                     </div>
                     <div>
                         <a href="https://in.tradingview.com/chart/?symbol=NSE:CNXSMALLCAP" target="_blank" class="pill pill-teal" style="font-size: 12px; padding: 5px 12px; text-decoration: none;">📈 Open in TradingView ↗</a>
+                    </div>
+                </div>
+
+                <!-- Nifty Smallcap 100 Nearest Monthly S/R Card -->
+                <div style="background: rgba(255,255,255,0.02); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                        <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 5px;">
+                            <span>⚡</span> NIFTY SMALLCAP 100 Key Inception Support &amp; Resistance (CMP: <strong id="sc-modal-self-cmp" style="color:var(--text-primary);">19,656.45</strong>)
+                        </span>
+                        <button class="btn btn-secondary" style="padding: 2px 8px; font-size: 11px;" onclick="closeSmallcapModal(); openSmallcapSRModal();">Open Full Smallcap S&amp;R Matrix (13) ↗</button>
+                    </div>
+                    <div class="sr-pill-box" style="padding: 8px 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px;">
+                        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                            <span class="sr-tag monthly-tag" style="font-size: 12px;">🟣 Monthly Key Inception</span>
+                            <span style="font-size: 10px; color: var(--text-muted);">From 'Nifty Smallcap 100' Sheet</span>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                            <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Resistance:</span>
+                            <span class="sr-badge res" id="sc-modal-self-mr1">MR1: <strong>20,187</strong> <small>(+2.7%)</small></span>
+                            <span class="sr-badge res" id="sc-modal-self-mr2" style="display:none;">MR2: <strong>-</strong></span>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                            <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Support:</span>
+                            <span class="sr-badge sup" id="sc-modal-self-ms1">MS1: <strong>19,224</strong> <small>(-2.2%)</small></span>
+                            <span class="sr-badge sup" id="sc-modal-self-ms2">MS2: <strong>16,691</strong> <small>(-15.1%)</small></span>
+                        </div>
                     </div>
                 </div>
 
@@ -5545,7 +5633,7 @@
         }
 
         // ─────────────────────────────────────────────────────────────
-        // SUPPORT & RESISTANCE (NIFTY KEY INCEPTION LEVELS)
+        // SUPPORT & RESISTANCE (NIFTY 50 & NIFTY SMALLCAP 100)
         // ─────────────────────────────────────────────────────────────
         let srData = [
             {"level": 26373, "monthly_level": 26373, "times_hit": 2, "distance": 704, "timeframe": "Monthly", "weight": 2, "strength": 4},
@@ -5582,6 +5670,24 @@
             {"level": 9885, "monthly_level": null, "times_hit": 1, "distance": 2374, "timeframe": "Weekly", "weight": 1, "strength": 1},
             {"level": 7511, "monthly_level": null, "times_hit": 1, "distance": 7511, "timeframe": "Monthly", "weight": 2, "strength": 2}
         ];
+
+        let smallcapSRData = [
+            {"level": 20187, "timeframe": "Monthly", "strength": 2},
+            {"level": 19224, "timeframe": "Monthly", "strength": 2},
+            {"level": 16691, "timeframe": "Monthly", "strength": 2},
+            {"level": 14986, "timeframe": "Monthly", "strength": 2},
+            {"level": 14084, "timeframe": "Monthly", "strength": 2},
+            {"level": 12047, "timeframe": "Monthly", "strength": 2},
+            {"level": 10180, "timeframe": "Monthly", "strength": 2},
+            {"level": 9656, "timeframe": "Monthly", "strength": 2},
+            {"level": 8682, "timeframe": "Monthly", "strength": 2},
+            {"level": 7904, "timeframe": "Monthly", "strength": 2},
+            {"level": 6822, "timeframe": "Monthly", "strength": 2},
+            {"level": 6048, "timeframe": "Monthly", "strength": 2},
+            {"level": 4619, "timeframe": "Monthly", "strength": 2}
+        ];
+
+        let srActiveTab = 'nifty'; // 'nifty' | 'smallcap'
         let srFilter = 'all';
         let srSortCol = 'level';
         let srSortAsc = false;
@@ -5594,29 +5700,74 @@
                     if (data && data.length > 0) srData = data;
                 }
             } catch (e) {
-                console.log("Using embedded support & resistance data.");
+                console.log("Using embedded Nifty support & resistance data.");
+            }
+            try {
+                const respSc = await fetch(`smallcap_support_resistance.json?t=${new Date().getTime()}`);
+                if (respSc.ok) {
+                    const dataSc = await respSc.json();
+                    if (dataSc && dataSc.length > 0) smallcapSRData = dataSc;
+                }
+            } catch (e) {
+                console.log("Using embedded Smallcap support & resistance data.");
             }
             updateSRCounts();
         }
 
         function updateSRCounts() {
-            if (!srData) return;
-            const monthlyCount = srData.filter(d => d.timeframe === 'Monthly').length;
-            const weeklyCount = srData.filter(d => d.timeframe === 'Weekly').length;
-            const strongCount = srData.filter(d => d.strength >= 5).length;
+            const elTabNifty = document.getElementById('sr-tab-count-nifty');
+            const elTabSc = document.getElementById('sr-tab-count-smallcap');
+            if (elTabNifty) elTabNifty.textContent = srData ? srData.length : 33;
+            if (elTabSc) elTabSc.textContent = smallcapSRData ? smallcapSRData.length : 13;
+
+            const activeDataset = srActiveTab === 'smallcap' ? smallcapSRData : srData;
+            if (!activeDataset) return;
+
+            const monthlyCount = activeDataset.filter(d => d.timeframe === 'Monthly').length;
+            const weeklyCount = activeDataset.filter(d => d.timeframe === 'Weekly').length;
+            const strongCount = activeDataset.filter(d => (d.strength || 0) >= 5).length;
+
             const elAll = document.getElementById('sr-count-all');
             const elMon = document.getElementById('sr-count-monthly');
             const elWk = document.getElementById('sr-count-weekly');
             const elStr = document.getElementById('sr-count-strong');
-            if (elAll) elAll.textContent = srData.length;
+            if (elAll) elAll.textContent = activeDataset.length;
             if (elMon) elMon.textContent = monthlyCount;
             if (elWk) elWk.textContent = weeklyCount;
             if (elStr) elStr.textContent = strongCount;
         }
 
+        function switchSRTab(tab) {
+            srActiveTab = tab;
+            const btnNifty = document.getElementById('sr-tab-nifty');
+            const btnSc = document.getElementById('sr-tab-smallcap');
+            if (btnNifty) btnNifty.classList.toggle('active', tab === 'nifty');
+            if (btnSc) btnSc.classList.toggle('active', tab === 'smallcap');
+
+            const btnWk = document.getElementById('sr-filter-weekly');
+            const btnStr = document.getElementById('sr-filter-strong');
+            if (btnWk) btnWk.style.display = tab === 'smallcap' ? 'none' : 'inline-block';
+            if (btnStr) btnStr.style.display = tab === 'smallcap' ? 'none' : 'inline-block';
+
+            srFilter = 'all';
+            ['all', 'monthly', 'weekly', 'strong'].forEach(t => {
+                const btn = document.getElementById(`sr-filter-${t}`);
+                if (btn) btn.classList.toggle('active', t === 'all');
+            });
+
+            updateSRCounts();
+            renderSRTable();
+        }
+
         function openSupportResistanceModal() {
             loadSupportResistanceData();
-            renderSRTable();
+            switchSRTab('nifty');
+            document.getElementById('sr-modal').classList.add('open');
+        }
+
+        function openSmallcapSRModal() {
+            loadSupportResistanceData();
+            switchSRTab('smallcap');
             document.getElementById('sr-modal').classList.add('open');
         }
 
@@ -5649,7 +5800,7 @@
         function computeNearestSR(cmp, records) {
             if (!records || !records.length || !cmp) return null;
             const weeklyLvls = records.filter(d => d.timeframe === 'Weekly').map(d => Number(d.level)).filter(n => !isNaN(n));
-            const monthlyLvls = records.filter(d => d.timeframe === 'Monthly').map(d => Number(d.level)).filter(n => !isNaN(n));
+            const monthlyLvls = records.filter(d => d.timeframe === 'Monthly' || !d.timeframe).map(d => Number(d.level)).filter(n => !isNaN(n));
 
             const wRes = weeklyLvls.filter(x => x > cmp).sort((a,b) => a - b).slice(0, 2);
             const wSup = weeklyLvls.filter(x => x < cmp).sort((a,b) => b - a).slice(0, 2);
@@ -5675,18 +5826,66 @@
             const tbody = document.getElementById('sr-table-body');
             if (!tbody) return;
 
-            let filtered = [...srData];
+            const isSmallcapTab = srActiveTab === 'smallcap';
+            const rawData = isSmallcapTab ? smallcapSRData : srData;
+            let filtered = [...rawData];
+
             if (srFilter === 'Monthly') {
-                filtered = filtered.filter(d => d.timeframe === 'Monthly');
+                filtered = filtered.filter(d => d.timeframe === 'Monthly' || !d.timeframe);
             } else if (srFilter === 'Weekly') {
                 filtered = filtered.filter(d => d.timeframe === 'Weekly');
             } else if (srFilter === 'strong') {
-                filtered = filtered.filter(d => d.strength >= 5);
+                filtered = filtered.filter(d => (d.strength || 0) >= 5);
             }
+
+            // Reference index CMP and change
+            let currentCMP = 25144.30;
+            let currentChg = -0.61;
+            if (isSmallcapTab) {
+                currentCMP = (smallcapData && smallcapData.latest && smallcapData.latest.cmp) || 19656.45;
+                currentChg = (smallcapData && smallcapData.latest && smallcapData.latest.change_pct !== undefined) ? smallcapData.latest.change_pct : -0.26;
+            } else {
+                currentCMP = (smallcapData && smallcapData.nifty && smallcapData.nifty.cmp) || (smallcapData && smallcapData.latest && smallcapData.latest.nifty_cmp) || 25144.30;
+                currentChg = (smallcapData && smallcapData.nifty && smallcapData.nifty.change_pct !== undefined) ? smallcapData.nifty.change_pct : ((smallcapData && smallcapData.latest && smallcapData.latest.nifty_change_pct) !== undefined ? smallcapData.latest.nifty_change_pct : -0.61);
+            }
+
+            // Update modal header info labels
+            const labelCmp = document.getElementById('sr-modal-cmp-label');
+            const srCmpEl = document.getElementById('sr-modal-nifty-cmp');
+            const srChgEl = document.getElementById('sr-modal-nifty-chg');
+            const srSourceEl = document.getElementById('sr-modal-source');
+            if (labelCmp) labelCmp.textContent = isSmallcapTab ? 'SMALLCAP 100 CMP:' : 'NIFTY 50 CMP:';
+            if (srCmpEl) srCmpEl.textContent = currentCMP.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (srChgEl) {
+                srChgEl.textContent = (currentChg >= 0 ? `+${currentChg.toFixed(2)}%` : `${currentChg.toFixed(2)}%`);
+                srChgEl.style.color = currentChg >= 0 ? '#10b981' : '#ef4444';
+            }
+            if (srSourceEl) srSourceEl.textContent = isSmallcapTab ? 'Support and resistance.xlsx [Nifty Smallcap 100]' : 'Support and resistance.xlsx [Sheet1]';
+
+            // Update table headers for Smallcap vs Nifty
+            const thHit = document.getElementById('sr-th-hit');
+            const thDist = document.getElementById('sr-th-distance');
+            const thStr = document.getElementById('sr-th-strength');
+            if (isSmallcapTab) {
+                if (thHit) thHit.textContent = 'Status ↕';
+                if (thDist) thDist.textContent = 'Distance from CMP ↕';
+                if (thStr) thStr.textContent = 'Signal ↕';
+            } else {
+                if (thHit) thHit.textContent = 'Times Hit ↕';
+                if (thDist) thDist.textContent = 'Distance ↕';
+                if (thStr) thStr.textContent = 'Strength ↕';
+            }
+
+            // Compute nearest S/R
+            const nsr = computeNearestSR(currentCMP, rawData);
 
             filtered.sort((a, b) => {
                 let vA = a[srSortCol];
                 let vB = b[srSortCol];
+                if (srSortCol === 'distance' && isSmallcapTab) {
+                    vA = Math.abs(a.level - currentCMP);
+                    vB = Math.abs(b.level - currentCMP);
+                }
                 if (typeof vA === 'string') {
                     vA = vA.toLowerCase();
                     vB = (vB || '').toLowerCase();
@@ -5701,40 +5900,11 @@
                 return;
             }
 
-            // Calculate nearest S/R tags for NIFTY 50
-            const niftyCMP = (smallcapData && smallcapData.nifty && smallcapData.nifty.cmp) || (smallcapData && smallcapData.latest && smallcapData.latest.nifty_cmp) || 25144.30;
-            const niftyChg = (smallcapData && smallcapData.nifty && smallcapData.nifty.change_pct !== undefined) ? smallcapData.nifty.change_pct : ((smallcapData && smallcapData.latest && smallcapData.latest.nifty_change_pct) !== undefined ? smallcapData.latest.nifty_change_pct : -0.61);
-            
-            const srCmpEl = document.getElementById('sr-modal-nifty-cmp');
-            const srChgEl = document.getElementById('sr-modal-nifty-chg');
-            if (srCmpEl) srCmpEl.textContent = niftyCMP.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            if (srChgEl) {
-                srChgEl.textContent = (niftyChg >= 0 ? `+${niftyChg.toFixed(2)}%` : `${niftyChg.toFixed(2)}%`);
-                srChgEl.style.color = niftyChg >= 0 ? '#10b981' : '#ef4444';
-            }
-
-            let nsr = null;
-            if (srData && srData.length && niftyCMP) {
-                nsr = computeNearestSR(niftyCMP, srData);
-            }
-
             tbody.innerHTML = filtered.map((row, idx) => {
-                const isMonthly = row.timeframe === 'Monthly';
+                const isMonthly = (row.timeframe === 'Monthly' || !row.timeframe);
                 const tfBadge = isMonthly 
                     ? `<span style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35); font-weight: 600; font-size: 11px; padding: 2px 8px; border-radius: 6px;">🟣 Monthly</span>`
                     : `<span style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.35); font-weight: 600; font-size: 11px; padding: 2px 8px; border-radius: 6px;">🔵 Weekly</span>`;
-
-                const str = row.strength;
-                let strBadge = '';
-                if (str >= 10) {
-                    strBadge = `<span style="background: rgba(16, 185, 129, 0.2); color: #10b981; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 6px; padding: 2px 8px;">${str} ★★★</span>`;
-                } else if (str >= 6) {
-                    strBadge = `<span style="background: rgba(59, 130, 246, 0.2); color: #3b82f6; font-weight: 700; border: 1px solid rgba(59, 130, 246, 0.4); border-radius: 6px; padding: 2px 8px;">${str} ★★</span>`;
-                } else if (str >= 4) {
-                    strBadge = `<span style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; font-weight: 700; border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 6px; padding: 2px 8px;">${str} ★</span>`;
-                } else {
-                    strBadge = `<span style="color: var(--text-muted); font-size: 12px;">${str}</span>`;
-                }
 
                 let nearestTag = '';
                 if (nsr) {
@@ -5749,22 +5919,59 @@
                 }
 
                 const levelFmt = (row.level || 0).toLocaleString('en-IN');
-                const distFmt = row.distance ? `${row.distance.toLocaleString('en-IN')} pts` : '-';
                 const rowBg = idx % 2 === 1 ? 'background: rgba(255,255,255,0.015);' : '';
 
-                return `<tr style="${rowBg} border-bottom: 1px solid var(--border-subtle);">
-                    <td style="padding: 10px 14px; font-weight: 700; font-size: 14px; color: ${isMonthly ? '#c084fc' : 'var(--text-primary)'};">
-                        ${levelFmt}${nearestTag}
-                    </td>
-                    <td style="padding: 10px 14px;">${tfBadge}</td>
-                    <td style="padding: 10px 14px; text-align: center; font-weight: 600;">${row.times_hit}</td>
-                    <td style="padding: 10px 14px; text-align: right; color: var(--text-secondary); font-family: monospace;">${distFmt}</td>
-                    <td style="padding: 10px 14px; text-align: center;">${strBadge}</td>
-                </tr>`;
+                if (isSmallcapTab) {
+                    const diffPts = Math.round((row.level - currentCMP) * 100) / 100;
+                    const diffPct = Math.round(((row.level - currentCMP) / currentCMP) * 10000) / 100;
+                    const isRes = row.level > currentCMP;
+                    const sign = diffPts >= 0 ? '+' : '';
+                    const distColor = isRes ? '#10b981' : '#ef4444';
+                    const statusBadge = isRes 
+                        ? `<span class="sr-badge res" style="font-size: 11px;">Resistance</span>` 
+                        : `<span class="sr-badge sup" style="font-size: 11px;">Support</span>`;
+
+                    return `<tr style="${rowBg} border-bottom: 1px solid var(--border-subtle);">
+                        <td style="padding: 10px 14px; font-weight: 700; font-size: 14px; color: #c084fc;">
+                            ${levelFmt}${nearestTag}
+                        </td>
+                        <td style="padding: 10px 14px;">${tfBadge}</td>
+                        <td style="padding: 10px 14px; text-align: center;">${statusBadge}</td>
+                        <td style="padding: 10px 14px; text-align: right; font-weight: 700; font-family: monospace; color: ${distColor};">
+                            ${sign}${diffPts.toLocaleString('en-IN', {minimumFractionDigits: 2})} pts (${sign}${diffPct.toFixed(2)}%)
+                        </td>
+                        <td style="padding: 10px 14px; text-align: center;">
+                            ${nearestTag ? nearestTag : '<span style="color:var(--text-muted); font-size:11px;">-</span>'}
+                        </td>
+                    </tr>`;
+                } else {
+                    const str = row.strength || 0;
+                    let strBadge = '';
+                    if (str >= 10) {
+                        strBadge = `<span style="background: rgba(16, 185, 129, 0.2); color: #10b981; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 6px; padding: 2px 8px;">${str} ★★★</span>`;
+                    } else if (str >= 6) {
+                        strBadge = `<span style="background: rgba(59, 130, 246, 0.2); color: #3b82f6; font-weight: 700; border: 1px solid rgba(59, 130, 246, 0.4); border-radius: 6px; padding: 2px 8px;">${str} ★★</span>`;
+                    } else if (str >= 4) {
+                        strBadge = `<span style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; font-weight: 700; border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 6px; padding: 2px 8px;">${str} ★</span>`;
+                    } else {
+                        strBadge = `<span style="color: var(--text-muted); font-size: 12px;">${str}</span>`;
+                    }
+                    const distFmt = row.distance ? `${row.distance.toLocaleString('en-IN')} pts` : '-';
+
+                    return `<tr style="${rowBg} border-bottom: 1px solid var(--border-subtle);">
+                        <td style="padding: 10px 14px; font-weight: 700; font-size: 14px; color: ${isMonthly ? '#c084fc' : 'var(--text-primary)'};">
+                            ${levelFmt}${nearestTag}
+                        </td>
+                        <td style="padding: 10px 14px;">${tfBadge}</td>
+                        <td style="padding: 10px 14px; text-align: center; font-weight: 600;">${row.times_hit || 0}</td>
+                        <td style="padding: 10px 14px; text-align: right; color: var(--text-secondary); font-family: monospace;">${distFmt}</td>
+                        <td style="padding: 10px 14px; text-align: center;">${strBadge}</td>
+                    </tr>`;
+                }
             }).join('');
 
             const summaryEl = document.getElementById('sr-summary-footer');
-            if (summaryEl) summaryEl.textContent = `Showing ${filtered.length} of ${srData.length} levels`;
+            if (summaryEl) summaryEl.textContent = `Showing ${filtered.length} of ${rawData.length} ${isSmallcapTab ? 'Smallcap 100' : 'Nifty 50'} levels`;
         }
 
         // ─────────────────────────────────────────────────────────────
@@ -5921,6 +6128,58 @@
                 }
             }
 
+            // Populate Nearest Support & Resistance for NIFTY SMALLCAP 100
+            const scCMP = l.cmp || 19656.45;
+            const scChg = l.change_pct !== undefined ? l.change_pct : -0.26;
+            const scSrCmpEl = document.getElementById('sc-sr-cmp');
+            const scSrChgEl = document.getElementById('sc-sr-chg');
+            if (scSrCmpEl) scSrCmpEl.textContent = scCMP.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (scSrChgEl) {
+                scSrChgEl.textContent = (scChg >= 0 ? `+${scChg.toFixed(2)}%` : `${scChg.toFixed(2)}%`);
+                scSrChgEl.style.color = scChg >= 0 ? '#10b981' : '#ef4444';
+            }
+
+            const sc_sr = (smallcapSRData && smallcapSRData.length && scCMP)
+                ? computeNearestSR(scCMP, smallcapSRData)
+                : (l.smallcap_nearest_sr || {
+                    monthly_resistance: [{ level: 20187, diff_pts: 530.55, diff_pct: 2.70 }],
+                    monthly_support: [
+                        { level: 19224, diff_pts: -432.45, diff_pct: -2.20 },
+                        { level: 16691, diff_pts: -2965.45, diff_pct: -15.09 }
+                    ]
+                });
+
+            if (sc_sr) {
+                const scMr = sc_sr.monthly_resistance || [];
+                const scMs = sc_sr.monthly_support || [];
+
+                const updateMiniBadge = (wrapId, textId, item, prefix) => {
+                    const wrapEl = document.getElementById(wrapId);
+                    const textEl = document.getElementById(textId);
+                    if (wrapEl && textEl) {
+                        if (item) {
+                            const sign = item.diff_pct >= 0 ? '+' : '';
+                            textEl.textContent = (item.level || 0).toLocaleString('en-IN');
+                            wrapEl.title = `${prefix}: ${(item.level||0).toLocaleString('en-IN')} (${sign}${item.diff_pts} pts / ${sign}${item.diff_pct}%)`;
+                            wrapEl.style.display = 'inline-flex';
+                        } else {
+                            wrapEl.style.display = 'none';
+                        }
+                    }
+                };
+
+                // Mini badges on top row
+                updateMiniBadge('sc-main-mr1-wrap', 'sc-main-mr1', scMr[0], 'Smallcap Monthly Resistance 1');
+                updateMiniBadge('sc-main-ms1-wrap', 'sc-main-ms1', scMs[0], 'Smallcap Monthly Support 1');
+                updateMiniBadge('sc-main-ms2-wrap', 'sc-main-ms2', scMs[1], 'Smallcap Monthly Support 2');
+
+                // Dedicated Smallcap S&R row
+                updateMiniBadge('sc-row-mr1-wrap', 'sc-row-mr1', scMr[0], 'Smallcap Monthly Resistance 1');
+                updateMiniBadge('sc-row-mr2-wrap', 'sc-row-mr2', scMr[1], 'Smallcap Monthly Resistance 2');
+                updateMiniBadge('sc-row-ms1-wrap', 'sc-row-ms1', scMs[0], 'Smallcap Monthly Support 1');
+                updateMiniBadge('sc-row-ms2-wrap', 'sc-row-ms2', scMs[1], 'Smallcap Monthly Support 2');
+            }
+
             // Populate Nearest 2 Weekly & Monthly Support & Resistance for NIFTY 50
             const niftyObj = smallcapData.nifty || {};
             const niftyCMP = niftyObj.cmp || (smallcapData.latest && smallcapData.latest.nifty_cmp) || 25144.30;
@@ -5999,6 +6258,34 @@
                     modalBadge.className = 'regime-badge entry-blocked';
                     modalBadge.textContent = '🔴 NO ENTRY (Market Disqualified)';
                 }
+            }
+
+            // Populate Nifty Smallcap 100 Nearest S/R in Modal
+            const scModalCmp = document.getElementById('sc-modal-self-cmp');
+            if (scModalCmp) scModalCmp.textContent = (l.cmp || 19656.45).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const scModalSr = (smallcapSRData && smallcapSRData.length && (l.cmp || 19656.45))
+                ? computeNearestSR(l.cmp || 19656.45, smallcapSRData)
+                : (l.smallcap_nearest_sr);
+            if (scModalSr) {
+                const scMr = scModalSr.monthly_resistance || [];
+                const scMs = scModalSr.monthly_support || [];
+                const setModalSelfSr = (id, item, prefix) => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        if (item) {
+                            const sign = item.diff_pct >= 0 ? '+' : '';
+                            el.innerHTML = `${prefix}: <strong>${(item.level||0).toLocaleString('en-IN')}</strong> <small style="opacity:0.85; margin-left:3px;">(${sign}${item.diff_pct}%)</small>`;
+                            el.title = `${prefix}: ${(item.level||0).toLocaleString('en-IN')} (${sign}${item.diff_pts} pts / ${sign}${item.diff_pct}%)`;
+                            el.style.display = 'inline-flex';
+                        } else {
+                            el.style.display = 'none';
+                        }
+                    }
+                };
+                setModalSelfSr('sc-modal-self-mr1', scMr[0], 'MR1');
+                setModalSelfSr('sc-modal-self-mr2', scMr[1], 'MR2');
+                setModalSelfSr('sc-modal-self-ms1', scMs[0], 'MS1');
+                setModalSelfSr('sc-modal-self-ms2', scMs[1], 'MS2');
             }
 
             // Populate Nifty 50 Nearest S/R in Modal
