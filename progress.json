@@ -1,1 +1,11 @@
-{"phase": "initialising", "status": "running", "completed": 0, "total": 1, "pct": 0, "current_company": "Authenticating with Screener.in...", "elapsed_sec": 0, "eta_sec": 0, "ts": "2026-11-15T16:45:05.062939Z"}
+{
+  "phase": "complete",
+  "status": "complete",
+  "completed": 28,
+  "total": 28,
+  "pct": 100,
+  "current_company": "MSI Refresh Complete",
+  "elapsed_sec": 175,
+  "eta_sec": 0,
+  "ts": "2026-11-15T17:21:39Z"
+}
