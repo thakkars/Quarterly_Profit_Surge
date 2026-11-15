@@ -3118,6 +3118,67 @@
             color: var(--text-muted);
             font-weight: 600;
         }
+
+        /* High-Legibility S&R Badges & Grid Alignment in Market Setup Modal */
+        .mi-sr-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 16px;
+            border-radius: 7px;
+            font-size: 14.5px;
+            font-family: var(--font-mono, monospace);
+            white-space: nowrap;
+            font-weight: 600;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+            letter-spacing: 0.25px;
+        }
+
+        .mi-sr-badge strong {
+            font-size: 15.5px;
+            font-weight: 800;
+        }
+
+        .mi-sr-badge small {
+            font-size: 12.5px;
+            font-weight: 600;
+            opacity: 0.95;
+            margin-left: 4px;
+        }
+
+        .mi-sr-badge.res {
+            background: rgba(239, 68, 68, 0.14);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.45);
+        }
+
+        body.light-theme .mi-sr-badge.res {
+            background: #fee2e2;
+            color: #b91c1c;
+            border-color: #fca5a5;
+        }
+
+        .mi-sr-badge.sup {
+            background: rgba(16, 185, 129, 0.14);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.45);
+        }
+
+        body.light-theme .mi-sr-badge.sup {
+            background: #d1fae5;
+            color: #047857;
+            border-color: #6ee7b7;
+        }
+
+        .mi-sr-label {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--text-muted);
+            min-width: 50px;
+            display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+        }
     </style>
     <base target="_blank">
 </head>
@@ -3871,43 +3932,43 @@
                         </div>
                     </div>
                     <div class="insight-card-body">
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;">
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
                             <!-- Weekly S/R -->
-                            <div class="sr-pill-box" style="padding: 10px 14px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+                            <div class="sr-pill-box" style="padding: 12px 16px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
                                 <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px;">
-                                    <span class="sr-tag weekly-tag" style="font-size: 12px;">🔵 Weekly S &amp; R</span>
-                                    <span style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Nearest 2 Levels</span>
+                                    <span class="sr-tag weekly-tag" style="font-size: 13px;">🔵 Weekly Key Inception S &amp; R</span>
+                                    <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Nearest 2 Levels</span>
                                 </div>
-                                <div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
-                                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                                        <span style="font-size: 11px; color: var(--text-muted); width: 38px; font-weight: 700;">RES:</span>
-                                        <span class="sr-badge res" id="mi-nifty-wr1">WR1: 25,448 (+303.70 pts / +1.21%)</span>
-                                        <span class="sr-badge res" id="mi-nifty-wr2">WR2: 25,669 (+524.70 pts / +2.09%)</span>
+                                <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+                                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                        <span class="mi-sr-label">RES:</span>
+                                        <span class="mi-sr-badge res" id="mi-nifty-wr1">WR1: 25,448 (+303.70 pts / +1.21%)</span>
+                                        <span class="mi-sr-badge res" id="mi-nifty-wr2">WR2: 25,669 (+524.70 pts / +2.09%)</span>
                                     </div>
-                                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                                        <span style="font-size: 11px; color: var(--text-muted); width: 38px; font-weight: 700;">SUP:</span>
-                                        <span class="sr-badge sup" id="mi-nifty-ws1">WS1: 25,078 (-66.30 pts / -0.26%)</span>
-                                        <span class="sr-badge sup" id="mi-nifty-ws2">WS2: 24,482 (-662.30 pts / -2.63%)</span>
+                                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                        <span class="mi-sr-label">SUP:</span>
+                                        <span class="mi-sr-badge sup" id="mi-nifty-ws1">WS1: 25,078 (-66.30 pts / -0.26%)</span>
+                                        <span class="mi-sr-badge sup" id="mi-nifty-ws2">WS2: 24,482 (-662.30 pts / -2.63%)</span>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Monthly S/R -->
-                            <div class="sr-pill-box" style="padding: 10px 14px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+                            <div class="sr-pill-box" style="padding: 12px 16px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
                                 <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px;">
-                                    <span class="sr-tag monthly-tag" style="font-size: 12px;">🟣 Monthly S &amp; R</span>
-                                    <span style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Nearest 2 Levels</span>
+                                    <span class="sr-tag monthly-tag" style="font-size: 13px;">🟣 Monthly Key Inception S &amp; R</span>
+                                    <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Nearest 2 Levels</span>
                                 </div>
-                                <div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
-                                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                                        <span style="font-size: 11px; color: var(--text-muted); width: 38px; font-weight: 700;">RES:</span>
-                                        <span class="sr-badge res" id="mi-nifty-mr1">MR1: 26,373 (+1,228.70 pts / +4.89%)</span>
-                                        <span class="sr-badge res" id="mi-nifty-mr2" style="display:none;">MR2: -</span>
+                                <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+                                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                        <span class="mi-sr-label">RES:</span>
+                                        <span class="mi-sr-badge res" id="mi-nifty-mr1">MR1: 26,373 (+1,228.70 pts / +4.89%)</span>
+                                        <span class="mi-sr-badge res" id="mi-nifty-mr2" style="display:none;">MR2: -</span>
                                     </div>
-                                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                                        <span style="font-size: 11px; color: var(--text-muted); width: 38px; font-weight: 700;">SUP:</span>
-                                        <span class="sr-badge sup" id="mi-nifty-ms1">MS1: 24,774 (-370.30 pts / -1.47%)</span>
-                                        <span class="sr-badge sup" id="mi-nifty-ms2">MS2: 21,964 (-3,180.30 pts / -12.65%)</span>
+                                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                        <span class="mi-sr-label">SUP:</span>
+                                        <span class="mi-sr-badge sup" id="mi-nifty-ms1">MS1: 24,774 (-370.30 pts / -1.47%)</span>
+                                        <span class="mi-sr-badge sup" id="mi-nifty-ms2">MS2: 21,964 (-3,180.30 pts / -12.65%)</span>
                                     </div>
                                 </div>
                             </div>
@@ -3926,45 +3987,45 @@
                         </div>
                     </div>
                     <div class="insight-card-body">
-                        <div class="sr-pill-box" style="padding: 10px 14px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+                        <div class="sr-pill-box" style="padding: 12px 16px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
                             <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px;">
-                                <span class="sr-tag monthly-tag" style="font-size: 12px;">🟣 Monthly Key Inception S &amp; R</span>
-                                <span style="font-size: 10px; color: var(--text-muted);">From 'Nifty Smallcap 100' Sheet in Support and resistance.xlsx</span>
+                                <span class="sr-tag monthly-tag" style="font-size: 13px;">🟣 Monthly Key Inception S &amp; R</span>
+                                <span style="font-size: 11px; color: var(--text-muted);">From 'Nifty Smallcap 100' Sheet in Support and resistance.xlsx</span>
                             </div>
-                            <div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
-                                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                                    <span style="font-size: 11px; color: var(--text-muted); width: 38px; font-weight: 700;">RES:</span>
-                                    <span class="sr-badge res" id="mi-sc-mr1">MR1: 20,187 (+530.55 pts / +2.70%)</span>
-                                    <span class="sr-badge res" id="mi-sc-mr2" style="display:none;">MR2: -</span>
+                            <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+                                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                    <span class="mi-sr-label">RES:</span>
+                                    <span class="mi-sr-badge res" id="mi-sc-mr1">MR1: 20,187 (+530.55 pts / +2.70%)</span>
+                                    <span class="mi-sr-badge res" id="mi-sc-mr2" style="display:none;">MR2: -</span>
                                 </div>
-                                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                                    <span style="font-size: 11px; color: var(--text-muted); width: 38px; font-weight: 700;">SUP:</span>
-                                    <span class="sr-badge sup" id="mi-sc-ms1">MS1: 19,224 (-432.45 pts / -2.20%)</span>
-                                    <span class="sr-badge sup" id="mi-sc-ms2">MS2: 16,691 (-2,965.45 pts / -15.09%)</span>
+                                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                    <span class="mi-sr-label">SUP:</span>
+                                    <span class="mi-sr-badge sup" id="mi-sc-ms1">MS1: 19,224 (-432.45 pts / -2.20%)</span>
+                                    <span class="mi-sr-badge sup" id="mi-sc-ms2">MS2: 16,691 (-2,965.45 pts / -15.09%)</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 4. Accepted Stocks whose MSI Price Strength is > 80 -->
+                <!-- 4. Accepted Stocks by MSI Price Strength -->
                 <div class="market-insight-card">
                     <div class="insight-card-header" style="flex-wrap: wrap; gap: 10px;">
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <span class="insight-card-title">⭐ 4. Accepted Stocks with MSI Price Strength &gt; 80</span>
-                            <span class="badge" id="mi-accepted-count-badge" style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 700;">0 Stocks</span>
+                            <span class="insight-card-title">⭐ 4. Accepted Stocks by MSI Price Strength</span>
+                            <span class="badge" id="mi-accepted-count-badge" style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 700;">0 Accepted Stocks</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                             <!-- Active User Profile Toggle -->
                             <div class="user-strip" style="border: none; margin: 0; padding: 0;">
-                                <span class="user-strip-label" style="font-size: 10px;">Profile:</span>
-                                <button class="user-switch-pill active" id="mi-user-pill-Sachin" onclick="switchActiveUser('Sachin'); renderMarketSetupModalContent();">Sachin</button>
-                                <button class="user-switch-pill" id="mi-user-pill-Deepak" onclick="switchActiveUser('Deepak'); renderMarketSetupModalContent();">Deepak</button>
+                                <span class="user-strip-label" style="font-size: 11px;">👤 Profile:</span>
+                                <button class="user-switch-pill active" id="mi-user-pill-Sachin" data-user="Sachin" onclick="switchActiveUser('Sachin'); renderMarketSetupModalContent();">Sachin</button>
+                                <button class="user-switch-pill" id="mi-user-pill-Deepak" data-user="Deepak" onclick="switchActiveUser('Deepak'); renderMarketSetupModalContent();">Deepak</button>
                             </div>
-                            <!-- Tab Toggle: Accepted vs All Universe MSI > 80 -->
+                            <!-- Only 2 Tabs: Accepted > 80 and Accepted < 80 -->
                             <div class="bucket-pills" style="padding: 2px;">
-                                <button id="mi-tab-accepted" class="bucket-btn active" style="padding: 3px 10px; font-size: 11px;" onclick="switchMiStocksTab('accepted')">Accepted (&gt;80)</button>
-                                <button id="mi-tab-all" class="bucket-btn" style="padding: 3px 10px; font-size: 11px;" onclick="switchMiStocksTab('all')">All Universe (&gt;80)</button>
+                                <button id="mi-tab-gt80" class="bucket-btn active" style="padding: 4px 12px; font-size: 11.5px; font-weight: 700;" onclick="switchMiStocksTab('gt80')">Accepted &gt; 80 (<span id="mi-tab-gt80-count">0</span>)</button>
+                                <button id="mi-tab-lt80" class="bucket-btn" style="padding: 4px 12px; font-size: 11.5px; font-weight: 700;" onclick="switchMiStocksTab('lt80')">Accepted &lt; 80 (<span id="mi-tab-lt80-count">0</span>)</button>
                             </div>
                             <button class="btn btn-secondary" style="padding: 3px 8px; font-size: 11px; background: rgba(16, 185, 129, 0.15); color: #10b981; border-color: rgba(16, 185, 129, 0.3);" onclick="triggerMsiUpdate()" title="Update MSI Price Strength from MarketSmith India for accepted stocks">📈 Update MSI</button>
                         </div>
@@ -6840,14 +6901,14 @@
             if (summaryEl) summaryEl.textContent = `Showing ${smallcapData.history.length} historical trading days`;
         }
 
-        let miStocksActiveTab = 'accepted'; // 'accepted' or 'all'
+        let miStocksActiveTab = 'gt80'; // 'gt80' (> 80) or 'lt80' (<= 80)
 
         function switchMiStocksTab(tab) {
             miStocksActiveTab = tab;
-            const btnAcc = document.getElementById('mi-tab-accepted');
-            const btnAll = document.getElementById('mi-tab-all');
-            if (btnAcc) btnAcc.classList.toggle('active', tab === 'accepted');
-            if (btnAll) btnAll.classList.toggle('active', tab === 'all');
+            const btnGt80 = document.getElementById('mi-tab-gt80');
+            const btnLt80 = document.getElementById('mi-tab-lt80');
+            if (btnGt80) btnGt80.classList.toggle('active', tab === 'gt80');
+            if (btnLt80) btnLt80.classList.toggle('active', tab === 'lt80');
             renderMiStocksTable();
         }
 
@@ -7108,59 +7169,75 @@
         function renderMiStocksTable() {
             const tbody = document.getElementById('mi-stocks-body');
             const countBadge = document.getElementById('mi-accepted-count-badge');
+            const countGt80El = document.getElementById('mi-tab-gt80-count');
+            const countLt80El = document.getElementById('mi-tab-lt80-count');
             if (!tbody) return;
 
             const activeQuarter = (quarterlyColumns && quarterlyColumns[0]) || (typeof getCurrentQuarterCode === 'function' ? getCurrentQuarterCode() : 'Sep 2026');
             const sourceData = (typeof rawData !== 'undefined' && Array.isArray(rawData)) ? rawData : [];
 
-            // Filter stocks with MSI Price Strength > 80
-            const gt80Stocks = [];
+            // Filter ONLY accepted stocks for currentActiveUser in activeQuarter
+            const acceptedGt80 = [];
+            const acceptedLt80 = [];
+            let totalAccepted = 0;
+
             sourceData.forEach(row => {
-                const msiVal = parseFloat(String(row['MSI Price Strength'] || row['MSI'] || 0).replace(/,/g, ''));
-                if (!isNaN(msiVal) && msiVal > 80) {
-                    const { nse, bse } = getExchangeCodes(row);
-                    const ticker = nse || bse || (row['Company (Page)'] || row['Name'] || '');
-                    const status = getStockEvaluation(ticker);
-                    gt80Stocks.push({
+                const { nse, bse } = getExchangeCodes(row);
+                const ticker = nse || bse || (row['Company (Page)'] || row['Name'] || '');
+                const status = getStockEvaluation(ticker);
+                const isAccepted = (status === 'accepted' || status === 'accepted_mcap');
+
+                if (isAccepted) {
+                    totalAccepted++;
+                    const msiVal = parseFloat(String(row['MSI Price Strength'] || row['MSI'] || 0).replace(/,/g, ''));
+                    const item = {
                         row,
                         ticker,
                         nse,
                         bse,
                         status,
-                        msiVal,
-                        isAccepted: (status === 'accepted' || status === 'accepted_mcap')
-                    });
+                        msiVal: isNaN(msiVal) ? 0 : msiVal,
+                        hasMsi: !isNaN(msiVal) && msiVal > 0
+                    };
+                    if (!isNaN(msiVal) && msiVal > 80) {
+                        acceptedGt80.push(item);
+                    } else {
+                        acceptedLt80.push(item);
+                    }
                 }
             });
 
-            // Sort by MSI Price Strength descending
-            gt80Stocks.sort((a, b) => b.msiVal - a.msiVal);
+            // Sort both subsets descending by MSI Price Strength
+            acceptedGt80.sort((a, b) => b.msiVal - a.msiVal);
+            acceptedLt80.sort((a, b) => b.msiVal - a.msiVal);
 
-            const acceptedGt80 = gt80Stocks.filter(s => s.isAccepted);
+            if (countGt80El) countGt80El.textContent = acceptedGt80.length;
+            if (countLt80El) countLt80El.textContent = acceptedLt80.length;
+
             if (countBadge) {
-                countBadge.textContent = `${acceptedGt80.length} Accepted Stocks (MSI > 80)`;
-                countBadge.style.background = acceptedGt80.length > 0 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.15)';
-                countBadge.style.color = acceptedGt80.length > 0 ? '#10b981' : '#ef4444';
-                countBadge.style.borderColor = acceptedGt80.length > 0 ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.3)';
+                countBadge.textContent = `${totalAccepted} Accepted (${acceptedGt80.length} > 80, ${acceptedLt80.length} <= 80)`;
+                countBadge.style.background = totalAccepted > 0 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.15)';
+                countBadge.style.color = totalAccepted > 0 ? '#10b981' : '#ef4444';
+                countBadge.style.borderColor = totalAccepted > 0 ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.3)';
             }
 
-            const displayedStocks = (miStocksActiveTab === 'accepted') ? acceptedGt80 : gt80Stocks;
+            const displayedStocks = (miStocksActiveTab === 'gt80') ? acceptedGt80 : acceptedLt80;
 
             if (displayedStocks.length === 0) {
-                if (miStocksActiveTab === 'accepted') {
+                if (miStocksActiveTab === 'gt80') {
                     tbody.innerHTML = `<tr>
                         <td colspan="8" style="text-align: center; padding: 26px 16px; color: var(--text-muted);">
                             <div style="font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">No accepted stocks with MSI Price Strength &gt; 80 for 👤 ${currentActiveUser} in ${activeQuarter}</div>
-                            <div style="font-size: 12px; margin-bottom: 14px; color: var(--text-secondary);">There are <strong>${gt80Stocks.length}</strong> stocks across the universe with MSI Strength &gt; 80. You can review them in the "All Universe (>80)" tab and mark them as Accepted.</div>
-                            <button class="btn btn-primary" style="padding: 5px 16px; font-size: 12px;" onclick="switchMiStocksTab('all')">View All Universe Stocks with MSI &gt; 80 (${gt80Stocks.length})</button>
+                            <div style="font-size: 12px; margin-bottom: 14px; color: var(--text-secondary);">You have <strong>${acceptedLt80.length}</strong> accepted stock${acceptedLt80.length === 1 ? '' : 's'} with MSI &le; 80 (or pending update).</div>
+                            ${acceptedLt80.length > 0 ? `<button class="btn btn-primary" style="padding: 5px 16px; font-size: 12px;" onclick="switchMiStocksTab('lt80')">View Accepted &lt; 80 (${acceptedLt80.length})</button>` : `<button class="btn btn-secondary" style="padding: 5px 16px; font-size: 12px;" onclick="triggerMsiUpdate()">📈 Update MSI Scores</button>`}
                         </td>
                     </tr>`;
                 } else {
                     tbody.innerHTML = `<tr>
                         <td colspan="8" style="text-align: center; padding: 26px 16px; color: var(--text-muted);">
-                            <div style="font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">No stocks found with MSI Price Strength &gt; 80</div>
-                            <div style="font-size: 12px; margin-bottom: 14px;">Run the MSI price trend updater to scrape latest MarketSmith scores for your universe.</div>
-                            <button class="btn btn-primary" style="padding: 5px 16px; font-size: 12px;" onclick="triggerMsiUpdate()">📈 Update MSI Price Trend</button>
+                            <div style="font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">No accepted stocks with MSI Price Strength &le; 80 for 👤 ${currentActiveUser} in ${activeQuarter}</div>
+                            <div style="font-size: 12px; margin-bottom: 14px; color: var(--text-secondary);">${acceptedGt80.length > 0 ? `All ${acceptedGt80.length} accepted stocks have high MSI Price Strength &gt; 80!` : `No accepted stocks found. Mark stocks as Accepted in the main screener.`}</div>
+                            ${acceptedGt80.length > 0 ? `<button class="btn btn-primary" style="padding: 5px 16px; font-size: 12px;" onclick="switchMiStocksTab('gt80')">View Accepted &gt; 80 (${acceptedGt80.length})</button>` : ''}
                         </td>
                     </tr>`;
                 }
@@ -7184,6 +7261,12 @@
 
                 const status = item.status;
                 const rowBg = idx % 2 === 1 ? 'background: rgba(255,255,255,0.015);' : '';
+
+                const msiBadge = item.hasMsi 
+                    ? (item.msiVal > 80 
+                        ? `<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #10b981; font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.4);">${item.msiVal.toFixed(1)}</span>`
+                        : `<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.3);">${item.msiVal.toFixed(1)}</span>`)
+                    : `<span style="color: var(--text-muted); font-size: 11px;">-</span>`;
 
                 return `<tr style="${rowBg} border-bottom: 1px solid var(--border-subtle);">
                     <td style="padding: 8px 10px; text-align: center; color: var(--text-muted); font-weight: 600;">${idx + 1}</td>
@@ -7218,9 +7301,7 @@
                         </div>
                     </td>
                     <td style="padding: 8px 10px; text-align: right;">
-                        <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #10b981; font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.4);">
-                            ${item.msiVal.toFixed(1)}
-                        </span>
+                        ${msiBadge}
                     </td>
                     <td style="padding: 8px 10px; text-align: right; font-weight: 600; color: var(--text-secondary);">${mcapDisplay}</td>
                     <td style="padding: 8px 12px; color: var(--text-muted); font-size: 11px;">${r['Industry'] || '-'}</td>
