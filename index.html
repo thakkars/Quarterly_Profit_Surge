@@ -6192,6 +6192,9 @@
                 console.log("Using embedded Smallcap support & resistance data.");
             }
             updateSRCounts();
+            if (document.getElementById('market-setup-modal') && document.getElementById('market-setup-modal').classList.contains('open')) {
+                try { renderMarketSetupModalContent(); } catch(e) {}
+            }
         }
 
         function updateSRCounts() {
@@ -6705,6 +6708,10 @@
                 updateSrBadge('sc-ms1-wrap', 'sc-ms1', ms[0], 'Monthly Support 1');
                 updateSrBadge('sc-ms2-wrap', 'sc-ms2', ms[1], 'Monthly Support 2');
             }
+
+            if (document.getElementById('market-setup-modal') && document.getElementById('market-setup-modal').classList.contains('open')) {
+                try { renderMarketSetupModalContent(); } catch(e) {}
+            }
         }
 
         function openSmallcapModal() {
@@ -6912,15 +6919,21 @@
             };
         }
 
-        function openMarketSetupModal() {
-            if (!smallcapData) loadSmallcapData();
-            if (!supportResistanceData) loadSupportResistanceData();
-            renderMarketSetupModalContent();
-            document.getElementById('market-setup-modal').classList.add('open');
+        async function openMarketSetupModal() {
+            const modal = document.getElementById('market-setup-modal');
+            if (modal) modal.classList.add('open');
+            if (!smallcapData) await loadSmallcapData();
+            if (!srData || srData.length === 0) await loadSupportResistanceData();
+            try {
+                renderMarketSetupModalContent();
+            } catch (e) {
+                console.error("Error rendering Market Setup Modal:", e);
+            }
         }
 
         function closeMarketSetupModal() {
-            document.getElementById('market-setup-modal').classList.remove('open');
+            const modal = document.getElementById('market-setup-modal');
+            if (modal) modal.classList.remove('open');
         }
 
         function renderMarketSetupModalContent() {
@@ -7002,8 +7015,8 @@
                 miNiftyChgEl.style.color = niftyChg >= 0 ? '#10b981' : '#ef4444';
             }
 
-            const nsr = (supportResistanceData && supportResistanceData.length && niftyCMP) 
-                ? computeNearestSR(niftyCMP, supportResistanceData)
+            const nsr = (srData && srData.length && niftyCMP) 
+                ? computeNearestSR(niftyCMP, srData)
                 : (niftyObj.nearest_sr || (smallcapData && smallcapData.latest && smallcapData.latest.nifty_nearest_sr));
 
             if (nsr) {
@@ -7097,8 +7110,8 @@
             const countBadge = document.getElementById('mi-accepted-count-badge');
             if (!tbody) return;
 
-            const activeQuarter = quarterlyColumns[0] || getCurrentQuarterCode();
-            const sourceData = rawData || [];
+            const activeQuarter = (quarterlyColumns && quarterlyColumns[0]) || (typeof getCurrentQuarterCode === 'function' ? getCurrentQuarterCode() : 'Sep 2026');
+            const sourceData = (typeof rawData !== 'undefined' && Array.isArray(rawData)) ? rawData : [];
 
             // Filter stocks with MSI Price Strength > 80
             const gt80Stocks = [];
