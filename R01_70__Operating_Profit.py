@@ -11,6 +11,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import InvalidSessionIdException
 from datetime import datetime
 import os
+import re
 import json
 from openpyxl import load_workbook
 from openpyxl.styles import Alignment, Border, Side
