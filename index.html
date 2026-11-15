@@ -3004,6 +3004,120 @@
             border: 1px solid rgba(239, 68, 68, 0.45);
             box-shadow: 0 0 10px rgba(239, 68, 68, 0.15);
         }
+
+        /* Market Strategy & Setup Insights Modal */
+        .market-insight-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        body.light-theme .market-insight-card {
+            background: #ffffff;
+            border-color: #e2e8f0;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+        }
+
+        .insight-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-subtle);
+            padding-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .insight-card-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--text-primary);
+            letter-spacing: 0.3px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .mi-banner {
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            line-height: 1.5;
+        }
+
+        .mi-banner.banner-allowed {
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            color: #10b981;
+        }
+
+        body.light-theme .mi-banner.banner-allowed {
+            background: #ecfdf5;
+            border-color: #a7f3d0;
+            color: #047857;
+        }
+
+        .mi-banner.banner-blocked {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            color: #ef4444;
+        }
+
+        body.light-theme .mi-banner.banner-blocked {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #b91c1c;
+        }
+
+        .mi-metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 10px;
+        }
+
+        .mi-metric-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        body.light-theme .mi-metric-item {
+            background: #f8fafc;
+            border-color: #e2e8f0;
+        }
+
+        .mi-metric-label {
+            font-size: 10.5px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .mi-metric-val {
+            font-size: 15px;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        .mi-metric-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
     </style>
     <base target="_blank">
 </head>
@@ -3038,6 +3152,9 @@
                 <button class="btn btn-secondary" onclick="openDecisionsModal()">📁 Decisions</button>
                 <button class="btn btn-secondary" onclick="openSupportResistanceModal()" title="View Nifty Support and Resistance Key Levels">🎯 S & R Levels</button>
                 <button class="btn btn-secondary" onclick="openSmallcapModal()" title="View Nifty Smallcap 100 Historical OHLC and 10/20 EMA">📊 Smallcap 100</button>
+                <button class="btn btn-primary" onclick="openMarketSetupModal()" title="View Market Regime, Nearest S&R (Nifty & Smallcap) and Accepted MSI > 80 Stocks" style="background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); color: #ffffff; border: none; font-weight: 700; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35); display: inline-flex; align-items: center; gap: 5px;">
+                    <span>⚡</span> Market Setup &amp; MSI Insights
+                </button>
                 <button class="btn btn-secondary" onclick="openDecisionsModal()" title="Cross-Device Cloud Sync Status" id="sync-pill" style="gap: 5px;">
                     <span id="sync-icon">☁️</span>
                     <span id="sync-text">Cloud Sync</span>
@@ -3102,6 +3219,7 @@
                             <span class="sr-badge sup" id="sc-main-ms2-wrap" title="Monthly Support 2">MS2 <strong id="sc-main-ms2">16,691</strong></span>
                         </div>
                         <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 11px;" onclick="openSmallcapModal()" title="View Nifty Smallcap 100 Daily OHLC & Moving Average History">📊 OHLC History</button>
+                        <button class="btn btn-primary" style="padding: 4px 10px; font-size: 11px; background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); border: none; font-weight: 700; color: #ffffff;" onclick="openMarketSetupModal()" title="View Market Regime, Nearest S&R (Nifty & Smallcap) and Accepted MSI > 80 Stocks">⚡ Setup Insights</button>
                     </div>
                 </div>
             </div>
@@ -3686,6 +3804,198 @@
             <div class="modal-footer" style="padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle);">
                 <span style="font-size: 12px; color: var(--text-muted);" id="sc-summary-footer">Showing historical daily bars</span>
                 <button onclick="closeSmallcapModal()" class="btn btn-primary" style="padding: 6px 20px;">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Market Strategy Setup & MSI Insights Modal -->
+    <div class="modal-overlay" id="market-setup-modal" onclick="if(event.target===this) closeMarketSetupModal()">
+        <div class="modal-content" style="max-width: 980px; max-height: 90vh;">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 20px;">⚡</span>
+                    <div>
+                        <div style="font-weight: 800; font-size: 15px; color: var(--text-primary); letter-spacing: 0.3px;">Market Setup &amp; Strategy Insights</div>
+                        <div style="font-size: 11px; font-weight: normal; color: var(--text-muted);">
+                            Smallcap Regime &bull; Nifty Key S&amp;R &bull; Smallcap 100 S&amp;R &bull; Accepted High-Strength Stocks (MSI &gt; 80)
+                        </div>
+                    </div>
+                </div>
+                <button class="modal-close" onclick="closeMarketSetupModal()">&#215;</button>
+            </div>
+            <div class="modal-body" style="padding: 18px 22px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto;">
+                
+                <!-- 1. Smallcap Status & Last Transition Days Ago -->
+                <div class="market-insight-card">
+                    <div class="insight-card-header">
+                        <span class="insight-card-title">⚡ 1. NIFTY SMALLCAP 100 Status &amp; Trend Regime</span>
+                        <span id="mi-sc-status-pill" class="regime-badge entry-allowed">🟢 Allowed</span>
+                    </div>
+                    <div class="insight-card-body" style="display: flex; flex-direction: column; gap: 12px;">
+                        <div class="mi-banner banner-allowed" id="mi-sc-transition-banner">
+                            <!-- Populated dynamically -->
+                        </div>
+                        <div class="mi-metrics-grid">
+                            <div class="mi-metric-item">
+                                <span class="mi-metric-label">Smallcap CMP</span>
+                                <span class="mi-metric-val" id="mi-sc-cmp">19,656.45</span>
+                                <span class="mi-metric-sub" id="mi-sc-chg" style="color: #ef4444;">-0.26%</span>
+                            </div>
+                            <div class="mi-metric-item">
+                                <span class="mi-metric-label">10 EMA</span>
+                                <span class="mi-metric-val" id="mi-sc-ema10" style="color: #60a5fa;">19,243.28</span>
+                                <span class="mi-metric-sub" id="mi-sc-rule1-tag" style="color: #10b981;">CMP &gt; 10 EMA ✅</span>
+                            </div>
+                            <div class="mi-metric-item">
+                                <span class="mi-metric-label">20 EMA</span>
+                                <span class="mi-metric-val" id="mi-sc-ema20" style="color: #c084fc;">19,097.37</span>
+                                <span class="mi-metric-sub" id="mi-sc-rule2-tag" style="color: #10b981;">10 EMA &gt; 20 EMA ✅</span>
+                            </div>
+                            <div class="mi-metric-item">
+                                <span class="mi-metric-label">Trend Rule Verdict</span>
+                                <span class="mi-metric-val" id="mi-sc-rule-verdict" style="color: #10b981; font-size: 13px;">CMP &gt; 10 EMA &gt; 20 EMA Met</span>
+                                <span class="mi-metric-sub" id="mi-sc-days-streak">Streak: 3 consecutive days Allowed</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Nifty Nearest S & R - Monthly and Weekly -->
+                <div class="market-insight-card">
+                    <div class="insight-card-header">
+                        <span class="insight-card-title">🎯 2. NIFTY 50 Nearest Key Support &amp; Resistance (Monthly &amp; Weekly)</span>
+                        <div style="display: flex; align-items: baseline; gap: 8px;">
+                            <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Nifty CMP:</span>
+                            <strong id="mi-nifty-cmp" style="font-size: 14px; color: var(--text-primary);">25,144.30</strong>
+                            <span id="mi-nifty-chg" style="font-size: 11px; font-weight: 700; color: #ef4444;">-0.61%</span>
+                        </div>
+                    </div>
+                    <div class="insight-card-body">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;">
+                            <!-- Weekly S/R -->
+                            <div class="sr-pill-box" style="padding: 10px 14px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+                                <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px;">
+                                    <span class="sr-tag weekly-tag" style="font-size: 12px;">🔵 Weekly S &amp; R</span>
+                                    <span style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Nearest 2 Levels</span>
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
+                                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                        <span style="font-size: 11px; color: var(--text-muted); width: 38px; font-weight: 700;">RES:</span>
+                                        <span class="sr-badge res" id="mi-nifty-wr1">WR1: 25,448 (+303.70 pts / +1.21%)</span>
+                                        <span class="sr-badge res" id="mi-nifty-wr2">WR2: 25,669 (+524.70 pts / +2.09%)</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                        <span style="font-size: 11px; color: var(--text-muted); width: 38px; font-weight: 700;">SUP:</span>
+                                        <span class="sr-badge sup" id="mi-nifty-ws1">WS1: 25,078 (-66.30 pts / -0.26%)</span>
+                                        <span class="sr-badge sup" id="mi-nifty-ws2">WS2: 24,482 (-662.30 pts / -2.63%)</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Monthly S/R -->
+                            <div class="sr-pill-box" style="padding: 10px 14px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+                                <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px;">
+                                    <span class="sr-tag monthly-tag" style="font-size: 12px;">🟣 Monthly S &amp; R</span>
+                                    <span style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Nearest 2 Levels</span>
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
+                                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                        <span style="font-size: 11px; color: var(--text-muted); width: 38px; font-weight: 700;">RES:</span>
+                                        <span class="sr-badge res" id="mi-nifty-mr1">MR1: 26,373 (+1,228.70 pts / +4.89%)</span>
+                                        <span class="sr-badge res" id="mi-nifty-mr2" style="display:none;">MR2: -</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                        <span style="font-size: 11px; color: var(--text-muted); width: 38px; font-weight: 700;">SUP:</span>
+                                        <span class="sr-badge sup" id="mi-nifty-ms1">MS1: 24,774 (-370.30 pts / -1.47%)</span>
+                                        <span class="sr-badge sup" id="mi-nifty-ms2">MS2: 21,964 (-3,180.30 pts / -12.65%)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Nifty Smallcap 100 Nearest S & R - Monthly -->
+                <div class="market-insight-card">
+                    <div class="insight-card-header">
+                        <span class="insight-card-title">🟣 3. NIFTY SMALLCAP 100 Nearest Support &amp; Resistance (Monthly)</span>
+                        <div style="display: flex; align-items: baseline; gap: 8px;">
+                            <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Smallcap CMP:</span>
+                            <strong id="mi-sc-sr-cmp" style="font-size: 14px; color: var(--text-primary);">19,656.45</strong>
+                            <span id="mi-sc-sr-chg" style="font-size: 11px; font-weight: 700; color: #ef4444;">-0.26%</span>
+                        </div>
+                    </div>
+                    <div class="insight-card-body">
+                        <div class="sr-pill-box" style="padding: 10px 14px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+                            <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px;">
+                                <span class="sr-tag monthly-tag" style="font-size: 12px;">🟣 Monthly Key Inception S &amp; R</span>
+                                <span style="font-size: 10px; color: var(--text-muted);">From 'Nifty Smallcap 100' Sheet in Support and resistance.xlsx</span>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
+                                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                    <span style="font-size: 11px; color: var(--text-muted); width: 38px; font-weight: 700;">RES:</span>
+                                    <span class="sr-badge res" id="mi-sc-mr1">MR1: 20,187 (+530.55 pts / +2.70%)</span>
+                                    <span class="sr-badge res" id="mi-sc-mr2" style="display:none;">MR2: -</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                    <span style="font-size: 11px; color: var(--text-muted); width: 38px; font-weight: 700;">SUP:</span>
+                                    <span class="sr-badge sup" id="mi-sc-ms1">MS1: 19,224 (-432.45 pts / -2.20%)</span>
+                                    <span class="sr-badge sup" id="mi-sc-ms2">MS2: 16,691 (-2,965.45 pts / -15.09%)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Accepted Stocks whose MSI Price Strength is > 80 -->
+                <div class="market-insight-card">
+                    <div class="insight-card-header" style="flex-wrap: wrap; gap: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span class="insight-card-title">⭐ 4. Accepted Stocks with MSI Price Strength &gt; 80</span>
+                            <span class="badge" id="mi-accepted-count-badge" style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 700;">0 Stocks</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <!-- Active User Profile Toggle -->
+                            <div class="user-strip" style="border: none; margin: 0; padding: 0;">
+                                <span class="user-strip-label" style="font-size: 10px;">Profile:</span>
+                                <button class="user-switch-pill active" id="mi-user-pill-Sachin" onclick="switchActiveUser('Sachin'); renderMarketSetupModalContent();">Sachin</button>
+                                <button class="user-switch-pill" id="mi-user-pill-Deepak" onclick="switchActiveUser('Deepak'); renderMarketSetupModalContent();">Deepak</button>
+                            </div>
+                            <!-- Tab Toggle: Accepted vs All Universe MSI > 80 -->
+                            <div class="bucket-pills" style="padding: 2px;">
+                                <button id="mi-tab-accepted" class="bucket-btn active" style="padding: 3px 10px; font-size: 11px;" onclick="switchMiStocksTab('accepted')">Accepted (&gt;80)</button>
+                                <button id="mi-tab-all" class="bucket-btn" style="padding: 3px 10px; font-size: 11px;" onclick="switchMiStocksTab('all')">All Universe (&gt;80)</button>
+                            </div>
+                            <button class="btn btn-secondary" style="padding: 3px 8px; font-size: 11px; background: rgba(16, 185, 129, 0.15); color: #10b981; border-color: rgba(16, 185, 129, 0.3);" onclick="triggerMsiUpdate()" title="Update MSI Price Strength from MarketSmith India for accepted stocks">📈 Update MSI</button>
+                        </div>
+                    </div>
+                    <div class="insight-card-body">
+                        <div style="overflow-x: auto; border: 1px solid var(--border-subtle); border-radius: 8px;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 12px;" id="mi-stocks-table">
+                                <thead>
+                                    <tr style="background: rgba(255,255,255,0.03); border-bottom: 2px solid var(--accent-blue);">
+                                        <th style="padding: 8px 10px; text-align: center; width: 40px;">#</th>
+                                        <th style="padding: 8px 12px; text-align: left;">Company Name</th>
+                                        <th style="padding: 8px 10px; text-align: left;">Symbol</th>
+                                        <th style="padding: 8px 10px; text-align: center;" id="mi-stocks-user-header">Decision (Sachin)</th>
+                                        <th style="padding: 8px 10px; text-align: right; color: #10b981; font-weight: 700;">MSI Strength</th>
+                                        <th style="padding: 8px 10px; text-align: right;">MCap (Cr)</th>
+                                        <th style="padding: 8px 12px; text-align: left;">Industry</th>
+                                        <th style="padding: 8px 10px; text-align: center;">Links</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mi-stocks-body">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer" style="padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle);">
+                <span style="font-size: 12px; color: var(--text-muted);" id="mi-footer-text">Market Setup Insights &bull; S&amp;R from Support and resistance.xlsx</span>
+                <button onclick="closeMarketSetupModal()" class="btn btn-primary" style="padding: 6px 20px;">Done</button>
             </div>
         </div>
     </div>
@@ -6521,6 +6831,391 @@
 
             const summaryEl = document.getElementById('sc-summary-footer');
             if (summaryEl) summaryEl.textContent = `Showing ${smallcapData.history.length} historical trading days`;
+        }
+
+        let miStocksActiveTab = 'accepted'; // 'accepted' or 'all'
+
+        function switchMiStocksTab(tab) {
+            miStocksActiveTab = tab;
+            const btnAcc = document.getElementById('mi-tab-accepted');
+            const btnAll = document.getElementById('mi-tab-all');
+            if (btnAcc) btnAcc.classList.toggle('active', tab === 'accepted');
+            if (btnAll) btnAll.classList.toggle('active', tab === 'all');
+            renderMiStocksTable();
+        }
+
+        function getSmallcapRegimeInfo() {
+            if (!smallcapData || !smallcapData.history || smallcapData.history.length === 0) {
+                return {
+                    isAllowed: false,
+                    statusText: 'Unknown',
+                    daysAgoTrading: -1,
+                    lastDateStr: '',
+                    calDaysAgo: -1,
+                    streak: 0,
+                    cmp: 0,
+                    changePct: 0,
+                    ema10: 0,
+                    ema20: 0,
+                    rule1: false,
+                    rule2: false,
+                    date: ''
+                };
+            }
+            const hist = smallcapData.history;
+            const latest = smallcapData.latest || hist[0];
+            const isAllowed = !!latest.entry_allowed;
+            const statusText = isAllowed ? 'Allowed' : 'No Entry';
+            
+            // Target opposite status to calculate days ago it changed
+            let daysAgoTrading = -1;
+            let lastDateStr = '';
+            let calDaysAgo = -1;
+            let streak = 0;
+
+            for (let i = 0; i < hist.length; i++) {
+                if (!!hist[i].entry_allowed === isAllowed) {
+                    streak++;
+                } else {
+                    if (daysAgoTrading === -1) {
+                        daysAgoTrading = i;
+                        lastDateStr = hist[i].date;
+                        try {
+                            const p1 = (lastDateStr || '').split('-');
+                            const p0 = (latest.date || hist[0].date || '').split('-');
+                            if (p1.length === 3 && p0.length === 3) {
+                                const d1 = new Date(`${p1[2]}-${p1[1]}-${p1[0]}`);
+                                const d0 = new Date(`${p0[2]}-${p0[1]}-${p0[0]}`);
+                                const diffMs = Math.abs(d0 - d1);
+                                calDaysAgo = Math.round(diffMs / (1000 * 60 * 60 * 24));
+                            }
+                        } catch(e) {}
+                    }
+                    break;
+                }
+            }
+
+            return {
+                isAllowed,
+                statusText,
+                daysAgoTrading: (daysAgoTrading >= 0 ? daysAgoTrading : streak),
+                lastDateStr,
+                calDaysAgo,
+                streak: Math.max(1, streak),
+                cmp: latest.cmp || latest.close || 0,
+                changePct: latest.change_pct || 0,
+                ema10: latest.ema10 || 0,
+                ema20: latest.ema20 || 0,
+                rule1: !!latest.rule1_met,
+                rule2: !!latest.rule2_met,
+                date: latest.date || (hist[0] ? hist[0].date : '')
+            };
+        }
+
+        function openMarketSetupModal() {
+            if (!smallcapData) loadSmallcapData();
+            if (!supportResistanceData) loadSupportResistanceData();
+            renderMarketSetupModalContent();
+            document.getElementById('market-setup-modal').classList.add('open');
+        }
+
+        function closeMarketSetupModal() {
+            document.getElementById('market-setup-modal').classList.remove('open');
+        }
+
+        function renderMarketSetupModalContent() {
+            // 1. Smallcap Trend & Regime Info
+            const scInfo = getSmallcapRegimeInfo();
+            const scStatusPill = document.getElementById('mi-sc-status-pill');
+            const scBanner = document.getElementById('mi-sc-transition-banner');
+            const scCmp = document.getElementById('mi-sc-cmp');
+            const scChg = document.getElementById('mi-sc-chg');
+            const scEma10 = document.getElementById('mi-sc-ema10');
+            const scEma20 = document.getElementById('mi-sc-ema20');
+            const scRule1Tag = document.getElementById('mi-sc-rule1-tag');
+            const scRule2Tag = document.getElementById('mi-sc-rule2-tag');
+            const scRuleVerdict = document.getElementById('mi-sc-rule-verdict');
+            const scStreak = document.getElementById('mi-sc-days-streak');
+
+            if (scStatusPill) {
+                scStatusPill.className = scInfo.isAllowed ? 'regime-badge entry-allowed' : 'regime-badge entry-blocked';
+                scStatusPill.innerHTML = scInfo.isAllowed ? '🟢 Allowed' : '🔴 No Entry';
+            }
+
+            if (scBanner) {
+                if (scInfo.isAllowed) {
+                    scBanner.className = 'mi-banner banner-allowed';
+                    const daysAgoText = scInfo.daysAgoTrading >= 0 
+                        ? `${scInfo.daysAgoTrading} days`
+                        : `${scInfo.streak} days`;
+                    const dateSub = scInfo.lastDateStr 
+                        ? ` (${scInfo.lastDateStr}${scInfo.calDaysAgo >= 0 ? `, ${scInfo.calDaysAgo} calendar days ago` : ''})` 
+                        : '';
+                    scBanner.innerHTML = `<span>🟢</span> <div><strong>Current Smallcap status : Allowed</strong> &amp; <strong>Last No Entry Days ago : ${daysAgoText}</strong><span style="font-size:11px; opacity:0.85; margin-left:6px;">${dateSub}</span></div>`;
+                } else {
+                    scBanner.className = 'mi-banner banner-blocked';
+                    const daysAgoText = scInfo.daysAgoTrading >= 0 
+                        ? `${scInfo.daysAgoTrading} days`
+                        : `${scInfo.streak} days`;
+                    const dateSub = scInfo.lastDateStr 
+                        ? ` (${scInfo.lastDateStr}${scInfo.calDaysAgo >= 0 ? `, ${scInfo.calDaysAgo} calendar days ago` : ''})` 
+                        : '';
+                    scBanner.innerHTML = `<span>🔴</span> <div><strong>Current Smallcap status : No Entry</strong> &amp; <strong>Last Allowed Days ago : ${daysAgoText}</strong><span style="font-size:11px; opacity:0.85; margin-left:6px;">${dateSub}</span></div>`;
+                }
+            }
+
+            if (scCmp) scCmp.textContent = (scInfo.cmp || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (scChg) {
+                const sign = scInfo.changePct >= 0 ? '+' : '';
+                scChg.textContent = `${sign}${scInfo.changePct.toFixed(2)}%`;
+                scChg.style.color = scInfo.changePct >= 0 ? '#10b981' : '#ef4444';
+            }
+            if (scEma10) scEma10.textContent = (scInfo.ema10 || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (scEma20) scEma20.textContent = (scInfo.ema20 || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (scRule1Tag) {
+                scRule1Tag.textContent = scInfo.rule1 ? 'CMP > 10 & 20 EMA ✅' : 'CMP > 10 & 20 EMA ❌';
+                scRule1Tag.style.color = scInfo.rule1 ? '#10b981' : '#ef4444';
+            }
+            if (scRule2Tag) {
+                scRule2Tag.textContent = scInfo.rule2 ? '10 EMA > 20 EMA ✅' : '10 EMA > 20 EMA ❌';
+                scRule2Tag.style.color = scInfo.rule2 ? '#10b981' : '#ef4444';
+            }
+            if (scRuleVerdict) {
+                scRuleVerdict.textContent = scInfo.isAllowed ? '✅ CMP > 10 EMA > 20 EMA Met' : '❌ Trend Filter Disqualified';
+                scRuleVerdict.style.color = scInfo.isAllowed ? '#10b981' : '#ef4444';
+            }
+            if (scStreak) {
+                scStreak.textContent = `Active regime streak: ${scInfo.streak} consecutive trading session${scInfo.streak > 1 ? 's' : ''}`;
+            }
+
+            // 2. Nifty Nearest S & R (Monthly & Weekly)
+            const niftyObj = (smallcapData && smallcapData.nifty) || {};
+            const niftyCMP = niftyObj.cmp || (smallcapData && smallcapData.latest && smallcapData.latest.nifty_cmp) || 25144.30;
+            const niftyChg = niftyObj.change_pct !== undefined ? niftyObj.change_pct : (smallcapData && smallcapData.latest && smallcapData.latest.nifty_change_pct) || -0.61;
+            
+            const miNiftyCmpEl = document.getElementById('mi-nifty-cmp');
+            const miNiftyChgEl = document.getElementById('mi-nifty-chg');
+            if (miNiftyCmpEl) miNiftyCmpEl.textContent = (niftyCMP || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (miNiftyChgEl) {
+                const sign = niftyChg >= 0 ? '+' : '';
+                miNiftyChgEl.textContent = `${sign}${niftyChg.toFixed(2)}%`;
+                miNiftyChgEl.style.color = niftyChg >= 0 ? '#10b981' : '#ef4444';
+            }
+
+            const nsr = (supportResistanceData && supportResistanceData.length && niftyCMP) 
+                ? computeNearestSR(niftyCMP, supportResistanceData)
+                : (niftyObj.nearest_sr || (smallcapData && smallcapData.latest && smallcapData.latest.nifty_nearest_sr));
+
+            if (nsr) {
+                const setSrBadge = (id, item, prefix) => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        if (item) {
+                            const sign = item.diff_pct >= 0 ? '+' : '';
+                            el.innerHTML = `${prefix}: <strong>${(item.level || 0).toLocaleString('en-IN')}</strong> <small style="opacity:0.85; margin-left:3px;">(${sign}${item.diff_pts} pts / ${sign}${item.diff_pct}%)</small>`;
+                            el.title = `${prefix}: ${(item.level||0).toLocaleString('en-IN')} (${sign}${item.diff_pts} pts / ${sign}${item.diff_pct}%)`;
+                            el.style.display = 'inline-flex';
+                        } else {
+                            el.style.display = 'none';
+                        }
+                    }
+                };
+                const wr = nsr.weekly_resistance || [];
+                const ws = nsr.weekly_support || [];
+                const mr = nsr.monthly_resistance || [];
+                const ms = nsr.monthly_support || [];
+
+                setSrBadge('mi-nifty-wr1', wr[0], 'WR1');
+                setSrBadge('mi-nifty-wr2', wr[1], 'WR2');
+                setSrBadge('mi-nifty-ws1', ws[0], 'WS1');
+                setSrBadge('mi-nifty-ws2', ws[1], 'WS2');
+
+                setSrBadge('mi-nifty-mr1', mr[0], 'MR1');
+                setSrBadge('mi-nifty-mr2', mr[1], 'MR2');
+                setSrBadge('mi-nifty-ms1', ms[0], 'MS1');
+                setSrBadge('mi-nifty-ms2', ms[1], 'MS2');
+            }
+
+            // 3. Smallcap Nearest S & R (Monthly)
+            const scCMP = (smallcapData && smallcapData.latest && smallcapData.latest.cmp) || 19656.45;
+            const scChgVal = (smallcapData && smallcapData.latest && smallcapData.latest.change_pct) || -0.26;
+            const miScSrCmpEl = document.getElementById('mi-sc-sr-cmp');
+            const miScSrChgEl = document.getElementById('mi-sc-sr-chg');
+            if (miScSrCmpEl) miScSrCmpEl.textContent = (scCMP || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (miScSrChgEl) {
+                const sign = scChgVal >= 0 ? '+' : '';
+                miScSrChgEl.textContent = `${sign}${scChgVal.toFixed(2)}%`;
+                miScSrChgEl.style.color = scChgVal >= 0 ? '#10b981' : '#ef4444';
+            }
+
+            const scSr = (smallcapSRData && smallcapSRData.length && scCMP)
+                ? computeNearestSR(scCMP, smallcapSRData)
+                : (smallcapData && smallcapData.latest && smallcapData.latest.smallcap_nearest_sr);
+
+            if (scSr) {
+                const setScSrBadge = (id, item, prefix) => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        if (item) {
+                            const sign = item.diff_pct >= 0 ? '+' : '';
+                            el.innerHTML = `${prefix}: <strong>${(item.level || 0).toLocaleString('en-IN')}</strong> <small style="opacity:0.85; margin-left:3px;">(${sign}${item.diff_pts} pts / ${sign}${item.diff_pct}%)</small>`;
+                            el.title = `${prefix}: ${(item.level||0).toLocaleString('en-IN')} (${sign}${item.diff_pts} pts / ${sign}${item.diff_pct}%)`;
+                            el.style.display = 'inline-flex';
+                        } else {
+                            el.style.display = 'none';
+                        }
+                    }
+                };
+                const scMr = scSr.monthly_resistance || [];
+                const scMs = scSr.monthly_support || [];
+
+                setScSrBadge('mi-sc-mr1', scMr[0], 'MR1');
+                setScSrBadge('mi-sc-mr2', scMr[1], 'MR2');
+                setScSrBadge('mi-sc-ms1', scMs[0], 'MS1');
+                setScSrBadge('mi-sc-ms2', scMs[1], 'MS2');
+            }
+
+            // 4. Update Profile Switchers & Table
+            const pillSachin = document.getElementById('mi-user-pill-Sachin');
+            const pillDeepak = document.getElementById('mi-user-pill-Deepak');
+            if (pillSachin) pillSachin.classList.toggle('active', currentActiveUser === 'Sachin');
+            if (pillDeepak) pillDeepak.classList.toggle('active', currentActiveUser === 'Deepak');
+
+            const headerUserLabel = document.getElementById('mi-stocks-user-header');
+            if (headerUserLabel) headerUserLabel.textContent = `Decision (${currentActiveUser})`;
+
+            renderMiStocksTable();
+        }
+
+        function handleMiStockCategoryChange(ticker, category) {
+            handleStockCategoryChange(ticker, category);
+            renderMarketSetupModalContent();
+        }
+
+        function renderMiStocksTable() {
+            const tbody = document.getElementById('mi-stocks-body');
+            const countBadge = document.getElementById('mi-accepted-count-badge');
+            if (!tbody) return;
+
+            const activeQuarter = quarterlyColumns[0] || getCurrentQuarterCode();
+            const sourceData = rawData || [];
+
+            // Filter stocks with MSI Price Strength > 80
+            const gt80Stocks = [];
+            sourceData.forEach(row => {
+                const msiVal = parseFloat(String(row['MSI Price Strength'] || row['MSI'] || 0).replace(/,/g, ''));
+                if (!isNaN(msiVal) && msiVal > 80) {
+                    const { nse, bse } = getExchangeCodes(row);
+                    const ticker = nse || bse || (row['Company (Page)'] || row['Name'] || '');
+                    const status = getStockEvaluation(ticker);
+                    gt80Stocks.push({
+                        row,
+                        ticker,
+                        nse,
+                        bse,
+                        status,
+                        msiVal,
+                        isAccepted: (status === 'accepted' || status === 'accepted_mcap')
+                    });
+                }
+            });
+
+            // Sort by MSI Price Strength descending
+            gt80Stocks.sort((a, b) => b.msiVal - a.msiVal);
+
+            const acceptedGt80 = gt80Stocks.filter(s => s.isAccepted);
+            if (countBadge) {
+                countBadge.textContent = `${acceptedGt80.length} Accepted Stocks (MSI > 80)`;
+                countBadge.style.background = acceptedGt80.length > 0 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.15)';
+                countBadge.style.color = acceptedGt80.length > 0 ? '#10b981' : '#ef4444';
+                countBadge.style.borderColor = acceptedGt80.length > 0 ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.3)';
+            }
+
+            const displayedStocks = (miStocksActiveTab === 'accepted') ? acceptedGt80 : gt80Stocks;
+
+            if (displayedStocks.length === 0) {
+                if (miStocksActiveTab === 'accepted') {
+                    tbody.innerHTML = `<tr>
+                        <td colspan="8" style="text-align: center; padding: 26px 16px; color: var(--text-muted);">
+                            <div style="font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">No accepted stocks with MSI Price Strength &gt; 80 for 👤 ${currentActiveUser} in ${activeQuarter}</div>
+                            <div style="font-size: 12px; margin-bottom: 14px; color: var(--text-secondary);">There are <strong>${gt80Stocks.length}</strong> stocks across the universe with MSI Strength &gt; 80. You can review them in the "All Universe (>80)" tab and mark them as Accepted.</div>
+                            <button class="btn btn-primary" style="padding: 5px 16px; font-size: 12px;" onclick="switchMiStocksTab('all')">View All Universe Stocks with MSI &gt; 80 (${gt80Stocks.length})</button>
+                        </td>
+                    </tr>`;
+                } else {
+                    tbody.innerHTML = `<tr>
+                        <td colspan="8" style="text-align: center; padding: 26px 16px; color: var(--text-muted);">
+                            <div style="font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">No stocks found with MSI Price Strength &gt; 80</div>
+                            <div style="font-size: 12px; margin-bottom: 14px;">Run the MSI price trend updater to scrape latest MarketSmith scores for your universe.</div>
+                            <button class="btn btn-primary" style="padding: 5px 16px; font-size: 12px;" onclick="triggerMsiUpdate()">📈 Update MSI Price Trend</button>
+                        </td>
+                    </tr>`;
+                }
+                return;
+            }
+
+            tbody.innerHTML = displayedStocks.map((item, idx) => {
+                const r = item.row;
+                const tickerEsc = (item.ticker || '').replace(/'/g, "\\'");
+                const screenerQuery = encodeURIComponent(item.nse || item.bse || r['Company (Page)'] || r['Name'] || '');
+                const screenerUrl = `https://www.screener.in/company/${screenerQuery}/`;
+                const tvObj = getTvSymbol(r);
+                const tvUrl = `https://in.tradingview.com/chart/?symbol=${encodeURIComponent(tvObj.symbol)}`;
+
+                const mcapRaw = parseFloat(String(r['Mcap'] || '').replace(/,/g, ''));
+                const mcapDisplay = !isNaN(mcapRaw) && mcapRaw > 0 ? mcapRaw.toLocaleString('en-IN', { maximumFractionDigits: 1 }) : '-';
+
+                const symBadge = item.nse 
+                    ? `<span style="font-family: monospace; font-weight: 700; color: #60a5fa;">NSE: ${item.nse}</span>`
+                    : (item.bse ? `<span style="font-family: monospace; font-weight: 700; color: #c084fc;">BSE: ${item.bse}</span>` : '-');
+
+                const status = item.status;
+                const rowBg = idx % 2 === 1 ? 'background: rgba(255,255,255,0.015);' : '';
+
+                return `<tr style="${rowBg} border-bottom: 1px solid var(--border-subtle);">
+                    <td style="padding: 8px 10px; text-align: center; color: var(--text-muted); font-weight: 600;">${idx + 1}</td>
+                    <td style="padding: 8px 12px;">
+                        <a href="${screenerUrl}" target="_blank" style="font-weight: 700; color: var(--text-primary); text-decoration: none;" title="Open Screener.in page for ${r['Name'] || ''}">
+                            ${r['Name'] || r['Company (Page)'] || item.ticker} ↗
+                        </a>
+                    </td>
+                    <td style="padding: 8px 10px;">${symBadge}</td>
+                    <td style="padding: 8px 10px; text-align: center;">
+                        <div class="decision-pills-cell" style="justify-content: center; gap: 4px;">
+                            <button type="button" class="cat-pill pill-acc ${status === 'accepted' ? 'active' : ''}" 
+                                    title="${currentActiveUser}: Mark Accepted" 
+                                    onclick="handleMiStockCategoryChange('${tickerEsc}', 'accepted')">
+                                Acc
+                            </button>
+                            <button type="button" class="cat-pill pill-mcap ${status === 'accepted_mcap' ? 'active' : ''}" 
+                                    title="${currentActiveUser}: Mark Accepted MCap > 3000" 
+                                    onclick="handleMiStockCategoryChange('${tickerEsc}', 'accepted_mcap')">
+                                &gt; 3k
+                            </button>
+                            <button type="button" class="cat-pill pill-prom ${status === 'promising' ? 'active' : ''}" 
+                                    title="${currentActiveUser}: Mark Promising" 
+                                    onclick="handleMiStockCategoryChange('${tickerEsc}', 'promising')">
+                                Prom
+                            </button>
+                            <button type="button" class="cat-pill pill-rej ${status === 'rejected' ? 'active' : ''}" 
+                                    title="${currentActiveUser}: Mark Rejected" 
+                                    onclick="handleMiStockCategoryChange('${tickerEsc}', 'rejected')">
+                                Rej
+                            </button>
+                        </div>
+                    </td>
+                    <td style="padding: 8px 10px; text-align: right;">
+                        <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #10b981; font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.4);">
+                            ${item.msiVal.toFixed(1)}
+                        </span>
+                    </td>
+                    <td style="padding: 8px 10px; text-align: right; font-weight: 600; color: var(--text-secondary);">${mcapDisplay}</td>
+                    <td style="padding: 8px 12px; color: var(--text-muted); font-size: 11px;">${r['Industry'] || '-'}</td>
+                    <td style="padding: 8px 10px; text-align: center;">
+                        <a href="${tvUrl}" target="_blank" class="pill pill-teal" style="font-size: 10px; padding: 2px 7px; text-decoration: none;" title="Open TradingView Chart">📈 Chart ↗</a>
+                    </td>
+                </tr>`;
+            }).join('');
         }
 
         document.addEventListener('DOMContentLoaded', function() {
