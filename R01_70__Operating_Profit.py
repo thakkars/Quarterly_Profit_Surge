@@ -601,17 +601,23 @@ def get_company_full_name():
     return "Unknown"
 
 def get_top_dashboard_metrics():
-    metrics = {"Promoter Holding": 0.0, "Pledged %": 0.0, "WC Days": 0.0}
+    metrics = {"Promoter Holding": 0.0, "Pledged %": 0.0, "WC Days": 0.0, "Mcap": 0.0}
     try:
         ratio_items = driver.find_elements(By.CSS_SELECTOR, "ul#top-ratios li")
         for li in ratio_items:
             try:
                 name_els = li.find_elements(By.CSS_SELECTOR, "span.name")
                 num_els  = li.find_elements(By.CSS_SELECTOR, "span.number")
-                if not name_els or not num_els:
+                if not name_els:
                     continue
                 label  = name_els[0].text.lower().strip()
-                val_el = num_els[0].text.strip().replace(",", "")
+                val_el = num_els[0].text.strip().replace(",", "") if num_els else ""
+                if not val_el:
+                    val_spans = li.find_elements(By.CSS_SELECTOR, "span.value")
+                    if val_spans:
+                        m = re.search(r"[-+]?\d[\d,]*\.?\d*", val_spans[0].text)
+                        if m:
+                            val_el = m.group(0).replace(",", "")
                 value  = float(val_el) if val_el else 0.0
                 if "promoter holding" in label:
                     metrics["Promoter Holding"] = value
@@ -619,6 +625,8 @@ def get_top_dashboard_metrics():
                     metrics["Pledged %"] = value
                 elif "wc days" in label:
                     metrics["WC Days"] = value
+                elif "market cap" in label or "mar cap" in label or "market capitalization" in label:
+                    metrics["Mcap"] = value
             except Exception:
                 continue
     except Exception:
@@ -743,7 +751,7 @@ def scrape_company(company_info):
 def detect_latest_quarter(row_dict):
     non_quarter_keys = {
         "Sr no", "Name", "Company (Page)", "Industry Group", "Industry",
-        "Promoter Holding", "Pledged %", "WC Days", "date",
+        "Promoter Holding", "Pledged %", "WC Days", "Mcap", "date",
         "NSE Code Exact", "Screener Name Exact",
         *MSI_COLS,
     }
@@ -780,6 +788,7 @@ def transform_and_order_data(df):
         "NSE Code Exact", "Screener Name Exact",
     ]
     metric_cols = [
+        "Mcap",
         "Pledged %",
         "Promoter Holding",
         "WC Days",

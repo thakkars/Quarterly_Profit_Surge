@@ -4963,6 +4963,13 @@
                     if (col === 'Current Quarter Surge') return `<td>${row[col] === 'Yes' ? '<span class="badge badge-yes">Yes</span>' : (row[col]||'-')}</td>`;
                     if (col === 'Peak Quarter') return `<td>${row[col] === 'Yes' ? '<span class="badge badge-peak">Peak</span>' : (row[col]||'-')}</td>`;
                     const val = row[col];
+                    if (col === 'Mcap') {
+                        const num = parseFloat(String(val).replace(/,/g, ''));
+                        if (!isNaN(num) && num > 0) {
+                            return `<td><span style="font-weight:600;">₹${num.toLocaleString('en-IN', { maximumFractionDigits: 1 })} Cr</span></td>`;
+                        }
+                        return `<td>-</td>`;
+                    }
                     if (col === 'MSI Price Strength') {
                         const num = parseFloat(String(val).replace(/,/g, ''));
                         if (!isNaN(num) && num > 0) {
@@ -5122,6 +5129,7 @@
             if (col === 'date') return 'Date';
             if (col === 'Company (Page)') return 'Company';
             if (col === 'Promoter Holding') return 'Promoter %';
+            if (col === 'Mcap') return 'Mcap (Cr)';
             if (col === COL_NSE) return 'NSE Code';
             if (col === COL_BSE) return 'BSE Code';
             if (col === COL_SURGE_QTR) return 'Surge Qtr';
@@ -5183,7 +5191,7 @@
                     const yoyIds = yoyDescs.map(d => d.id);
                     
                     const filteredAllColumns = allColumns.filter(c => 
-                        !['Sr no', 'date', 'Company (Page)', 'MSI Price Strength', 'Industry', 'Industry Group'].includes(c)
+                        !['Sr no', 'date', 'Company (Page)', 'MSI Price Strength', 'Industry', 'Industry Group', 'Mcap'].includes(c)
                     );
 
                     columnOrder = [
@@ -5194,6 +5202,7 @@
                         'MSI Price Strength',
                         COL_NSE,
                         COL_BSE,
+                        'Mcap',
                         'Industry',
                         'Industry Group',
                         COL_SURGE_QTR,
@@ -5209,6 +5218,7 @@
                         COL_DECISION,
                         'MSI Price Strength',
                         COL_NSE,
+                        'Mcap',
                         'Industry',
                         COL_SURGE_QTR,
                         'Pledged %',
