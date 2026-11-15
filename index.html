@@ -2416,6 +2416,18 @@
             box-shadow: 0 0 8px rgba(16, 185, 129, 0.15);
         }
 
+        .bucket-btn#bucket-btn-accepted_mcap.active {
+            background: rgba(14, 165, 233, 0.15);
+            color: #0ea5e9;
+            box-shadow: 0 0 8px rgba(14, 165, 233, 0.2);
+        }
+
+        .bucket-btn#bucket-btn-promising.active {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+            box-shadow: 0 0 8px rgba(245, 158, 11, 0.2);
+        }
+
         .bucket-btn#bucket-btn-rejected.active {
             background: rgba(239, 68, 68, 0.15);
             color: #ef4444;
@@ -2429,7 +2441,169 @@
         }
 
         .decision-th {
-            min-width: 140px;
+            min-width: 175px;
+        }
+
+        .decision-pills-cell {
+            display: inline-flex;
+            gap: 4px;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 2px 4px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            white-space: nowrap;
+        }
+
+        body.light-theme .decision-pills-cell {
+            background: rgba(15, 23, 42, 0.04);
+            border-color: rgba(15, 23, 42, 0.08);
+        }
+
+        .cat-pill {
+            padding: 3px 6px;
+            font-size: 11px;
+            font-weight: 700;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--text-muted);
+            transition: all var(--transition-fast);
+            line-height: 1.2;
+            font-family: inherit;
+        }
+
+        .cat-pill:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        body.light-theme .cat-pill:hover {
+            background: rgba(0, 0, 0, 0.06);
+        }
+
+        /* Accepted (Green) */
+        .cat-pill.pill-acc.active {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border-color: rgba(16, 185, 129, 0.5);
+            box-shadow: 0 0 6px rgba(16, 185, 129, 0.2);
+        }
+
+        /* Accepted MCap > 3000 (Cyan / Blue) */
+        .cat-pill.pill-mcap.active {
+            background: rgba(14, 165, 233, 0.2);
+            color: #38bdf8;
+            border-color: rgba(14, 165, 233, 0.5);
+            box-shadow: 0 0 6px rgba(14, 165, 233, 0.2);
+        }
+
+        /* Promising (Gold / Amber) */
+        .cat-pill.pill-prom.active {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+            border-color: rgba(245, 158, 11, 0.5);
+            box-shadow: 0 0 6px rgba(245, 158, 11, 0.2);
+        }
+
+        /* Rejected (Red) */
+        .cat-pill.pill-rej.active {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            border-color: rgba(239, 68, 68, 0.5);
+            box-shadow: 0 0 6px rgba(239, 68, 68, 0.2);
+        }
+
+        .user-switcher-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            padding: 3px 6px;
+            margin-right: 12px;
+        }
+
+        body.light-theme .user-switcher-bar {
+            background: rgba(15, 23, 42, 0.04);
+        }
+
+        .user-switcher-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            padding-left: 6px;
+        }
+
+        .user-btn {
+            border: none;
+            padding: 4px 12px;
+            border-radius: 14px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            background: transparent;
+            color: var(--text-muted);
+            transition: all var(--transition-fast);
+            font-family: inherit;
+        }
+
+        .user-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .user-btn.active {
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+            color: #ffffff;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.35);
+        }
+
+        .user-strip {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-right: 6px;
+            border-right: 1px solid var(--border-subtle);
+            padding-right: 12px;
+        }
+
+        .user-strip-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .user-switch-pill {
+            border: 1px solid var(--border-subtle);
+            background: rgba(255, 255, 255, 0.03);
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all var(--transition-fast);
+            font-family: inherit;
+        }
+
+        body.light-theme .user-switch-pill {
+            background: #ffffff;
+        }
+
+        .user-switch-pill:hover {
+            color: var(--text-primary);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .user-switch-pill.active {
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+            color: #ffffff;
+            border-color: transparent;
+            box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
         }
 
         .decision-header-container {
@@ -2762,6 +2936,15 @@
                     <span>Quarterly Profit Surge Screener</span>
                 </div>
             </div>
+            <div class="user-switcher-bar">
+                <span class="user-switcher-title">👤 User:</span>
+                <button class="user-btn active" id="user-btn-Sachin" data-user="Sachin" onclick="switchActiveUser('Sachin')">
+                    Sachin
+                </button>
+                <button class="user-btn" id="user-btn-Deepak" data-user="Deepak" onclick="switchActiveUser('Deepak')">
+                    Deepak
+                </button>
+            </div>
             <div class="btn-group">
                 <button id="run-btn" class="btn btn-primary" onclick="triggerWorkflow()">
                     <span>▶</span> Run Scraper
@@ -2885,20 +3068,28 @@
         <!-- Bucket Filter Bar -->
         <div class="bucket-filter-bar">
             <div class="bucket-pills-wrap">
-                <span class="bucket-pills-label">Bucket:</span>
+                <div class="user-strip">
+                    <span class="user-strip-label">👤 User:</span>
+                    <button class="user-switch-pill active" id="user-pill-Sachin" data-user="Sachin" onclick="switchActiveUser('Sachin')">Sachin</button>
+                    <button class="user-switch-pill" id="user-pill-Deepak" data-user="Deepak" onclick="switchActiveUser('Deepak')">Deepak</button>
+                </div>
                 <div class="bucket-pills">
                     <button id="bucket-btn-all" class="bucket-btn" onclick="setBucketFilter('all')">All (<span id="count-all">0</span>)</button>
                     <button id="bucket-btn-pending" class="bucket-btn active" onclick="setBucketFilter('pending')">Pending (<span id="count-pending">0</span>)</button>
                     <button id="bucket-btn-accepted" class="bucket-btn" onclick="setBucketFilter('accepted')">🟢 Accepted (<span id="count-accepted">0</span>)</button>
+                    <button id="bucket-btn-accepted_mcap" class="bucket-btn" onclick="setBucketFilter('accepted_mcap')">🔵 Accepted MCap &gt; 3000 (<span id="count-accepted_mcap">0</span>)</button>
+                    <button id="bucket-btn-promising" class="bucket-btn" onclick="setBucketFilter('promising')">⭐ Promising (<span id="count-promising">0</span>)</button>
                     <button id="bucket-btn-rejected" class="bucket-btn" onclick="setBucketFilter('rejected')">🔴 Rejected (<span id="count-rejected">0</span>)</button>
                 </div>
             </div>
             <div class="bucket-actions">
                 <span class="bucket-info-text">Active Quarter: <strong id="bucket-active-quarter">-</strong></span>
                 <button id="bucket-msi-btn" class="btn btn-secondary btn-bulk-accept" style="padding: 4px 10px; font-size: 11px; background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #10b981;" onclick="triggerMsiUpdate()" title="Update MSI Price Strength from MarketSmith India for accepted stocks in this quarter">📈 Update MSI price trend</button>
-                <button class="btn btn-secondary btn-bulk-accept" style="padding: 4px 10px; font-size: 11px;" onclick="bulkEvaluateFiltered('accepted')" title="Accept all currently filtered visible stocks">🟢 Accept All Filtered</button>
-                <button class="btn btn-secondary btn-bulk-reject" style="padding: 4px 10px; font-size: 11px;" onclick="bulkEvaluateFiltered('rejected')" title="Reject all currently filtered visible stocks">🔴 Reject All Filtered</button>
-                <button class="btn btn-danger btn-ghost" style="padding: 4px 10px; font-size: 11px;" onclick="clearQuarterDecisions()" title="Clear all accept/reject decisions for this quarter">🗑️ Clear Decisions</button>
+                <button class="btn btn-secondary btn-bulk-accept" style="padding: 4px 8px; font-size: 11px;" onclick="bulkEvaluateFiltered('accepted')" title="Accept all currently filtered visible stocks for active user">🟢 Accept All</button>
+                <button class="btn btn-secondary btn-bulk-mcap" style="padding: 4px 8px; font-size: 11px; color: #38bdf8;" onclick="bulkEvaluateFiltered('accepted_mcap')" title="Mark all currently filtered visible stocks as Accepted MCap > 3000 for active user">🔵 Acc &gt; 3k</button>
+                <button class="btn btn-secondary btn-bulk-prom" style="padding: 4px 8px; font-size: 11px; color: #fbbf24;" onclick="bulkEvaluateFiltered('promising')" title="Mark all currently filtered visible stocks as Promising for active user">⭐ Promising</button>
+                <button class="btn btn-secondary btn-bulk-reject" style="padding: 4px 8px; font-size: 11px;" onclick="bulkEvaluateFiltered('rejected')" title="Reject all currently filtered visible stocks for active user">🔴 Reject All</button>
+                <button class="btn btn-danger btn-ghost" style="padding: 4px 8px; font-size: 11px;" onclick="clearQuarterDecisions()" title="Clear decisions for active user in this quarter">🗑️ Clear Decisions</button>
             </div>
         </div>
 
@@ -3439,11 +3630,58 @@
         let rawData = [];
         let activeBucketFilter = 'pending';
 
+        const RESEARCH_USERS = ['Sachin', 'Deepak'];
+        let currentActiveUser = (function() {
+            try {
+                const urlParam = new URLSearchParams(window.location.search).get('user');
+                if (urlParam && RESEARCH_USERS.includes(urlParam)) {
+                    localStorage.setItem('active_user', urlParam);
+                    return urlParam;
+                }
+            } catch(e) {}
+            return localStorage.getItem('active_user') || 'Sachin';
+        })();
+
+        const CATEGORIES = {
+            'accepted': { id: 'accepted', label: 'Accepted', shortLabel: 'Acc', icon: '🟢', color: '#10b981' },
+            'accepted_mcap': { id: 'accepted_mcap', label: 'Accepted MCap > 3000', shortLabel: 'Acc > 3k', icon: '🔵', color: '#0ea5e9' },
+            'promising': { id: 'promising', label: 'Promising', shortLabel: 'Promising', icon: '⭐', color: '#f59e0b' },
+            'rejected': { id: 'rejected', label: 'Rejected', shortLabel: 'Rej', icon: '🔴', color: '#ef4444' }
+        };
+
+        function switchActiveUser(userName) {
+            if (!RESEARCH_USERS.includes(userName)) return;
+            currentActiveUser = userName;
+            localStorage.setItem('active_user', userName);
+            try {
+                const url = new URL(window.location);
+                url.searchParams.set('user', userName);
+                window.history.replaceState({}, '', url);
+            } catch(e) {}
+            updateUserSwitcherUI();
+            applyFiltersAndRender();
+            showToast(`Active Profile: ${userName}`, 'info', 2000);
+        }
+
+        function updateUserSwitcherUI() {
+            document.querySelectorAll('.user-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.user === currentActiveUser);
+            });
+            document.querySelectorAll('.user-switch-pill').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.user === currentActiveUser);
+            });
+            const displayEl = document.getElementById('active-user-name-display');
+            if (displayEl) displayEl.textContent = currentActiveUser;
+        }
+
         function getQuarterEvaluations(quarter) {
             const evals = localStorage.getItem('quarterly_evaluations');
             if (!evals) return {};
             try {
                 const parsed = JSON.parse(evals);
+                if (parsed.users && parsed.users[currentActiveUser]) {
+                    return parsed.users[currentActiveUser][quarter] || {};
+                }
                 return parsed[quarter] || {};
             } catch (e) {
                 return {};
@@ -3464,10 +3702,31 @@
             if (allEvals) {
                 try { parsed = JSON.parse(allEvals); } catch(e) {}
             }
-            if (!parsed[activeQuarter]) parsed[activeQuarter] = {};
+            if (!parsed.users) {
+                parsed.users = { 'Sachin': {}, 'Deepak': {} };
+                Object.keys(parsed).forEach(q => {
+                    if (q !== 'users' && typeof parsed[q] === 'object') {
+                        parsed.users['Deepak'][q] = Object.assign({}, parsed[q]);
+                        parsed.users['Sachin'][q] = Object.assign({}, parsed[q]);
+                    }
+                });
+            }
+            if (!parsed.users[currentActiveUser]) parsed.users[currentActiveUser] = {};
+            if (!parsed.users[currentActiveUser][activeQuarter]) parsed.users[currentActiveUser][activeQuarter] = {};
             
             if (status === 'pending') {
-                delete parsed[activeQuarter][ticker];
+                delete parsed.users[currentActiveUser][activeQuarter][ticker];
+            } else {
+                parsed.users[currentActiveUser][activeQuarter][ticker] = status;
+            }
+            
+            // Sync to root quarter for backward compatibility
+            if (!parsed[activeQuarter]) parsed[activeQuarter] = {};
+            if (status === 'pending') {
+                const otherUser = currentActiveUser === 'Sachin' ? 'Deepak' : 'Sachin';
+                const otherVal = parsed.users[otherUser]?.[activeQuarter]?.[ticker];
+                if (otherVal) parsed[activeQuarter][ticker] = otherVal;
+                else delete parsed[activeQuarter][ticker];
             } else {
                 parsed[activeQuarter][ticker] = status;
             }
@@ -3477,39 +3736,10 @@
             queueGitHubSync();
         }
 
-        function handleStockCheckboxChange(ticker, type, isChecked) {
-            let status = 'pending';
-            if (isChecked) {
-                status = type; // 'accepted' or 'rejected'
-            }
-            setStockEvaluation(ticker, status);
-        }
-
-        function toggleSelectAllEvaluations(status, isChecked) {
-            if (!currentFilteredData || currentFilteredData.length === 0) return;
-            const activeQuarter = quarterlyColumns[0] || getCurrentQuarterCode();
-            const allEvals = localStorage.getItem('quarterly_evaluations');
-            let parsed = {};
-            if (allEvals) {
-                try { parsed = JSON.parse(allEvals); } catch(e) {}
-            }
-            if (!parsed[activeQuarter]) parsed[activeQuarter] = {};
-
-            currentFilteredData.forEach(row => {
-                const { nse, bse } = getExchangeCodes(row);
-                const ticker = nse || bse || (row['Company (Page)'] || row['Name'] || '');
-                if (isChecked) {
-                    parsed[activeQuarter][ticker] = status;
-                } else {
-                    if (parsed[activeQuarter][ticker] === status) {
-                        delete parsed[activeQuarter][ticker];
-                    }
-                }
-            });
-
-            localStorage.setItem('quarterly_evaluations', JSON.stringify(parsed));
-            applyFiltersAndRender();
-            queueGitHubSync();
+        function handleStockCategoryChange(ticker, category) {
+            const current = getStockEvaluation(ticker);
+            const nextStatus = (current === category) ? 'pending' : category;
+            setStockEvaluation(ticker, nextStatus);
         }
 
         function setBucketFilter(filter) {
@@ -3522,12 +3752,14 @@
 
         function clearQuarterDecisions() {
             const activeQuarter = quarterlyColumns[0] || getCurrentQuarterCode();
-            if (confirm(`Are you sure you want to clear all Accept/Reject decisions for quarter ${activeQuarter}?`)) {
+            if (confirm(`Are you sure you want to clear all decisions for ${currentActiveUser} in quarter ${activeQuarter}?`)) {
                 const allEvals = localStorage.getItem('quarterly_evaluations');
                 if (allEvals) {
                     try {
                         let parsed = JSON.parse(allEvals);
-                        delete parsed[activeQuarter];
+                        if (parsed.users && parsed.users[currentActiveUser]) {
+                            delete parsed.users[currentActiveUser][activeQuarter];
+                        }
                         localStorage.setItem('quarterly_evaluations', JSON.stringify(parsed));
                         applyFiltersAndRender();
                         queueGitHubSync();
@@ -3542,25 +3774,38 @@
                 return;
             }
             const activeQuarter = quarterlyColumns[0] || getCurrentQuarterCode();
-            const actionText = status === 'accepted' ? 'Accept' : 'Reject';
-            if (confirm(`Are you sure you want to ${actionText} all ${currentFilteredData.length} currently filtered stocks for quarter ${activeQuarter}?`)) {
+            const catCfg = CATEGORIES[status] || { label: status };
+            if (confirm(`Set ${currentFilteredData.length} visible stocks as "${catCfg.label}" for ${currentActiveUser} in ${activeQuarter}?`)) {
                 const allEvals = localStorage.getItem('quarterly_evaluations');
                 let parsed = {};
                 if (allEvals) {
                     try { parsed = JSON.parse(allEvals); } catch(e) {}
                 }
+                if (!parsed.users) {
+                    parsed.users = { 'Sachin': {}, 'Deepak': {} };
+                    Object.keys(parsed).forEach(q => {
+                        if (q !== 'users' && typeof parsed[q] === 'object') {
+                            parsed.users['Deepak'][q] = Object.assign({}, parsed[q]);
+                            parsed.users['Sachin'][q] = Object.assign({}, parsed[q]);
+                        }
+                    });
+                }
+                if (!parsed.users[currentActiveUser]) parsed.users[currentActiveUser] = {};
+                if (!parsed.users[currentActiveUser][activeQuarter]) parsed.users[currentActiveUser][activeQuarter] = {};
                 if (!parsed[activeQuarter]) parsed[activeQuarter] = {};
-                
+
                 currentFilteredData.forEach(row => {
                     const { nse, bse } = getExchangeCodes(row);
                     const ticker = nse || bse || (row['Company (Page)'] || row['Name'] || '');
                     if (status === 'pending') {
+                        delete parsed.users[currentActiveUser][activeQuarter][ticker];
                         delete parsed[activeQuarter][ticker];
                     } else {
+                        parsed.users[currentActiveUser][activeQuarter][ticker] = status;
                         parsed[activeQuarter][ticker] = status;
                     }
                 });
-                
+
                 localStorage.setItem('quarterly_evaluations', JSON.stringify(parsed));
                 applyFiltersAndRender();
                 queueGitHubSync();
@@ -4549,15 +4794,41 @@
                 try { localEvals = JSON.parse(localEvalsStr); } catch(e) {}
             }
             
-            // Smart two-way merge: combine both without losing either device's decisions
-            const merged = {};
-            const quarters = new Set([...Object.keys(fetchedEvals), ...Object.keys(localEvals)]);
-            quarters.forEach(qtr => {
-                merged[qtr] = Object.assign({}, fetchedEvals[qtr] || {}, localEvals[qtr] || {});
+            // Smart two-way merge for multi-user structure:
+            const merged = { users: { 'Sachin': {}, 'Deepak': {} } };
+            
+            const remoteUsers = fetchedEvals.users || {
+                'Sachin': Object.assign({}, fetchedEvals),
+                'Deepak': Object.assign({}, fetchedEvals)
+            };
+            const localUsers = localEvals.users || {
+                'Sachin': Object.assign({}, localEvals),
+                'Deepak': Object.assign({}, localEvals)
+            };
+
+            RESEARCH_USERS.forEach(u => {
+                merged.users[u] = {};
+                const rQtrs = remoteUsers[u] || {};
+                const lQtrs = localUsers[u] || {};
+                const allQtrs = new Set([...Object.keys(rQtrs), ...Object.keys(lQtrs)]);
+                allQtrs.forEach(q => {
+                    if (q !== 'users') {
+                        merged.users[u][q] = Object.assign({}, rQtrs[q] || {}, lQtrs[q] || {});
+                    }
+                });
+            });
+
+            // Also merge root quarters for backward compatibility
+            const rootQtrs = new Set([...Object.keys(fetchedEvals), ...Object.keys(localEvals)]);
+            rootQtrs.forEach(q => {
+                if (q !== 'users') {
+                    merged[q] = Object.assign({}, fetchedEvals[q] || {}, localEvals[q] || {});
+                }
             });
             
             localStorage.setItem('quarterly_evaluations', JSON.stringify(merged));
             updateSyncIndicator('synced');
+            updateUserSwitcherUI();
             return merged;
         }
 
@@ -4652,10 +4923,31 @@
                         try { localEvals = JSON.parse(localEvalsStr); } catch(err) {}
                     }
                     
-                    const merged = {};
-                    const quarters = new Set([...Object.keys(content), ...Object.keys(localEvals)]);
-                    quarters.forEach(qtr => {
-                        merged[qtr] = Object.assign({}, content[qtr] || {}, localEvals[qtr] || {});
+                    const merged = { users: { 'Sachin': {}, 'Deepak': {} } };
+                    const remoteUsers = content.users || {
+                        'Sachin': Object.assign({}, content),
+                        'Deepak': Object.assign({}, content)
+                    };
+                    const localUsers = localEvals.users || {
+                        'Sachin': Object.assign({}, localEvals),
+                        'Deepak': Object.assign({}, localEvals)
+                    };
+                    RESEARCH_USERS.forEach(u => {
+                        merged.users[u] = {};
+                        const rQtrs = remoteUsers[u] || {};
+                        const lQtrs = localUsers[u] || {};
+                        const allQtrs = new Set([...Object.keys(rQtrs), ...Object.keys(lQtrs)]);
+                        allQtrs.forEach(q => {
+                            if (q !== 'users') {
+                                merged.users[u][q] = Object.assign({}, rQtrs[q] || {}, lQtrs[q] || {});
+                            }
+                        });
+                    });
+                    const rootQtrs = new Set([...Object.keys(content), ...Object.keys(localEvals)]);
+                    rootQtrs.forEach(q => {
+                        if (q !== 'users') {
+                            merged[q] = Object.assign({}, content[q] || {}, localEvals[q] || {});
+                        }
                     });
                     
                     localStorage.setItem('quarterly_evaluations', JSON.stringify(merged));
@@ -4894,30 +5186,10 @@
                 if (sortColumn === col) sortIcon = `<span class="sort-icon">${sortAscending ? '▲' : '▼'}</span>`;
                 
                 if (col === COL_DECISION) {
-                    const allVisibleAccepted = data.length > 0 && data.every(row => {
-                        const { nse, bse } = getExchangeCodes(row);
-                        const ticker = nse || bse || (row['Company (Page)'] || row['Name'] || '');
-                        return getStockEvaluation(ticker) === 'accepted';
-                    });
-                    const allVisibleRejected = data.length > 0 && data.every(row => {
-                        const { nse, bse } = getExchangeCodes(row);
-                        const ticker = nse || bse || (row['Company (Page)'] || row['Name'] || '');
-                        return getStockEvaluation(ticker) === 'rejected';
-                    });
-                    
-                    return `<th class="decision-th" onclick="event.stopPropagation()">
+                    return `<th class="decision-th" onclick="handleSort('${COL_DECISION}')" style="cursor: pointer;" title="Sort by Category">
                         <div class="decision-header-container">
-                            <span class="decision-header-title" onclick="handleSort('${COL_DECISION}')" style="cursor: pointer;">Status ${sortIcon}</span>
-                            <div class="decision-header-checkboxes">
-                                <label class="header-cb-label text-success" title="Select all visible stocks as Accepted">
-                                    <input type="checkbox" id="header-accept-all" ${allVisibleAccepted ? 'checked' : ''} onchange="toggleSelectAllEvaluations('accepted', this.checked)">
-                                    Acc
-                                </label>
-                                <label class="header-cb-label text-danger" title="Select all visible stocks as Rejected">
-                                    <input type="checkbox" id="header-reject-all" ${allVisibleRejected ? 'checked' : ''} onchange="toggleSelectAllEvaluations('rejected', this.checked)">
-                                    Rej
-                                </label>
-                            </div>
+                            <span class="decision-header-title">Status ${sortIcon}</span>
+                            <span style="font-size: 10px; color: var(--accent-blue); font-weight: 600;">(👤 ${currentActiveUser})</span>
                         </div>
                     </th>`;
                 }
@@ -4934,8 +5206,9 @@
                 else if (sortColumn === COL_DECISION) {
                     const tA = getExchangeCodes(a).nse || getExchangeCodes(a).bse || (a['Company (Page)'] || a['Name'] || '');
                     const tB = getExchangeCodes(b).nse || getExchangeCodes(b).bse || (b['Company (Page)'] || b['Name'] || '');
-                    aVal = getStockEvaluation(tA);
-                    bVal = getStockEvaluation(tB);
+                    const RANK = { 'accepted': 1, 'accepted_mcap': 2, 'promising': 3, 'pending': 4, 'rejected': 5 };
+                    aVal = RANK[getStockEvaluation(tA)] || 99;
+                    bVal = RANK[getStockEvaluation(tB)] || 99;
                 }
                 else if (sortColumn && sortColumn.startsWith(YOY_PREFIX)) { const desc = yoyDescs.find(d => d.id === sortColumn); aVal = desc ? (calcYoY(a, desc.newCol, desc.oldCol) ?? -Infinity) : -Infinity; bVal = desc ? (calcYoY(b, desc.newCol, desc.oldCol) ?? -Infinity) : -Infinity; }
                 else { aVal = a[sortColumn]; bVal = b[sortColumn]; const aNum = parseFloat(String(aVal||'').replace(/,/g,'')); const bNum = parseFloat(String(bVal||'').replace(/,/g,'')); if (!isNaN(aNum) && !isNaN(bNum)) { aVal = aNum; bVal = bNum; } else { aVal = String(aVal||'').toLowerCase(); bVal = String(bVal||'').toLowerCase(); } }
@@ -4960,20 +5233,29 @@
                     if (col === COL_DECISION) {
                         const ticker = nse || bse || companyName;
                         const status = getStockEvaluation(ticker);
+                        const tickerEsc = ticker.replace(/'/g, "\\'");
                         return `<td>
-                            <div class="decision-checkboxes-cell" onclick="event.stopPropagation()">
-                                <label class="row-cb-label text-success" title="Accept stock">
-                                    <input type="checkbox" class="stock-cb accept-stock-cb"
-                                           ${status === 'accepted' ? 'checked' : ''}
-                                           onchange="handleStockCheckboxChange('${ticker.replace(/'/g, "\\'")}', 'accepted', this.checked)">
-                                    Accept
-                                </label>
-                                <label class="row-cb-label text-danger" title="Reject stock">
-                                    <input type="checkbox" class="stock-cb reject-stock-cb"
-                                           ${status === 'rejected' ? 'checked' : ''}
-                                           onchange="handleStockCheckboxChange('${ticker.replace(/'/g, "\\'")}', 'rejected', this.checked)">
-                                    Reject
-                                </label>
+                            <div class="decision-pills-cell" onclick="event.stopPropagation()">
+                                <button type="button" class="cat-pill pill-acc ${status === 'accepted' ? 'active' : ''}" 
+                                        title="${currentActiveUser}: Mark Accepted" 
+                                        onclick="handleStockCategoryChange('${tickerEsc}', 'accepted')">
+                                    Acc
+                                </button>
+                                <button type="button" class="cat-pill pill-mcap ${status === 'accepted_mcap' ? 'active' : ''}" 
+                                        title="${currentActiveUser}: Mark Accepted MCap > 3000" 
+                                        onclick="handleStockCategoryChange('${tickerEsc}', 'accepted_mcap')">
+                                    &gt; 3k
+                                </button>
+                                <button type="button" class="cat-pill pill-prom ${status === 'promising' ? 'active' : ''}" 
+                                        title="${currentActiveUser}: Mark Promising" 
+                                        onclick="handleStockCategoryChange('${tickerEsc}', 'promising')">
+                                    Promising
+                                </button>
+                                <button type="button" class="cat-pill pill-rej ${status === 'rejected' ? 'active' : ''}" 
+                                        title="${currentActiveUser}: Mark Rejected" 
+                                        onclick="handleStockCategoryChange('${tickerEsc}', 'rejected')">
+                                    Rej
+                                </button>
                             </div>
                         </td>`;
                     }
@@ -5081,13 +5363,12 @@
             const evaluations = getQuarterEvaluations(activeQuarter);
 
             // Compute counts from the strictly-filtered dataset
-            let counts = { all: filteredData.length, pending: 0, accepted: 0, rejected: 0 };
+            let counts = { all: filteredData.length, pending: 0, accepted: 0, accepted_mcap: 0, promising: 0, rejected: 0 };
             filteredData.forEach(row => {
                 const { nse, bse } = getExchangeCodes(row);
                 const ticker = nse || bse || (row['Company (Page)'] || row['Name'] || '');
                 const status = evaluations[ticker] || 'pending';
-                if (status === 'accepted') counts.accepted++;
-                else if (status === 'rejected') counts.rejected++;
+                if (counts.hasOwnProperty(status)) counts[status]++;
                 else counts.pending++;
             });
 
@@ -5095,40 +5376,26 @@
             const countAllEl = document.getElementById('count-all');
             const countPendingEl = document.getElementById('count-pending');
             const countAcceptedEl = document.getElementById('count-accepted');
+            const countAcceptedMcapEl = document.getElementById('count-accepted_mcap');
+            const countPromisingEl = document.getElementById('count-promising');
             const countRejectedEl = document.getElementById('count-rejected');
             const activeQtrEl = document.getElementById('bucket-active-quarter');
 
             if (countAllEl) countAllEl.textContent = counts.all;
             if (countPendingEl) countPendingEl.textContent = counts.pending;
             if (countAcceptedEl) countAcceptedEl.textContent = counts.accepted;
+            if (countAcceptedMcapEl) countAcceptedMcapEl.textContent = counts.accepted_mcap;
+            if (countPromisingEl) countPromisingEl.textContent = counts.promising;
             if (countRejectedEl) countRejectedEl.textContent = counts.rejected;
             if (activeQtrEl) activeQtrEl.textContent = activeQuarter;
 
-            // Show or hide bulk action buttons based on whether Pending or All bucket is active
-            const showBulk = (activeBucketFilter === 'pending' || activeBucketFilter === 'all');
-            const btnBulkAccept = document.querySelector('.btn-bulk-accept');
-            const btnBulkReject = document.querySelector('.btn-bulk-reject');
-            if (btnBulkAccept) btnBulkAccept.style.display = showBulk ? '' : 'none';
-            if (btnBulkReject) btnBulkReject.style.display = showBulk ? '' : 'none';
-
             // Apply active bucket filter
-            if (activeBucketFilter === 'pending') {
+            if (activeBucketFilter !== 'all') {
                 filteredData = filteredData.filter(row => {
                     const { nse, bse } = getExchangeCodes(row);
                     const ticker = nse || bse || (row['Company (Page)'] || row['Name'] || '');
-                    return (evaluations[ticker] || 'pending') === 'pending';
-                });
-            } else if (activeBucketFilter === 'accepted') {
-                filteredData = filteredData.filter(row => {
-                    const { nse, bse } = getExchangeCodes(row);
-                    const ticker = nse || bse || (row['Company (Page)'] || row['Name'] || '');
-                    return evaluations[ticker] === 'accepted';
-                });
-            } else if (activeBucketFilter === 'rejected') {
-                filteredData = filteredData.filter(row => {
-                    const { nse, bse } = getExchangeCodes(row);
-                    const ticker = nse || bse || (row['Company (Page)'] || row['Name'] || '');
-                    return evaluations[ticker] === 'rejected';
+                    const status = evaluations[ticker] || 'pending';
+                    return status === activeBucketFilter;
                 });
             }
 
@@ -5262,6 +5529,7 @@
                         console.warn("Failed to load/merge decisions on startup:", e);
                     }
                     
+                    updateUserSwitcherUI();
                     updateCurrentQtrBadge();
                     renderColumnToggles();
                     applyFiltersAndRender();

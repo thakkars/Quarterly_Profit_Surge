@@ -336,25 +336,26 @@ def main():
 
     print(f"🎯 Target Quarter: '{target_quarter}'")
 
-    # 4. Extract accepted set for this quarter
-    q_decisions = decisions.get(target_quarter, {})
-    accepted_keys = {
-        str(k).strip().upper()
-        for k, v in q_decisions.items()
-        if str(v).lower() == "accepted"
-    }
+    # 4. Extract accepted set for this quarter across users and root
+    ACCEPTED_STATUSES = {"accepted", "accepted_mcap", "promising"}
+    accepted_keys = set()
+    
+    candidate_dicts = []
+    if "users" in decisions and isinstance(decisions["users"], dict):
+        for user_name, user_qtrs in decisions["users"].items():
+            if isinstance(user_qtrs, dict):
+                candidate_dicts.append(user_qtrs)
+    candidate_dicts.append(decisions)
 
-    # If target_quarter had no accepted entries, check if quarter was stored in short format
-    if not accepted_keys:
-        parts = target_quarter.split()
-        if len(parts) == 2 and len(parts[1]) == 4:
-            short_q = f"{parts[0]} {parts[1][2:]}"
-            if short_q in decisions:
-                accepted_keys = {
-                    str(k).strip().upper()
-                    for k, v in decisions[short_q].items()
-                    if str(v).lower() == "accepted"
-                }
+    parts = target_quarter.split()
+    short_q = f"{parts[0]} {parts[1][2:]}" if len(parts) == 2 and len(parts[1]) == 4 else ""
+
+    for d in candidate_dicts:
+        for q_key in [target_quarter, short_q]:
+            if q_key and q_key in d and isinstance(d[q_key], dict):
+                for k, v in d[q_key].items():
+                    if str(v).lower() in ACCEPTED_STATUSES:
+                        accepted_keys.add(str(k).strip().upper())
 
     print(f"📋 Found {len(accepted_keys)} accepted key(s) in decisions for quarter '{target_quarter}':")
     for k in sorted(accepted_keys):
