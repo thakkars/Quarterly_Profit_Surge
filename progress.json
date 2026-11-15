@@ -1,1 +1,1 @@
-{"phase": "complete", "status": "complete", "completed": 1070, "total": 1070, "pct": 100, "current_company": "Dataset refreshed successfully.", "elapsed_sec": 1967, "eta_sec": 0, "ts": "2026-11-15T13:50:53.192428Z"}
+{"phase": "initialising", "status": "running", "completed": 0, "total": 1, "pct": 0, "current_company": "Authenticating with Screener.in...", "elapsed_sec": 0, "eta_sec": 0, "ts": "2026-11-15T16:45:05.062939Z"}
