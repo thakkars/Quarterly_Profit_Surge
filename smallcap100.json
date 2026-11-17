@@ -2,42 +2,42 @@
   "latest": {
     "index_name": "NIFTY SMALLCAP 100",
     "symbol": "NSE:CNXSMALLCAP",
-    "date": "16-11-2026",
-    "cmp": 19419.1,
+    "date": "17-11-2026",
+    "cmp": 19398.7,
     "open": 19411.5,
     "high": 19588.15,
     "low": 19365.5,
-    "close": 19419.1,
-    "change_pct": -0.11,
-    "volume": 291691233,
-    "ema10": 19304.67,
-    "ema20": 19157.63,
+    "close": 19398.7,
+    "change_pct": -0.22,
+    "volume": 415458965,
+    "ema10": 19300.96,
+    "ema20": 19155.68,
     "rule1_met": true,
     "rule2_met": true,
     "entry_allowed": true,
     "status_text": "ENTRY ALLOWED",
-    "rule1_desc": "CMP (19,419.10) > 10 EMA (19,304.67) and > 20 EMA (19,157.63)",
-    "rule2_desc": "10 EMA (19,304.67) > 20 EMA (19,157.63)",
+    "rule1_desc": "CMP (19,398.70) > 10 EMA (19,300.96) and > 20 EMA (19,155.68)",
+    "rule2_desc": "10 EMA (19,300.96) > 20 EMA (19,155.68)",
     "smallcap_nearest_sr": {
       "weekly_resistance": [],
       "weekly_support": [],
       "monthly_resistance": [
         {
           "level": 20187,
-          "diff_pts": 767.9,
-          "diff_pct": 3.95
+          "diff_pts": 788.3,
+          "diff_pct": 4.06
         }
       ],
       "monthly_support": [
         {
           "level": 19224,
-          "diff_pts": -195.1,
-          "diff_pct": -1.0
+          "diff_pts": -174.7,
+          "diff_pct": -0.9
         },
         {
           "level": 16691,
-          "diff_pts": -2728.1,
-          "diff_pct": -14.05
+          "diff_pts": -2707.7,
+          "diff_pct": -13.96
         }
       ]
     },
@@ -56,60 +56,60 @@
       6048,
       4619
     ],
-    "nifty_cmp": 25394.75,
-    "nifty_change_pct": 0.41,
+    "nifty_cmp": 25387.4,
+    "nifty_change_pct": 0.38,
     "nifty_nearest_sr": {
       "weekly_resistance": [
         {
           "level": 25448,
-          "diff_pts": 53.25,
-          "diff_pct": 0.21
+          "diff_pts": 60.6,
+          "diff_pct": 0.24
         },
         {
           "level": 25669,
-          "diff_pts": 274.25,
-          "diff_pct": 1.08
+          "diff_pts": 281.6,
+          "diff_pct": 1.11
         }
       ],
       "weekly_support": [
         {
           "level": 25078,
-          "diff_pts": -316.75,
-          "diff_pct": -1.25
+          "diff_pts": -309.4,
+          "diff_pct": -1.22
         },
         {
           "level": 24482,
-          "diff_pts": -912.75,
-          "diff_pct": -3.59
+          "diff_pts": -905.4,
+          "diff_pct": -3.57
         }
       ],
       "monthly_resistance": [
         {
           "level": 26373,
-          "diff_pts": 978.25,
-          "diff_pct": 3.85
+          "diff_pts": 985.6,
+          "diff_pct": 3.88
         }
       ],
       "monthly_support": [
         {
           "level": 24774,
-          "diff_pts": -620.75,
-          "diff_pct": -2.44
+          "diff_pts": -613.4,
+          "diff_pct": -2.42
         },
         {
           "level": 21964,
-          "diff_pts": -3430.75,
-          "diff_pct": -13.51
+          "diff_pts": -3423.4,
+          "diff_pct": -13.48
         }
       ]
     },
-    "updated_at": "2026-11-17 08:23:43"
+    "updated_at": "2026-11-17 13:02:46"
   },
   "nifty": {
     "symbol": "NSE:NIFTY",
     "index_name": "NIFTY 50",
-    "cmp": 25394.75,
-    "change_pct": 0.41,
+    "cmp": 25387.4,
+    "change_pct": 0.38,
     "open": 25277.3,
     "high": 25501.35,
     "low": 25267.3,
@@ -117,49 +117,62 @@
       "weekly_resistance": [
         {
           "level": 25448,
-          "diff_pts": 53.25,
-          "diff_pct": 0.21
+          "diff_pts": 60.6,
+          "diff_pct": 0.24
         },
         {
           "level": 25669,
-          "diff_pts": 274.25,
-          "diff_pct": 1.08
+          "diff_pts": 281.6,
+          "diff_pct": 1.11
         }
       ],
       "weekly_support": [
         {
           "level": 25078,
-          "diff_pts": -316.75,
-          "diff_pct": -1.25
+          "diff_pts": -309.4,
+          "diff_pct": -1.22
         },
         {
           "level": 24482,
-          "diff_pts": -912.75,
-          "diff_pct": -3.59
+          "diff_pts": -905.4,
+          "diff_pct": -3.57
         }
       ],
       "monthly_resistance": [
         {
           "level": 26373,
-          "diff_pts": 978.25,
-          "diff_pct": 3.85
+          "diff_pts": 985.6,
+          "diff_pct": 3.88
         }
       ],
       "monthly_support": [
         {
           "level": 24774,
-          "diff_pts": -620.75,
-          "diff_pct": -2.44
+          "diff_pts": -613.4,
+          "diff_pct": -2.42
         },
         {
           "level": 21964,
-          "diff_pts": -3430.75,
-          "diff_pct": -13.51
+          "diff_pts": -3423.4,
+          "diff_pct": -13.48
         }
       ]
     }
   },
   "history": [
+    {
+      "date": "17-11-2026",
+      "open": 19411.5,
+      "high": 19588.15,
+      "low": 19365.5,
+      "close": 19398.7,
+      "volume": 415458965,
+      "ema10": 19281.06,
+      "ema20": 19139.97,
+      "rule1_met": true,
+      "rule2_met": true,
+      "entry_allowed": true
+    },
     {
       "date": "16-11-2026",
       "open": 19645.85,
