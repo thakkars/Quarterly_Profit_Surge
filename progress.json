@@ -1,11 +1,1 @@
-{
-  "phase": "complete",
-  "status": "complete",
-  "completed": 28,
-  "total": 28,
-  "pct": 100,
-  "current_company": "MSI Refresh Complete",
-  "elapsed_sec": 139,
-  "eta_sec": 0,
-  "ts": "2026-11-19T18:57:07Z"
-}
+{"phase": "complete", "status": "complete", "completed": 1110, "total": 1110, "pct": 100, "current_company": "Dataset refreshed successfully.", "elapsed_sec": 70, "eta_sec": 0, "ts": "2026-11-19T22:24:47.965848Z"}
