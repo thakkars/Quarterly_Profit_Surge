@@ -2,42 +2,42 @@
   "latest": {
     "index_name": "NIFTY SMALLCAP 100",
     "symbol": "NSE:CNXSMALLCAP",
-    "date": "25-11-2026",
-    "cmp": 19229.35,
-    "open": 19401.8,
-    "high": 19456.6,
-    "low": 19178.35,
-    "close": 19229.35,
-    "change_pct": -0.44,
-    "volume": 338405291,
-    "ema10": 19326.47,
-    "ema20": 19232.11,
-    "rule1_met": false,
+    "date": "26-11-2026",
+    "cmp": 19372.15,
+    "open": 19267.7,
+    "high": 19433.15,
+    "low": 19241.55,
+    "close": 19372.15,
+    "change_pct": 0.74,
+    "volume": 311293439,
+    "ema10": 19334.78,
+    "ema20": 19245.44,
+    "rule1_met": true,
     "rule2_met": true,
-    "entry_allowed": false,
-    "status_text": "NO ENTRY",
-    "rule1_desc": "CMP (19,229.35) > 10 EMA (19,326.47) and > 20 EMA (19,232.11)",
-    "rule2_desc": "10 EMA (19,326.47) > 20 EMA (19,232.11)",
+    "entry_allowed": true,
+    "status_text": "ENTRY ALLOWED",
+    "rule1_desc": "CMP (19,372.15) > 10 EMA (19,334.78) and > 20 EMA (19,245.44)",
+    "rule2_desc": "10 EMA (19,334.78) > 20 EMA (19,245.44)",
     "smallcap_nearest_sr": {
       "weekly_resistance": [],
       "weekly_support": [],
       "monthly_resistance": [
         {
           "level": 20187,
-          "diff_pts": 957.65,
-          "diff_pct": 4.98
+          "diff_pts": 814.85,
+          "diff_pct": 4.21
         }
       ],
       "monthly_support": [
         {
           "level": 19224,
-          "diff_pts": -5.35,
-          "diff_pct": -0.03
+          "diff_pts": -148.15,
+          "diff_pct": -0.76
         },
         {
           "level": 16691,
-          "diff_pts": -2538.35,
-          "diff_pct": -13.2
+          "diff_pts": -2681.15,
+          "diff_pct": -13.84
         }
       ]
     },
@@ -56,88 +56,101 @@
       6048,
       4619
     ],
-    "nifty_cmp": 25819.25,
-    "nifty_change_pct": 1.85,
+    "nifty_cmp": 25884.5,
+    "nifty_change_pct": 0.25,
     "nifty_nearest_sr": {
       "weekly_resistance": [],
       "weekly_support": [
         {
           "level": 25669,
-          "diff_pts": -150.25,
-          "diff_pct": -0.58
+          "diff_pts": -215.5,
+          "diff_pct": -0.83
         },
         {
           "level": 25448,
-          "diff_pts": -371.25,
-          "diff_pct": -1.44
+          "diff_pts": -436.5,
+          "diff_pct": -1.69
         }
       ],
       "monthly_resistance": [
         {
           "level": 26373,
-          "diff_pts": 553.75,
-          "diff_pct": 2.14
+          "diff_pts": 488.5,
+          "diff_pct": 1.89
         }
       ],
       "monthly_support": [
         {
           "level": 24774,
-          "diff_pts": -1045.25,
-          "diff_pct": -4.05
+          "diff_pts": -1110.5,
+          "diff_pct": -4.29
         },
         {
           "level": 21964,
-          "diff_pts": -3855.25,
-          "diff_pct": -14.93
+          "diff_pts": -3920.5,
+          "diff_pct": -15.15
         }
       ]
     },
-    "updated_at": "2026-11-25 23:17:13"
+    "updated_at": "2026-11-26 13:45:55"
   },
   "nifty": {
     "symbol": "NSE:NIFTY",
     "index_name": "NIFTY 50",
-    "cmp": 25819.25,
-    "change_pct": 1.85,
-    "open": 25658.35,
-    "high": 25951.65,
-    "low": 25619.0,
+    "cmp": 25884.5,
+    "change_pct": 0.25,
+    "open": 25873.2,
+    "high": 25974.95,
+    "low": 25733.5,
     "nearest_sr": {
       "weekly_resistance": [],
       "weekly_support": [
         {
           "level": 25669,
-          "diff_pts": -150.25,
-          "diff_pct": -0.58
+          "diff_pts": -215.5,
+          "diff_pct": -0.83
         },
         {
           "level": 25448,
-          "diff_pts": -371.25,
-          "diff_pct": -1.44
+          "diff_pts": -436.5,
+          "diff_pct": -1.69
         }
       ],
       "monthly_resistance": [
         {
           "level": 26373,
-          "diff_pts": 553.75,
-          "diff_pct": 2.14
+          "diff_pts": 488.5,
+          "diff_pct": 1.89
         }
       ],
       "monthly_support": [
         {
           "level": 24774,
-          "diff_pts": -1045.25,
-          "diff_pct": -4.05
+          "diff_pts": -1110.5,
+          "diff_pct": -4.29
         },
         {
           "level": 21964,
-          "diff_pts": -3855.25,
-          "diff_pct": -14.93
+          "diff_pts": -3920.5,
+          "diff_pct": -15.15
         }
       ]
     }
   },
   "history": [
+    {
+      "date": "26-11-2026",
+      "open": 19267.7,
+      "high": 19433.15,
+      "low": 19241.55,
+      "close": 19372.15,
+      "volume": 311293439,
+      "ema10": 19328.81,
+      "ema20": 19236.87,
+      "rule1_met": true,
+      "rule2_met": true,
+      "entry_allowed": true
+    },
     {
       "date": "25-11-2026",
       "open": 19401.8,
@@ -146,7 +159,7 @@
       "close": 19229.35,
       "volume": 338405291,
       "ema10": 19319.18,
-      "ema20": 19223.07,
+      "ema20": 19222.63,
       "rule1_met": false,
       "rule2_met": true,
       "entry_allowed": false
@@ -159,7 +172,7 @@
       "close": 19314.4,
       "volume": 333334265,
       "ema10": 19339.14,
-      "ema20": 19222.41,
+      "ema20": 19221.92,
       "rule1_met": false,
       "rule2_met": true,
       "entry_allowed": false
@@ -171,8 +184,8 @@
       "low": 19274.45,
       "close": 19443.6,
       "volume": 368795209,
-      "ema10": 19344.64,
-      "ema20": 19212.73,
+      "ema10": 19344.63,
+      "ema20": 19212.18,
       "rule1_met": true,
       "rule2_met": true,
       "entry_allowed": true
@@ -185,7 +198,7 @@
       "close": 19468.4,
       "volume": 393802468,
       "ema10": 19322.64,
-      "ema20": 19188.43,
+      "ema20": 19187.82,
       "rule1_met": true,
       "rule2_met": true,
       "entry_allowed": true
@@ -198,7 +211,7 @@
       "close": 19331.6,
       "volume": 435762933,
       "ema10": 19290.25,
-      "ema20": 19158.96,
+      "ema20": 19158.29,
       "rule1_met": true,
       "rule2_met": true,
       "entry_allowed": true
@@ -210,8 +223,8 @@
       "low": 19365.5,
       "close": 19398.7,
       "volume": 415458965,
-      "ema10": 19281.07,
-      "ema20": 19140.78,
+      "ema10": 19281.06,
+      "ema20": 19140.05,
       "rule1_met": true,
       "rule2_met": true,
       "entry_allowed": true
@@ -223,8 +236,8 @@
       "low": 19368.6,
       "close": 19441.1,
       "volume": 472155177,
-      "ema10": 19254.93,
-      "ema20": 19113.63,
+      "ema10": 19254.92,
+      "ema20": 19112.82,
       "rule1_met": true,
       "rule2_met": true,
       "entry_allowed": true
@@ -237,7 +250,7 @@
       "close": 19656.45,
       "volume": 457903968,
       "ema10": 19213.55,
-      "ema20": 19079.16,
+      "ema20": 19078.26,
       "rule1_met": true,
       "rule2_met": true,
       "entry_allowed": true
@@ -250,7 +263,7 @@
       "close": 19706.75,
       "volume": 484237412,
       "ema10": 19115.13,
-      "ema20": 19018.4,
+      "ema20": 19017.4,
       "rule1_met": true,
       "rule2_met": true,
       "entry_allowed": true
@@ -262,8 +275,8 @@
       "low": 19305.25,
       "close": 19489.35,
       "volume": 396387733,
-      "ema10": 18983.66,
-      "ema20": 18945.94,
+      "ema10": 18983.65,
+      "ema20": 18944.84,
       "rule1_met": true,
       "rule2_met": true,
       "entry_allowed": true
@@ -275,8 +288,8 @@
       "low": 18954.75,
       "close": 19185.05,
       "volume": 315630006,
-      "ema10": 18871.29,
-      "ema20": 18888.74,
+      "ema10": 18871.28,
+      "ema20": 18887.52,
       "rule1_met": true,
       "rule2_met": false,
       "entry_allowed": false
@@ -288,8 +301,8 @@
       "low": 18757.75,
       "close": 18975.05,
       "volume": 400903084,
-      "ema10": 18801.56,
-      "ema20": 18857.55,
+      "ema10": 18801.55,
+      "ema20": 18856.2,
       "rule1_met": true,
       "rule2_met": false,
       "entry_allowed": false
@@ -301,8 +314,8 @@
       "low": 19110.15,
       "close": 19132.45,
       "volume": 502767922,
-      "ema10": 18763.01,
-      "ema20": 18845.18,
+      "ema10": 18762.99,
+      "ema20": 18843.69,
       "rule1_met": true,
       "rule2_met": false,
       "entry_allowed": false
@@ -314,8 +327,8 @@
       "low": 18535.55,
       "close": 19026.4,
       "volume": 464990648,
-      "ema10": 18680.91,
-      "ema20": 18814.94,
+      "ema10": 18680.89,
+      "ema20": 18813.3,
       "rule1_met": true,
       "rule2_met": false,
       "entry_allowed": false
@@ -327,8 +340,8 @@
       "low": 18580.3,
       "close": 18652.85,
       "volume": 440702045,
-      "ema10": 18604.13,
-      "ema20": 18792.68,
+      "ema10": 18604.11,
+      "ema20": 18790.87,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -340,8 +353,8 @@
       "low": 18381.65,
       "close": 18595.3,
       "volume": 654180434,
-      "ema10": 18593.31,
-      "ema20": 18807.4,
+      "ema10": 18593.28,
+      "ema20": 18805.39,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -353,8 +366,8 @@
       "low": 18441.35,
       "close": 18463.6,
       "volume": 1425158751,
-      "ema10": 18592.87,
-      "ema20": 18829.73,
+      "ema10": 18592.83,
+      "ema20": 18827.51,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -366,8 +379,8 @@
       "low": 18575.15,
       "close": 18811.35,
       "volume": 394210801,
-      "ema10": 18621.59,
-      "ema20": 18868.27,
+      "ema10": 18621.55,
+      "ema20": 18865.82,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -379,8 +392,8 @@
       "low": 18424.3,
       "close": 18634.9,
       "volume": 779112778,
-      "ema10": 18579.42,
-      "ema20": 18874.26,
+      "ema10": 18579.38,
+      "ema20": 18871.55,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -392,8 +405,8 @@
       "low": 18039.6,
       "close": 18468.7,
       "volume": 662410428,
-      "ema10": 18567.1,
-      "ema20": 18899.45,
+      "ema10": 18567.04,
+      "ema20": 18896.46,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -405,8 +418,8 @@
       "low": 17433.0,
       "close": 17985.0,
       "volume": 508514483,
-      "ema10": 18588.96,
-      "ema20": 18944.8,
+      "ema10": 18588.89,
+      "ema20": 18941.49,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -418,8 +431,8 @@
       "low": 17571.6,
       "close": 17739.45,
       "volume": 505380008,
-      "ema10": 18723.18,
-      "ema20": 19045.83,
+      "ema10": 18723.09,
+      "ema20": 19042.17,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -431,8 +444,8 @@
       "low": 18155.75,
       "close": 18275.9,
       "volume": 320295188,
-      "ema10": 18941.78,
-      "ema20": 19183.34,
+      "ema10": 18941.67,
+      "ema20": 19179.3,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -444,8 +457,8 @@
       "low": 18373.05,
       "close": 18487.3,
       "volume": 323007081,
-      "ema10": 19089.76,
-      "ema20": 19278.86,
+      "ema10": 19089.62,
+      "ema20": 19274.39,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -457,8 +470,8 @@
       "low": 18913.6,
       "close": 18935.75,
       "volume": 301615231,
-      "ema10": 19223.63,
-      "ema20": 19362.18,
+      "ema10": 19223.47,
+      "ema20": 19357.25,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -470,8 +483,8 @@
       "low": 19069.85,
       "close": 19129.8,
       "volume": 343746157,
-      "ema10": 19287.61,
-      "ema20": 19407.07,
+      "ema10": 19287.41,
+      "ema20": 19401.61,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -483,8 +496,8 @@
       "low": 19102.2,
       "close": 19131.7,
       "volume": 433044808,
-      "ema10": 19322.68,
-      "ema20": 19436.26,
+      "ema10": 19322.44,
+      "ema20": 19430.23,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -496,8 +509,8 @@
       "low": 19335.95,
       "close": 19384.8,
       "volume": 746273239,
-      "ema10": 19365.12,
-      "ema20": 19468.32,
+      "ema10": 19364.82,
+      "ema20": 19461.65,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -509,8 +522,8 @@
       "low": 19183.65,
       "close": 19447.4,
       "volume": 441401918,
-      "ema10": 19360.74,
-      "ema20": 19477.11,
+      "ema10": 19360.38,
+      "ema20": 19469.74,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -522,8 +535,8 @@
       "low": 19260.8,
       "close": 19425.8,
       "volume": 406372118,
-      "ema10": 19341.49,
-      "ema20": 19480.23,
+      "ema10": 19341.05,
+      "ema20": 19472.09,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -535,8 +548,8 @@
       "low": 18875.4,
       "close": 19153.7,
       "volume": 420798551,
-      "ema10": 19322.75,
-      "ema20": 19485.96,
+      "ema10": 19322.21,
+      "ema20": 19476.96,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -548,8 +561,8 @@
       "low": 19031.5,
       "close": 19050.1,
       "volume": 672749276,
-      "ema10": 19360.32,
-      "ema20": 19520.94,
+      "ema10": 19359.66,
+      "ema20": 19510.99,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -561,8 +574,8 @@
       "low": 19358.8,
       "close": 19506.95,
       "volume": 407495299,
-      "ema10": 19429.25,
-      "ema20": 19570.5,
+      "ema10": 19428.45,
+      "ema20": 19559.51,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -574,8 +587,8 @@
       "low": 19175.3,
       "close": 19448.7,
       "volume": 333210045,
-      "ema10": 19411.99,
-      "ema20": 19577.19,
+      "ema10": 19411.0,
+      "ema20": 19565.04,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -587,8 +600,8 @@
       "low": 18994.2,
       "close": 19149.1,
       "volume": 347962798,
-      "ema10": 19403.83,
-      "ema20": 19590.71,
+      "ema10": 19402.63,
+      "ema20": 19577.28,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -600,8 +613,8 @@
       "low": 18797.65,
       "close": 19058.65,
       "volume": 400804474,
-      "ema10": 19460.43,
-      "ema20": 19637.2,
+      "ema10": 19458.96,
+      "ema20": 19622.36,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -613,8 +626,8 @@
       "low": 19223.95,
       "close": 19245.7,
       "volume": 392865564,
-      "ema10": 19549.72,
-      "ema20": 19698.1,
+      "ema10": 19547.92,
+      "ema20": 19681.69,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -626,8 +639,8 @@
       "low": 19116.5,
       "close": 19193.55,
       "volume": 467953110,
-      "ema10": 19617.28,
-      "ema20": 19745.72,
+      "ema10": 19615.08,
+      "ema20": 19727.59,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -639,8 +652,8 @@
       "low": 19324.0,
       "close": 19351.1,
       "volume": 402249850,
-      "ema10": 19711.44,
-      "ema20": 19803.84,
+      "ema10": 19708.76,
+      "ema20": 19783.8,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -652,8 +665,8 @@
       "low": 19594.9,
       "close": 19715.25,
       "volume": 489192867,
-      "ema10": 19791.52,
-      "ema20": 19851.5,
+      "ema10": 19788.24,
+      "ema20": 19829.35,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -665,8 +678,8 @@
       "low": 19657.7,
       "close": 19684.75,
       "volume": 719491830,
-      "ema10": 19808.46,
-      "ema20": 19865.84,
+      "ema10": 19804.46,
+      "ema20": 19841.36,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -678,8 +691,8 @@
       "low": 19847.7,
       "close": 19991.5,
       "volume": 767691313,
-      "ema10": 19835.96,
-      "ema20": 19884.91,
+      "ema10": 19831.06,
+      "ema20": 19857.84,
       "rule1_met": true,
       "rule2_met": false,
       "entry_allowed": false
@@ -691,8 +704,8 @@
       "low": 19778.55,
       "close": 19815.45,
       "volume": 532219346,
-      "ema10": 19801.39,
-      "ema20": 19873.69,
+      "ema10": 19795.41,
+      "ema20": 19843.78,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -704,9 +717,9 @@
       "low": 19824.1,
       "close": 19861.5,
       "volume": 325310078,
-      "ema10": 19798.27,
-      "ema20": 19879.82,
-      "rule1_met": false,
+      "ema10": 19790.95,
+      "ema20": 19846.76,
+      "rule1_met": true,
       "rule2_met": false,
       "entry_allowed": false
     },
@@ -717,9 +730,9 @@
       "low": 19565.5,
       "close": 19875.7,
       "volume": 576841509,
-      "ema10": 19784.21,
-      "ema20": 19881.75,
-      "rule1_met": false,
+      "ema10": 19775.28,
+      "ema20": 19845.21,
+      "rule1_met": true,
       "rule2_met": false,
       "entry_allowed": false
     },
@@ -730,8 +743,8 @@
       "low": 19361.95,
       "close": 19535.7,
       "volume": 457013703,
-      "ema10": 19763.88,
-      "ema20": 19882.38,
+      "ema10": 19752.96,
+      "ema20": 19842.0,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -743,8 +756,8 @@
       "low": 19036.3,
       "close": 19388.3,
       "volume": 525516255,
-      "ema10": 19814.59,
-      "ema20": 19918.87,
+      "ema10": 19801.24,
+      "ema20": 19874.24,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -756,8 +769,8 @@
       "low": 19380.9,
       "close": 19422.45,
       "volume": 633097686,
-      "ema10": 19909.32,
-      "ema20": 19974.72,
+      "ema10": 19893.0,
+      "ema20": 19925.39,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -769,10 +782,10 @@
       "low": 19728.1,
       "close": 19906.3,
       "volume": 732250980,
-      "ema10": 20017.52,
-      "ema20": 20032.86,
+      "ema10": 19997.57,
+      "ema20": 19978.33,
       "rule1_met": false,
-      "rule2_met": false,
+      "rule2_met": true,
       "entry_allowed": false
     },
     {
@@ -782,11 +795,11 @@
       "low": 19992.35,
       "close": 20021.95,
       "volume": 615591405,
-      "ema10": 20042.23,
-      "ema20": 20046.18,
-      "rule1_met": false,
-      "rule2_met": false,
-      "entry_allowed": false
+      "ema10": 20017.86,
+      "ema20": 19985.91,
+      "rule1_met": true,
+      "rule2_met": true,
+      "entry_allowed": true
     },
     {
       "date": "09-09-2026",
@@ -795,11 +808,11 @@
       "low": 20021.35,
       "close": 20036.9,
       "volume": 563866217,
-      "ema10": 20046.74,
-      "ema20": 20048.73,
-      "rule1_met": false,
-      "rule2_met": false,
-      "entry_allowed": false
+      "ema10": 20016.95,
+      "ema20": 19982.12,
+      "rule1_met": true,
+      "rule2_met": true,
+      "entry_allowed": true
     },
     {
       "date": "08-09-2026",
@@ -808,11 +821,11 @@
       "low": 20027.25,
       "close": 20133.75,
       "volume": 570806303,
-      "ema10": 20048.92,
-      "ema20": 20049.98,
+      "ema10": 20012.51,
+      "ema20": 19976.35,
       "rule1_met": true,
-      "rule2_met": false,
-      "entry_allowed": false
+      "rule2_met": true,
+      "entry_allowed": true
     },
     {
       "date": "07-09-2026",
@@ -821,11 +834,11 @@
       "low": 20047.25,
       "close": 20100.2,
       "volume": 469225786,
-      "ema10": 20030.07,
-      "ema20": 20041.16,
+      "ema10": 19985.57,
+      "ema20": 19959.78,
       "rule1_met": true,
-      "rule2_met": false,
-      "entry_allowed": false
+      "rule2_met": true,
+      "entry_allowed": true
     },
     {
       "date": "04-09-2026",
@@ -834,11 +847,11 @@
       "low": 20077.4,
       "close": 20095.45,
       "volume": 815190840,
-      "ema10": 20014.49,
-      "ema20": 20034.94,
+      "ema10": 19960.1,
+      "ema20": 19945.0,
       "rule1_met": true,
-      "rule2_met": false,
-      "entry_allowed": false
+      "rule2_met": true,
+      "entry_allowed": true
     },
     {
       "date": "03-09-2026",
@@ -847,11 +860,11 @@
       "low": 19903.75,
       "close": 20050.75,
       "volume": 568643601,
-      "ema10": 19996.5,
-      "ema20": 20028.57,
+      "ema10": 19930.02,
+      "ema20": 19929.16,
       "rule1_met": true,
-      "rule2_met": false,
-      "entry_allowed": false
+      "rule2_met": true,
+      "entry_allowed": true
     },
     {
       "date": "02-09-2026",
@@ -860,8 +873,8 @@
       "low": 19662.15,
       "close": 19812.25,
       "volume": 723352435,
-      "ema10": 19984.44,
-      "ema20": 20026.24,
+      "ema10": 19903.19,
+      "ema20": 19916.37,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -873,8 +886,8 @@
       "low": 19759.2,
       "close": 19886.25,
       "volume": 337396842,
-      "ema10": 20022.7,
-      "ema20": 20048.76,
+      "ema10": 19923.4,
+      "ema20": 19927.33,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
@@ -886,21 +899,8 @@
       "low": 19830.55,
       "close": 19931.65,
       "volume": 563635410,
-      "ema10": 20053.03,
-      "ema20": 20065.87,
-      "rule1_met": false,
-      "rule2_met": false,
-      "entry_allowed": false
-    },
-    {
-      "date": "28-08-2026",
-      "open": 20079.6,
-      "high": 20129.1,
-      "low": 20045.25,
-      "close": 20080.0,
-      "volume": 516667360,
-      "ema10": 20080.0,
-      "ema20": 20080.0,
+      "ema10": 19931.65,
+      "ema20": 19931.65,
       "rule1_met": false,
       "rule2_met": false,
       "entry_allowed": false
